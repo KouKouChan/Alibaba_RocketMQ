@@ -23,6 +23,7 @@ It offers a variety of features as follows:
 * Issues: <https://github.com/alibaba/RocketMQ/issues>
 * QQ Group: [5776652](http://url.cn/Knxm0o)
 * Weibo <http://q.weibo.com/1628465>
+* [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/alibaba/RocketMQ?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
  
 
 ----------
