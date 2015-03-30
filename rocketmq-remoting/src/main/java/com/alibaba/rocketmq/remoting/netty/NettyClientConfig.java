@@ -40,6 +40,13 @@ public class NettyClientConfig {
     private int clientSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
     private boolean clientPooledByteBufAllocatorEnable = false;
 
+    private boolean clientSSLEnabled = false;
+
+    public NettyClientConfig() {
+        if ("true".equals(System.getenv("ROCKETMQ_ENABLE_SSL")) || "true".equals(System.getProperty("enable_ssl"))) {
+            clientSSLEnabled = true;
+        }
+    }
 
     public int getClientWorkerThreads() {
         return clientWorkerThreads;
@@ -138,5 +145,13 @@ public class NettyClientConfig {
 
     public void setClientPooledByteBufAllocatorEnable(boolean clientPooledByteBufAllocatorEnable) {
         this.clientPooledByteBufAllocatorEnable = clientPooledByteBufAllocatorEnable;
+    }
+
+    public boolean isClientSSLEnabled() {
+        return clientSSLEnabled;
+    }
+
+    public void setClientSSLEnabled(boolean clientSSLEnabled) {
+        this.clientSSLEnabled = clientSSLEnabled;
     }
 }

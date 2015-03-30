@@ -15,6 +15,19 @@
  */
 package com.alibaba.rocketmq.remoting.netty;
 
+import com.alibaba.rocketmq.remoting.ChannelEventListener;
+import com.alibaba.rocketmq.remoting.InvokeCallback;
+import com.alibaba.rocketmq.remoting.RPCHook;
+import com.alibaba.rocketmq.remoting.RemotingClient;
+import com.alibaba.rocketmq.remoting.common.Pair;
+import com.alibaba.rocketmq.remoting.common.RemotingHelper;
+import com.alibaba.rocketmq.remoting.common.RemotingUtil;
+import com.alibaba.rocketmq.remoting.exception.RemotingConnectException;
+import com.alibaba.rocketmq.remoting.exception.RemotingSendRequestException;
+import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
+import com.alibaba.rocketmq.remoting.exception.RemotingTooMuchRequestException;
+import com.alibaba.rocketmq.remoting.exception.SSLContextCreationException;
+import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -28,10 +41,13 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.Collections;
@@ -48,22 +64,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.rocketmq.remoting.ChannelEventListener;
-import com.alibaba.rocketmq.remoting.InvokeCallback;
-import com.alibaba.rocketmq.remoting.RPCHook;
-import com.alibaba.rocketmq.remoting.RemotingClient;
-import com.alibaba.rocketmq.remoting.common.Pair;
-import com.alibaba.rocketmq.remoting.common.RemotingHelper;
-import com.alibaba.rocketmq.remoting.common.RemotingUtil;
-import com.alibaba.rocketmq.remoting.exception.RemotingConnectException;
-import com.alibaba.rocketmq.remoting.exception.RemotingSendRequestException;
-import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
-import com.alibaba.rocketmq.remoting.exception.RemotingTooMuchRequestException;
-import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 
 
 /**
@@ -261,6 +261,14 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                     this.threadIndex.incrementAndGet()));
             }
         });
+
+        if (nettyClientConfig.isClientSSLEnabled()) {
+            try {
+                sslContext = SslHelper.getSSLContext(SslRole.CLIENT);
+            } catch (SSLContextCreationException e) {
+                log.error("Failed to create SSL context.", e);
+            }
+        }
     }
 
 
@@ -291,13 +299,24 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel ch) throws Exception {
-                    ch.pipeline().addLast(//
-                        defaultEventExecutorGroup, //
-                        new NettyEncoder(), //
-                        new NettyDecoder(), //
-                        new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),//
-                        new NettyConnetManageHandler(), //
-                        new NettyClientHandler());
+                    if (null == sslContext) {
+                        ch.pipeline().addLast(//
+                            defaultEventExecutorGroup, //
+                            new NettyEncoder(), //
+                            new NettyDecoder(), //
+                            new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),//
+                            new NettyConnetManageHandler(), //
+                            new NettyClientHandler());
+                    } else {
+                        ch.pipeline().addLast(//
+                                defaultEventExecutorGroup, //
+                                new SslHandler(SslHelper.getSSLEngine(sslContext, SslRole.CLIENT)),
+                                new NettyEncoder(), //
+                                new NettyDecoder(), //
+                                new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),//
+                                new NettyConnetManageHandler(), //
+                                new NettyClientHandler());
+                    }
                 }
             });
 

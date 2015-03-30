@@ -34,6 +34,13 @@ public class NettyServerConfig {
     private int serverSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
     private boolean serverPooledByteBufAllocatorEnable = false;
 
+    private boolean serverSSLEnabled = false;
+
+    public NettyServerConfig() {
+        if ("true".equals(System.getenv("ROCKETMQ_ENABLE_SSL")) || "true".equals(System.getProperty("enable_ssl"))) {
+            serverSSLEnabled = true;
+        }
+    }
 
     public int getListenPort() {
         return listenPort;
@@ -132,5 +139,13 @@ public class NettyServerConfig {
 
     public void setServerPooledByteBufAllocatorEnable(boolean serverPooledByteBufAllocatorEnable) {
         this.serverPooledByteBufAllocatorEnable = serverPooledByteBufAllocatorEnable;
+    }
+
+    public boolean isServerSSLEnabled() {
+        return serverSSLEnabled;
+    }
+
+    public void setServerSSLEnabled(boolean serverSSLEnabled) {
+        this.serverSSLEnabled = serverSSLEnabled;
     }
 }

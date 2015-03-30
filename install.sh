@@ -1,3 +1,4 @@
+#!/bin/sh
 git pull
 
 rm -rf target
@@ -8,4 +9,5 @@ fi
 export PATH=/opt/taobao/mvn/bin:$JAVA_HOME/bin:$PATH
 mvn -Dmaven.test.skip=true clean package install assembly:assembly -U
 
-ln -s target/alibaba-rocketmq.dir/alibaba-rocketmq devenv
+ln -s target/alibaba-rocketmq/alibaba-rocketmq devenv
+cp ${JAVA_HOME}/jre/lib/ext/sunjce_provider.jar devenv/lib/

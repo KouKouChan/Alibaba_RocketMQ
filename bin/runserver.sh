@@ -26,6 +26,11 @@ JAVA_OPT="${JAVA_OPT} -XX:+UseConcMarkSweepGC -XX:+UseCMSCompactAtFullCollection
 JAVA_OPT="${JAVA_OPT} -verbose:gc -Xloggc:${HOME}/rmq_srv_gc.log -XX:+PrintGCDetails"
 JAVA_OPT="${JAVA_OPT} -XX:-OmitStackTraceInFastThrow"
 JAVA_OPT="${JAVA_OPT} -Djava.ext.dirs=${BASE_DIR}/lib"
+JAVA_OPT="${JAVA_OPT} -Drocketmq.namesrv.domain=config.graphene.spellso.com"
+JAVA_OPT="${JAVA_OPT} -Denable_ssl=true"
+JAVA_OPT="${JAVA_OPT} -Duse_elastic_ip=true"
+JAVA_OPT="${JAVA_OPT} -DRocketMQServerPassword=VVYZZ9NLVdy849XIy/tM3Q=="
+JAVA_OPT="${JAVA_OPT} -DRocketMQClientPassword=VVYZZ9NLVdy849XIy/tM3Q=="
 #JAVA_OPT="${JAVA_OPT} -Xdebug -Xrunjdwp:transport=dt_socket,address=9555,server=y,suspend=n"
 JAVA_OPT="${JAVA_OPT} -cp ${CLASSPATH}"
 

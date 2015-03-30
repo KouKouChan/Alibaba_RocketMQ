@@ -23,6 +23,11 @@ export CLASSPATH=.:${BASE_DIR}/conf:${CLASSPATH}
 #===========================================================================================
 JAVA_OPT="${JAVA_OPT} -server -Xms1g -Xmx1g -Xmn256m -XX:PermSize=128m -XX:MaxPermSize=128m"
 JAVA_OPT="${JAVA_OPT} -Djava.ext.dirs=${BASE_DIR}/lib:${JAVA_HOME}/jre/lib/ext"
+JAVA_OPT="${JAVA_OPT} -Drocketmq.namesrv.domain=config.graphene.spellso.com"
+JAVA_OPT="${JAVA_OPT} -Denable_ssl=true"
+JAVA_OPT="${JAVA_OPT} -Duse_elastic_ip=true"
+JAVA_OPT="${JAVA_OPT} -DRocketMQServerPassword=VVYZZ9NLVdy849XIy/tM3Q=="
+JAVA_OPT="${JAVA_OPT} -DRocketMQClientPassword=VVYZZ9NLVdy849XIy/tM3Q=="
 JAVA_OPT="${JAVA_OPT} -cp ${CLASSPATH}"
 
 $JAVA ${JAVA_OPT} $@

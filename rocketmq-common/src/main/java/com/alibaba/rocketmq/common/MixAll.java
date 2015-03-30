@@ -15,6 +15,10 @@
  */
 package com.alibaba.rocketmq.common;
 
+import com.alibaba.rocketmq.common.annotation.ImportantField;
+import com.alibaba.rocketmq.common.help.FAQUrl;
+import org.slf4j.Logger;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
@@ -41,11 +45,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.slf4j.Logger;
-
-import com.alibaba.rocketmq.common.annotation.ImportantField;
-import com.alibaba.rocketmq.common.help.FAQUrl;
-
 
 /**
  * 各种方法大杂烩
@@ -60,11 +59,11 @@ public class MixAll {
     public static final String NAMESRV_ADDR_PROPERTY = "rocketmq.namesrv.addr";
     public static final String MESSAGE_COMPRESS_LEVEL = "rocketmq.message.compressLevel";
     public static final String WS_DOMAIN_NAME = System.getProperty("rocketmq.namesrv.domain",
-        "jmenv.tbsite.net");
+        "config.graphene.spellso.com");
     public static final String WS_DOMAIN_SUBGROUP = System.getProperty("rocketmq.namesrv.domain.subgroup",
         "nsaddr");
     // http://jmenv.tbsite.net:8080/rocketmq/nsaddr
-    public static final String WS_ADDR = "http://" + WS_DOMAIN_NAME + ":8080/rocketmq/" + WS_DOMAIN_SUBGROUP;
+    public static final String WS_ADDR = "http://" + WS_DOMAIN_NAME + ":80/rocketmq/" + WS_DOMAIN_SUBGROUP;
     public static final String DEFAULT_TOPIC = "TBW102";
     public static final String BENCHMARK_TOPIC = "BenchmarkTest";
     public static final String DEFAULT_PRODUCER_GROUP = "DEFAULT_PRODUCER";
