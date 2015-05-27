@@ -192,6 +192,7 @@
                 <version>2.5.3</version>
                 <configuration>
                     <finalName>alibaba-rocketmq-${project.version}</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
                     <descriptors>
                         <descriptor>release.xml</descriptor>
                     </descriptors>
