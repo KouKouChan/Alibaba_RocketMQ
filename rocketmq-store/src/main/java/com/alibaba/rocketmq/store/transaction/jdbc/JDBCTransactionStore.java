@@ -1,7 +1,7 @@
-package com.alibaba.rocketmq.broker.transaction.jdbc;
+package com.alibaba.rocketmq.store.transaction.jdbc;
 
-import com.alibaba.rocketmq.broker.transaction.TransactionRecord;
-import com.alibaba.rocketmq.broker.transaction.TransactionStore;
+import com.alibaba.rocketmq.store.transaction.TransactionRecord;
+import com.alibaba.rocketmq.store.transaction.TransactionStore;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import org.slf4j.Logger;

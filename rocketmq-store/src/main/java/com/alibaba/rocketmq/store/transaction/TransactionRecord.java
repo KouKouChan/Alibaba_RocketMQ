@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.broker.transaction;
+package com.alibaba.rocketmq.store.transaction;
 
 public class TransactionRecord {
     // Commit Log Offset
