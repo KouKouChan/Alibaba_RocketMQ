@@ -15,22 +15,6 @@
  */
 package com.alibaba.rocketmq.broker;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alibaba.rocketmq.broker.client.ClientHousekeepingService;
 import com.alibaba.rocketmq.broker.client.ConsumerIdsChangeListener;
 import com.alibaba.rocketmq.broker.client.ConsumerManager;
@@ -76,8 +60,24 @@ import com.alibaba.rocketmq.store.config.BrokerRole;
 import com.alibaba.rocketmq.store.config.MessageStoreConfig;
 import com.alibaba.rocketmq.store.stats.BrokerStats;
 import com.alibaba.rocketmq.store.stats.BrokerStatsManager;
+import com.alibaba.rocketmq.store.transaction.jdbc.JDBCTransactionStore;
+import com.alibaba.rocketmq.store.transaction.jdbc.JDBCTransactionStoreConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -124,17 +124,21 @@ public class BrokerController {
     private final BrokerStatsManager brokerStatsManager;
     private InetSocketAddress storeHost;
 
+    private JDBCTransactionStoreConfig jdbcTransactionStoreConfig;
+    private JDBCTransactionStore jdbcTransactionStore;
 
     public BrokerController(//
             final BrokerConfig brokerConfig, //
             final NettyServerConfig nettyServerConfig, //
             final NettyClientConfig nettyClientConfig, //
-            final MessageStoreConfig messageStoreConfig //
+            final MessageStoreConfig messageStoreConfig, //
+            final JDBCTransactionStoreConfig jdbcTransactionStoreConfig
     ) {
         this.brokerConfig = brokerConfig;
         this.nettyServerConfig = nettyServerConfig;
         this.nettyClientConfig = nettyClientConfig;
         this.messageStoreConfig = messageStoreConfig;
+        this.jdbcTransactionStoreConfig = jdbcTransactionStoreConfig;
         this.consumerOffsetManager = new ConsumerOffsetManager(this);
         this.topicConfigManager = new TopicConfigManager(this);
         this.pullMessageProcessor = new PullMessageProcessor(this);
@@ -186,6 +190,11 @@ public class BrokerController {
         }
 
         result = result && this.messageStore.load();
+
+        if (result) {
+            this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
+            result = result && jdbcTransactionStore.open();
+        }
 
         if (result) {
             this.remotingServer =
@@ -421,6 +430,13 @@ public class BrokerController {
         return messageStoreConfig;
     }
 
+    public JDBCTransactionStoreConfig getJdbcTransactionStoreConfig() {
+        return jdbcTransactionStoreConfig;
+    }
+
+    public JDBCTransactionStore getJdbcTransactionStore() {
+        return jdbcTransactionStore;
+    }
 
     public NettyServerConfig getNettyServerConfig() {
         return nettyServerConfig;
