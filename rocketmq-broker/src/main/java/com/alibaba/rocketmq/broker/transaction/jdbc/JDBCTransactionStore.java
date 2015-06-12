@@ -1,5 +1,12 @@
 package com.alibaba.rocketmq.broker.transaction.jdbc;
 
+import com.alibaba.rocketmq.broker.transaction.TransactionRecord;
+import com.alibaba.rocketmq.broker.transaction.TransactionStore;
+import com.alibaba.rocketmq.common.MixAll;
+import com.alibaba.rocketmq.common.constant.LoggerName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -12,20 +19,19 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.rocketmq.broker.transaction.TransactionRecord;
-import com.alibaba.rocketmq.broker.transaction.TransactionStore;
-import com.alibaba.rocketmq.common.MixAll;
-import com.alibaba.rocketmq.common.constant.LoggerName;
-
 
 public class JDBCTransactionStore implements TransactionStore {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.TransactionLoggerName);
     private final JDBCTransactionStoreConfig jdbcTransactionStoreConfig;
     private Connection connection;
     private AtomicLong totalRecordsValue = new AtomicLong(0);
+
+    /**
+     * SQL to check existence of specified table.
+     */
+    private static final String SQL_TABLE_EXISTS = "SELECT count(1) > 1 AS table_exists " +
+            "FROM information_schema.TABLES " +
+            "WHERE TABLE_NAME = ? and TABLE_SCHEMA= ?";
 
 
     public JDBCTransactionStore(JDBCTransactionStoreConfig jdbcTransactionStoreConfig) {
@@ -87,13 +93,33 @@ public class JDBCTransactionStore implements TransactionStore {
         return true;
     }
 
+    /**
+     * This method checks if the given tables exists in DB.
+     * @param tableName table name to check.
+     * @return true if exists; false otherwise.
+     * @throws SQLException If any error occurs.
+     */
+    private boolean tableExists(String tableName) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement(SQL_TABLE_EXISTS);
+        preparedStatement.setString(1, tableName);
+        preparedStatement.setString(2, connection.getSchema());
+        ResultSet resultSet = preparedStatement.executeQuery();
+
+        if (resultSet.first()) {
+            boolean exists = resultSet.getBoolean("table_exists");
+            preparedStatement.close();
+            return exists;
+        }
+
+        return false;
+    }
+
 
     private String createTableSql() {
         URL resource = JDBCTransactionStore.class.getClassLoader().getResource("transaction.sql");
         String fileContent = MixAll.file2String(resource);
         return fileContent;
     }
-
 
     private boolean createDB() {
         Statement statement = null;
@@ -130,20 +156,18 @@ public class JDBCTransactionStore implements TransactionStore {
             props.put("password", jdbcTransactionStoreConfig.getJdbcPassword());
 
             try {
-                this.connection =
-                        DriverManager.getConnection(this.jdbcTransactionStoreConfig.getJdbcURL(), props);
-
+                this.connection = DriverManager.getConnection(this.jdbcTransactionStoreConfig.getJdbcURL(), props);
                 this.connection.setAutoCommit(false);
 
                 // 如果表不存在，尝试初始化表
-                if (!this.computeTotalRecords()) {
+                if (!tableExists("t_transaction")) {
                     return this.createDB();
                 }
 
                 return true;
             }
             catch (SQLException e) {
-                log.info("Create JDBC Connection Exeption", e);
+                log.info("Create JDBC Connection Exception", e);
             }
         }
 
