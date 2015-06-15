@@ -1,13 +1,11 @@
 package com.alibaba.rocketmq.store.transaction.jdbc;
 
+import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.store.transaction.TransactionRecord;
 import com.alibaba.rocketmq.store.transaction.TransactionStore;
-import com.alibaba.rocketmq.common.MixAll;
-import com.alibaba.rocketmq.common.constant.LoggerName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -16,7 +14,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -26,6 +26,8 @@ public class JDBCTransactionStore implements TransactionStore {
     private Connection connection;
     private AtomicLong totalRecordsValue = new AtomicLong(0);
 
+    private ConcurrentHashMap<String, Integer> producerGroupIdMap = new ConcurrentHashMap<String, Integer>();
+
     /**
      * SQL to check existence of specified table.
      */
@@ -33,11 +35,50 @@ public class JDBCTransactionStore implements TransactionStore {
             "FROM information_schema.TABLES " +
             "WHERE TABLE_NAME = ? and TABLE_SCHEMA= ?";
 
+    private static final String SQL_CREATE_TRANSACTION_TABLE = "CREATE TABLE IF NOT EXISTS t_transaction (" +
+            "offset NUMERIC(20) NOT NULL PRIMARY KEY, " +
+            "producer_group_id INT NOT NULL)";
+
+    private static final String SQL_CREATE_PRODUCER_GROUP_TABLE = "CREATE TABLE IF NOT EXISTS t_producer_group (" +
+            "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
+            "name VARCHAR(64) NOT NULL, " +
+            "CONSTRAINT uniq_producer_group_name UNIQUE(name))";
+
+    private static final String SQL_INSERT_PRODUCER_GROUP =
+            "INSERT INTO t_producer_group (id, name) VALUES (NULL, ?)";
+
+    private static final String SQL_GET_PRODUCER_GROUP_ID = "SELECT name, id FROM t_producer_group";
+
+    public String getProducerGroup(int producerGroupId) {
+
+        if (producerGroupId < 0) {
+            return null;
+        }
+
+        for (Map.Entry<String, Integer> next : producerGroupIdMap.entrySet()) {
+            if (next.getValue() == producerGroupId) {
+                return next.getKey();
+            }
+        }
+        return null;
+    }
+
+    public int getOrCreateProducerGroupId(String producerGroup) {
+
+        if (null == producerGroup || producerGroup.isEmpty()) {
+            return -1;
+        }
+
+        if (!producerGroupIdMap.containsKey(producerGroup)) {
+            insertProducerGroup(producerGroup);
+        }
+
+        return producerGroupIdMap.get(producerGroup);
+    }
 
     public JDBCTransactionStore(JDBCTransactionStoreConfig jdbcTransactionStoreConfig) {
         this.jdbcTransactionStoreConfig = jdbcTransactionStoreConfig;
     }
-
 
     private boolean loadDriver() {
         try {
@@ -115,28 +156,18 @@ public class JDBCTransactionStore implements TransactionStore {
     }
 
 
-    private String createTableSql() {
-        URL resource = JDBCTransactionStore.class.getClassLoader().getResource("transaction.sql");
-        String fileContent = MixAll.file2String(resource);
-        return fileContent;
-    }
-
-    private boolean createDB() {
+    private boolean createTable(String tableName, String sql) {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-
-            String sql = this.createTableSql();
-            log.info("createDB SQL:\n {}", sql);
+            log.info("create table: {} \n SQL: {}", tableName, sql);
             statement.execute(sql);
             this.connection.commit();
             return true;
-        }
-        catch (Exception e) {
-            log.warn("createDB Exception", e);
+        } catch (Exception e) {
+            log.warn("create table: {}  Exception", tableName, e);
             return false;
-        }
-        finally {
+        } finally {
             if (null != statement) {
                 try {
                     statement.close();
@@ -145,6 +176,29 @@ public class JDBCTransactionStore implements TransactionStore {
                 }
             }
         }
+    }
+
+    public boolean insertProducerGroup(String producerGroup) {
+        if (!producerGroupIdMap.containsKey(producerGroup)) {
+            if (null != connection) {
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement(SQL_INSERT_PRODUCER_GROUP, Statement.RETURN_GENERATED_KEYS);
+                    preparedStatement.setString(1, producerGroup);
+                    preparedStatement.executeUpdate();
+                    ResultSet resultSet = preparedStatement.getGeneratedKeys();
+                    resultSet.first();
+                    int groupId = resultSet.getInt(1);
+                    connection.commit();
+                    producerGroupIdMap.putIfAbsent(producerGroup, groupId);
+                    preparedStatement.close();
+                    return true;
+                } catch (SQLException e) {
+                    log.error("Failed to insert new producer group: {}", producerGroup);
+                }
+            }
+        }
+
+        return false;
     }
 
 
@@ -159,19 +213,47 @@ public class JDBCTransactionStore implements TransactionStore {
                 this.connection = DriverManager.getConnection(this.jdbcTransactionStoreConfig.getJdbcURL(), props);
                 this.connection.setAutoCommit(false);
 
+                boolean success = true;
                 // 如果表不存在，尝试初始化表
                 if (!tableExists("t_transaction")) {
-                    return this.createDB();
+                    success = success && createTable("t_transaction", SQL_CREATE_TRANSACTION_TABLE);
                 }
 
-                return true;
-            }
-            catch (SQLException e) {
+                if (!tableExists("t_producer_group")) {
+                    success = success && createTable("t_producer_group", SQL_CREATE_PRODUCER_GROUP_TABLE);
+                }
+
+                //pre-fetch all existing producer group ID mapping.
+                loadProducerGroupIdMapFromDB();
+
+                return success;
+            } catch (SQLException e) {
                 log.info("Create JDBC Connection Exception", e);
             }
         }
 
         return false;
+    }
+
+    private boolean loadProducerGroupIdMapFromDB() {
+        boolean isSuccess = true;
+        if (null != connection) {
+            try {
+                Statement statement = connection.createStatement();
+                log.info("Executing SQL: {}", SQL_GET_PRODUCER_GROUP_ID);
+                ResultSet resultSet = statement.executeQuery(SQL_GET_PRODUCER_GROUP_ID);
+                while (resultSet.next()) {
+                    producerGroupIdMap.putIfAbsent(resultSet.getString("name"), resultSet.getInt("id"));
+                }
+                statement.close();
+            } catch (SQLException e) {
+                log.error("Query Producer Group Name-ID mapping error", e);
+            }
+        } else {
+            isSuccess = false;
+        }
+
+        return isSuccess;
     }
 
 
@@ -256,13 +338,20 @@ public class JDBCTransactionStore implements TransactionStore {
 
     @Override
     public boolean put(List<TransactionRecord> trs) {
+
+        for (TransactionRecord tr: trs) {
+            if (!producerGroupIdMap.containsKey(tr.getProducerGroup())) {
+                insertProducerGroup(tr.getProducerGroup());
+            }
+        }
+
         PreparedStatement statement = null;
         try {
             this.connection.setAutoCommit(false);
             statement = this.connection.prepareStatement("insert into t_transaction values (?, ?)");
             for (TransactionRecord tr : trs) {
                 statement.setLong(1, tr.getOffset());
-                statement.setString(2, tr.getProducerGroup());
+                statement.setInt(2, producerGroupIdMap.get(tr.getProducerGroup()));
                 statement.addBatch();
             }
             int[] executeBatch = statement.executeBatch();

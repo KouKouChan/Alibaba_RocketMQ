@@ -180,8 +180,13 @@ public class BrokerController {
         result = result && this.subscriptionGroupManager.load();
 
         if (result) {
+            this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
+            result = result && jdbcTransactionStore.open();
+        }
+
+        if (result) {
             try {
-                this.messageStore = new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager);
+                this.messageStore = new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager, jdbcTransactionStore);
             }
             catch (IOException e) {
                 result = false;
@@ -190,11 +195,6 @@ public class BrokerController {
         }
 
         result = result && this.messageStore.load();
-
-        if (result) {
-            this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
-            result = result && jdbcTransactionStore.open();
-        }
 
         if (result) {
             this.remotingServer =
