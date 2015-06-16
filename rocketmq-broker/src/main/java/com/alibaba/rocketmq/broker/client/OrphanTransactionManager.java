@@ -52,6 +52,7 @@ public class OrphanTransactionManager {
                 SelectMapedBufferResult selectMapedBufferResult = brokerController.getMessageStore().selectOneMessageByOffset(offset);
                 //Select a channel randomly.
                 Channel channel = clientChannelMap.keySet().iterator().next();
+                ClientChannelInfo clientChannelInfo = clientChannelMap.get(channel);
                 CheckTransactionStateRequestHeader requestHeader = new CheckTransactionStateRequestHeader();
                 requestHeader.setCommitLogOffset(offset);
                 MessageExt messageExt = MessageDecoder.decode(selectMapedBufferResult.getByteBuffer());
@@ -60,6 +61,9 @@ public class OrphanTransactionManager {
                 //The following two fields are no longer used. Set for compatible purpose only.
                 requestHeader.setTranStateTableOffset(-1L);
                 requestHeader.setTransactionId("NO-LONGER-USED");
+
+                LOGGER.info("check producer transaction state against broker {} for Message ID: {}",
+                        clientChannelInfo.getClientId(), messageExt.getMsgId());
 
                 brokerController.getBroker2Client().checkProducerTransactionState(channel, requestHeader, selectMapedBufferResult);
             }

@@ -43,7 +43,7 @@ public class TransactionProducer {
 
         String[] tags = new String[] { "TagA", "TagB", "TagC", "TagD", "TagE" };
         TransactionExecuterImpl tranExecuter = new TransactionExecuterImpl();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1; i++) {
             try {
                 Message msg =
                         new Message("TopicTest", tags[i % tags.length], "KEY" + i,

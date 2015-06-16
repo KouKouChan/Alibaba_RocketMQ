@@ -1657,6 +1657,12 @@ public class DefaultMessageStore implements MessageStore {
                     // 1、分发消息位置信息到ConsumeQueue
                     switch (tranType) {
                     case MessageSysFlag.TransactionNotType:
+                        // 将请求发到具体的Consume Queue
+                        DefaultMessageStore.this.putMessagePostionInfo(req.getTopic(), req.getQueueId(),
+                                req.getCommitLogOffset(), req.getMsgSize(), req.getTagsCode(),
+                                req.getStoreTimestamp(), req.getConsumeQueueOffset());
+                        break;
+
                     case MessageSysFlag.TransactionCommitType:
                         // 将请求发到具体的Consume Queue
                         DefaultMessageStore.this.putMessagePostionInfo(req.getTopic(), req.getQueueId(),
@@ -1664,12 +1670,14 @@ public class DefaultMessageStore implements MessageStore {
                             req.getStoreTimestamp(), req.getConsumeQueueOffset());
                         commitPKs.add(req.getCommitLogOffset());
                         break;
+
                     case MessageSysFlag.TransactionPreparedType:
                         transactionRecord = new TransactionRecord();
                         transactionRecord.setOffset(req.getCommitLogOffset());
                         transactionRecord.setProducerGroup(req.getProducerGroup());
                         preparedTransactionRecords.add(transactionRecord);
                         break;
+
                     case MessageSysFlag.TransactionRollbackType:
                         rollbackPKs.add(req.getCommitLogOffset());
                         break;

@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -295,13 +294,12 @@ public class JDBCTransactionStore implements TransactionStore {
                 statement.setLong(1, pk);
                 statement.addBatch();
             }
-            int[] executeBatch = statement.executeBatch();
-            System.out.println(Arrays.toString(executeBatch));
+            statement.executeBatch();
             this.connection.commit();
             totalRecordsValue.addAndGet(-1 * pks.size());
         }
         catch (Exception e) {
-            log.warn("createDB Exception", e);
+            log.warn("Remove Transaction Record Exception", e);
         } finally {
             close(statement);
         }

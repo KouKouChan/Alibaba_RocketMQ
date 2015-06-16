@@ -280,7 +280,7 @@ public class BrokerController {
                         log.error("Schedule handleOrphanTransaction", e);
                     }
                 }
-            }, 10, 10, TimeUnit.SECONDS);
+            }, 30, 30, TimeUnit.SECONDS);
 
             if (this.brokerConfig.getNamesrvAddr() != null) {
                 this.brokerOuterAPI.updateNameServerAddressList(this.brokerConfig.getNamesrvAddr());
