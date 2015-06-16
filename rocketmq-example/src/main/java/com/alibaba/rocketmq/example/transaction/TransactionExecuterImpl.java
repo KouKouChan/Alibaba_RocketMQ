@@ -31,6 +31,6 @@ public class TransactionExecuterImpl implements LocalTransactionExecuter {
 
     @Override
     public LocalTransactionState executeLocalTransactionBranch(final Message msg, final Object arg) {
-        return LocalTransactionState.COMMIT_MESSAGE;
+        return LocalTransactionState.UNKNOW;
     }
 }
