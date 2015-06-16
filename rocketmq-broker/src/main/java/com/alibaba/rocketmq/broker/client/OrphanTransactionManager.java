@@ -4,17 +4,22 @@
 package com.alibaba.rocketmq.broker.client;
 
 import com.alibaba.rocketmq.broker.BrokerController;
+import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.protocol.header.CheckTransactionStateRequestHeader;
 import com.alibaba.rocketmq.store.SelectMapedBufferResult;
 import io.netty.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class OrphanTransactionManager {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BrokerLoggerName);
 
     private final BrokerController brokerController;
 
@@ -23,16 +28,20 @@ public class OrphanTransactionManager {
     }
 
     public void handleOrphanTransaction() {
-        Map<String, Set<Long>> laggedTransactions = brokerController.getJdbcTransactionStore().getLaggedTransaction();
-        if (null == laggedTransactions || laggedTransactions.isEmpty()) {
+        LOGGER.info("Start to handle orphan transactions");
+        Map<String, Set<Long>> orphanTransactions = brokerController.getJdbcTransactionStore().getLaggedTransaction();
+        if (null == orphanTransactions || orphanTransactions.isEmpty()) {
+            LOGGER.debug("No orphan transactions found.");
             return;
+        } else {
+            LOGGER.debug("Found {} orphan transactions", orphanTransactions.size());
         }
 
         HashMap<String, HashMap<Channel, ClientChannelInfo>> groupChannelTable = brokerController.getProducerManager().getGroupChannelTable();
 
-        for (Map.Entry<String, Set<Long>> next : laggedTransactions.entrySet()) {
-
+        for (Map.Entry<String, Set<Long>> next : orphanTransactions.entrySet()) {
             if (!groupChannelTable.containsKey(next.getKey())) { // All producer instances belonging to this group are dead.
+                LOGGER.warn("ProducerGroup: {} has no producer instances online.", next.getKey());
                 continue;
             }
 
@@ -56,7 +65,7 @@ public class OrphanTransactionManager {
             }
         }
 
-
+        LOGGER.info("End of processing orphan transactions");
     }
 
 }
