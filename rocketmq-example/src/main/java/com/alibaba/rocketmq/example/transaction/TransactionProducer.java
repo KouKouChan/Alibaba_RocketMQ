@@ -30,7 +30,8 @@ public class TransactionProducer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
 
         TransactionCheckListener transactionCheckListener = new TransactionCheckListenerImpl();
-        TransactionMQProducer producer = new TransactionMQProducer("please_rename_unique_group_name");
+        TransactionMQProducer producer = new TransactionMQProducer("PG_Transaction");
+        producer.setNamesrvAddr("localhost:9876");
         // 事务回查最小并发数
         producer.setCheckThreadPoolMinSize(2);
         // 事务回查最大并发数
@@ -42,7 +43,7 @@ public class TransactionProducer {
 
         String[] tags = new String[] { "TagA", "TagB", "TagC", "TagD", "TagE" };
         TransactionExecuterImpl tranExecuter = new TransactionExecuterImpl();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             try {
                 Message msg =
                         new Message("TopicTest", tags[i % tags.length], "KEY" + i,

@@ -12,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +28,7 @@ public class JDBCTransactionStore implements TransactionStore {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.TransactionLoggerName);
     private final JDBCTransactionStoreConfig jdbcTransactionStoreConfig;
     private Connection connection;
+
     private AtomicLong totalRecordsValue = new AtomicLong(0);
 
     private ConcurrentHashMap<String, Integer> producerGroupIdMap = new ConcurrentHashMap<String, Integer>();
@@ -60,6 +62,12 @@ public class JDBCTransactionStore implements TransactionStore {
 
     private static final String SQL_GET_PRODUCER_GROUP_ID = "SELECT name, id FROM t_producer_group";
 
+    private static final String SQL_INSERT_TRANSACTION_RECORD = "INSERT INTO t_transaction(offset, producer_group_id, create_time) VALUES (?, ?, ?)";
+
+    private static final String SQL_DELETE_TRANSACTION_RECORD = "DELETE FROM t_transaction WHERE offset = ?";
+
+    private static final String SQL_TOTAL_TRANSACTION_RECORD = "SELECT COUNT(1) AS total FROM t_transaction";
+
     public String getProducerGroup(int producerGroupId) {
 
         if (producerGroupId < 0) {
@@ -72,19 +80,6 @@ public class JDBCTransactionStore implements TransactionStore {
             }
         }
         return null;
-    }
-
-    public int getOrCreateProducerGroupId(String producerGroup) {
-
-        if (null == producerGroup || producerGroup.isEmpty()) {
-            return -1;
-        }
-
-        if (!producerGroupIdMap.containsKey(producerGroup)) {
-            insertProducerGroup(producerGroup);
-        }
-
-        return producerGroupIdMap.get(producerGroup);
     }
 
     public JDBCTransactionStore(JDBCTransactionStoreConfig jdbcTransactionStoreConfig) {
@@ -105,65 +100,39 @@ public class JDBCTransactionStore implements TransactionStore {
         return false;
     }
 
-
-    private boolean computeTotalRecords() {
-        Statement statement = null;
-        ResultSet resultSet = null;
-        try {
-            statement = this.connection.createStatement();
-
-            resultSet = statement.executeQuery("select count(offset) as total from t_transaction");
-            if (!resultSet.next()) {
-                log.warn("computeTotalRecords ResultSet is empty");
-                return false;
-            }
-
-            this.totalRecordsValue.set(resultSet.getLong(1));
-        }
-        catch (Exception e) {
-            log.warn("computeTotalRecords Exception", e);
-            return false;
-        }
-        finally {
-            if (null != statement) {
-                try {
-                    statement.close();
-                }
-                catch (SQLException e) {
-                }
-            }
-
-            if (null != resultSet) {
-                try {
-                    resultSet.close();
-                }
-                catch (SQLException e) {
-                }
-            }
-        }
-
-        return true;
-    }
-
     /**
      * This method checks if the given tables exists in DB.
      * @param tableName table name to check.
      * @return true if exists; false otherwise.
      * @throws SQLException If any error occurs.
      */
-    private boolean tableExists(String tableName) throws SQLException {
-        PreparedStatement preparedStatement = connection.prepareStatement(SQL_TABLE_EXISTS);
-        preparedStatement.setString(1, tableName);
-        preparedStatement.setString(2, connection.getSchema());
-        ResultSet resultSet = preparedStatement.executeQuery();
-
-        if (resultSet.first()) {
-            boolean exists = resultSet.getBoolean("table_exists");
-            preparedStatement.close();
-            return exists;
+    private boolean tableExists(String tableName) {
+        if (null == connection) {
+            return false;
         }
 
-        return false;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        try {
+            preparedStatement = connection.prepareStatement(SQL_TABLE_EXISTS);
+            preparedStatement.setString(1, tableName);
+            preparedStatement.setString(2, connection.getSchema());
+            resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.first()) {
+                boolean exists = resultSet.getBoolean("table_exists");
+                preparedStatement.close();
+                return exists;
+            }
+
+            return false;
+        } catch (SQLException e) {
+            log.error("DB error: failed to create table.", e);
+            return false;
+        } finally {
+            close(resultSet);
+            close(preparedStatement);
+        }
     }
 
 
@@ -179,32 +148,30 @@ public class JDBCTransactionStore implements TransactionStore {
             log.warn("create table: {}  Exception", tableName, e);
             return false;
         } finally {
-            if (null != statement) {
-                try {
-                    statement.close();
-                }
-                catch (SQLException e) {
-                }
-            }
+            close(statement);
         }
     }
 
     public boolean insertProducerGroup(String producerGroup) {
         if (!producerGroupIdMap.containsKey(producerGroup)) {
             if (null != connection) {
+                PreparedStatement preparedStatement = null;
+                ResultSet resultSet = null;
                 try {
-                    PreparedStatement preparedStatement = connection.prepareStatement(SQL_INSERT_PRODUCER_GROUP, Statement.RETURN_GENERATED_KEYS);
+                    preparedStatement = connection.prepareStatement(SQL_INSERT_PRODUCER_GROUP, Statement.RETURN_GENERATED_KEYS);
                     preparedStatement.setString(1, producerGroup);
                     preparedStatement.executeUpdate();
-                    ResultSet resultSet = preparedStatement.getGeneratedKeys();
+                    resultSet = preparedStatement.getGeneratedKeys();
                     resultSet.first();
                     int groupId = resultSet.getInt(1);
                     connection.commit();
                     producerGroupIdMap.putIfAbsent(producerGroup, groupId);
-                    preparedStatement.close();
                     return true;
                 } catch (SQLException e) {
                     log.error("Failed to insert new producer group: {}", producerGroup);
+                } finally {
+                    close(resultSet);
+                    close(preparedStatement);
                 }
             }
         }
@@ -235,7 +202,8 @@ public class JDBCTransactionStore implements TransactionStore {
                 }
 
                 //pre-fetch all existing producer group ID mapping.
-                loadProducerGroupIdMapFromDB();
+                success = success && loadProducerGroupIdMapFromDB();
+                success = success && loadTotalRecords();
 
                 return success;
             } catch (SQLException e) {
@@ -244,6 +212,29 @@ public class JDBCTransactionStore implements TransactionStore {
         }
 
         return false;
+    }
+
+    private boolean loadTotalRecords() {
+        if (null == connection) {
+            return false;
+        }
+
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+            statement = connection.createStatement();
+            resultSet = statement.executeQuery(SQL_TOTAL_TRANSACTION_RECORD);
+            resultSet.first();
+            totalRecordsValue.set(resultSet.getLong("total"));
+            return true;
+        } catch (SQLException e) {
+            log.error("DB error.", e);
+            return false;
+        } finally {
+            close(resultSet);
+            close(statement);
+        }
+
     }
 
     private boolean loadProducerGroupIdMapFromDB() {
@@ -274,8 +265,8 @@ public class JDBCTransactionStore implements TransactionStore {
             if (this.connection != null) {
                 this.connection.close();
             }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
+            log.error("Error while closing connection.", e);
         }
     }
 
@@ -292,10 +283,14 @@ public class JDBCTransactionStore implements TransactionStore {
 
     @Override
     public void remove(List<Long> pks) {
+        if (null == pks || pks.isEmpty()) {
+            return;
+        }
+
         PreparedStatement statement = null;
         try {
             this.connection.setAutoCommit(false);
-            statement = this.connection.prepareStatement("DELETE FROM t_transaction WHERE offset = ?");
+            statement = this.connection.prepareStatement(SQL_DELETE_TRANSACTION_RECORD);
             for (long pk : pks) {
                 statement.setLong(1, pk);
                 statement.addBatch();
@@ -303,18 +298,12 @@ public class JDBCTransactionStore implements TransactionStore {
             int[] executeBatch = statement.executeBatch();
             System.out.println(Arrays.toString(executeBatch));
             this.connection.commit();
+            totalRecordsValue.addAndGet(-1 * pks.size());
         }
         catch (Exception e) {
             log.warn("createDB Exception", e);
-        }
-        finally {
-            if (null != statement) {
-                try {
-                    statement.close();
-                }
-                catch (SQLException e) {
-                }
-            }
+        } finally {
+            close(statement);
         }
     }
 
@@ -328,7 +317,6 @@ public class JDBCTransactionStore implements TransactionStore {
 
     @Override
     public long totalRecords() {
-        // TODO Auto-generated method stub
         return this.totalRecordsValue.get();
     }
 
@@ -359,10 +347,11 @@ public class JDBCTransactionStore implements TransactionStore {
         PreparedStatement statement = null;
         try {
             this.connection.setAutoCommit(false);
-            statement = this.connection.prepareStatement("insert into t_transaction values (?, ?)");
+            statement = this.connection.prepareStatement(SQL_INSERT_TRANSACTION_RECORD);
             for (TransactionRecord tr : trs) {
                 statement.setLong(1, tr.getOffset());
                 statement.setInt(2, producerGroupIdMap.get(tr.getProducerGroup()));
+                statement.setTime(3, new Time(System.currentTimeMillis()));
                 statement.addBatch();
             }
             int[] executeBatch = statement.executeBatch();
@@ -373,24 +362,18 @@ public class JDBCTransactionStore implements TransactionStore {
         catch (Exception e) {
             log.warn("createDB Exception", e);
             return false;
-        }
-        finally {
-            if (null != statement) {
-                try {
-                    statement.close();
-                }
-                catch (SQLException e) {
-                }
-            }
+        } finally {
+            close(statement);
         }
     }
 
     public Map<String, Set<Long>> getLaggedTransaction() {
         if (null != connection) {
             Statement statement = null;
+            ResultSet resultSet = null;
             try {
                 statement = connection.createStatement();
-                ResultSet resultSet = statement.executeQuery(SQL_QUERY_LAGGED_TRANSACTION_RECORDS);
+                resultSet = statement.executeQuery(SQL_QUERY_LAGGED_TRANSACTION_RECORDS);
                 Map<String, Set<Long>> result = new HashMap<String, Set<Long>>();
                 while (resultSet.next()) {
                     String producerGroup = getProducerGroup(resultSet.getInt("producer_group_id"));
@@ -406,16 +389,31 @@ public class JDBCTransactionStore implements TransactionStore {
             } catch (SQLException e) {
                 log.error("Failed to create statement.", e);
             } finally {
-                if (null != statement) {
-                    try {
-                        statement.close();
-                    } catch (SQLException e) {
-                        log.error("Error while closing statement", e);
-                    }
-                }
+                close(resultSet);
+                close(statement);
             }
         }
-
         return null;
+    }
+
+    private static void close(Statement statement) {
+        if (null != statement) {
+            try {
+                statement.close();
+            } catch (SQLException e) {
+                log.error("Error while closing result set", e);
+            }
+        }
+    }
+
+
+    private static void close(ResultSet resultSet) {
+        if (null != resultSet) {
+            try {
+                resultSet.close();
+            } catch (SQLException e) {
+                log.error("Error while closing result set", e);
+            }
+        }
     }
 }
