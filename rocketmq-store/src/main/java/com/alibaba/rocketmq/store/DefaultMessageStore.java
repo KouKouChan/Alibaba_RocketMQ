@@ -430,7 +430,10 @@ public class DefaultMessageStore implements MessageStore {
         }
 
         long beginTime = this.getSystemClock().now();
+
+        // Store message.
         PutMessageResult result = this.commitLog.putMessage(msg);
+
         // 性能数据统计
         long eclipseTime = this.getSystemClock().now() - beginTime;
         if (eclipseTime > 1000) {
@@ -1664,11 +1667,15 @@ public class DefaultMessageStore implements MessageStore {
                         break;
 
                     case MessageSysFlag.TransactionCommitType:
+
+                        //TODO Optimization required.
+                        MessageExt messageExt = lookMessageByOffset(req.getPreparedTransactionOffset());
+
                         // 将请求发到具体的Consume Queue
                         DefaultMessageStore.this.putMessagePostionInfo(req.getTopic(), req.getQueueId(),
-                            req.getCommitLogOffset(), req.getMsgSize(), req.getTagsCode(),
-                            req.getStoreTimestamp(), req.getConsumeQueueOffset());
-                        commitPKs.add(req.getCommitLogOffset());
+                            req.getCommitLogOffset(), messageExt.getStoreSize(), req.getTagsCode(),
+                            req.getStoreTimestamp(), messageExt.getQueueOffset());
+                        commitPKs.add(req.getPreparedTransactionOffset());
                         break;
 
                     case MessageSysFlag.TransactionPreparedType:

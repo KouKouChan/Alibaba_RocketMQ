@@ -235,8 +235,8 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
                 if (sendOK) {
                     if (this.brokerController.getBrokerConfig().isLongPollingEnable()) {
                         this.brokerController.getPullRequestHoldService().notifyMessageArriving(
-                                msgInner.getTopic(), msgInner.getQueueId(),
-                                putMessageResult.getAppendMessageResult().getLogicsOffset() + 1);
+                                msgExt.getTopic(), msgExt.getQueueId(),
+                                msgExt.getQueueOffset());
                     }
                 }
                 return response;
