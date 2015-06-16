@@ -60,7 +60,6 @@ public class BrokerConfig {
     private int pullMessageThreadPoolNums = 16 + Runtime.getRuntime().availableProcessors() * 2;
     private int adminBrokerThreadPoolNums = 16;
     private int clientManageThreadPoolNums = 16;
-    private int txCallbackThreadPoolNums = 16;
 
     private int flushConsumerOffsetInterval = 1000 * 5;
 
@@ -215,14 +214,6 @@ public class BrokerConfig {
 
     public void setAdminBrokerThreadPoolNums(int adminBrokerThreadPoolNums) {
         this.adminBrokerThreadPoolNums = adminBrokerThreadPoolNums;
-    }
-
-    public int getTxCallbackThreadPoolNums() {
-        return txCallbackThreadPoolNums;
-    }
-
-    public void setTxCallbackThreadPoolNums(int txCallbackThreadPoolNums) {
-        this.txCallbackThreadPoolNums = txCallbackThreadPoolNums;
     }
 
     public int getFlushConsumerOffsetInterval() {
