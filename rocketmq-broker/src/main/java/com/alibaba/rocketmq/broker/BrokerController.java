@@ -20,6 +20,7 @@ import com.alibaba.rocketmq.broker.client.ConsumerIdsChangeListener;
 import com.alibaba.rocketmq.broker.client.ConsumerManager;
 import com.alibaba.rocketmq.broker.client.DefaultConsumerIdsChangeListener;
 import com.alibaba.rocketmq.broker.client.ProducerManager;
+import com.alibaba.rocketmq.broker.client.OrphanTransactionManager;
 import com.alibaba.rocketmq.broker.client.net.Broker2Client;
 import com.alibaba.rocketmq.broker.client.rebalance.RebalanceLockManager;
 import com.alibaba.rocketmq.broker.filtersrv.FilterServerManager;
@@ -94,6 +95,7 @@ public class BrokerController {
     private final ConsumerOffsetManager consumerOffsetManager;
     private final ConsumerManager consumerManager;
     private final ProducerManager producerManager;
+    private final OrphanTransactionManager orphanTransactionManager;
     private final ClientHousekeepingService clientHousekeepingService;
     private final PullMessageProcessor pullMessageProcessor;
     private final PullRequestHoldService pullRequestHoldService;
@@ -168,6 +170,9 @@ public class BrokerController {
         this.brokerStatsManager = new BrokerStatsManager(this.brokerConfig.getBrokerClusterName());
         this.setStoreHost(new InetSocketAddress(this.getBrokerConfig().getBrokerIP1(), this
             .getNettyServerConfig().getListenPort()));
+
+        this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
+        this.orphanTransactionManager = new OrphanTransactionManager(this);
     }
 
 
@@ -180,7 +185,6 @@ public class BrokerController {
         result = result && this.subscriptionGroupManager.load();
 
         if (result) {
-            this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
             result = result && jdbcTransactionStore.open();
         }
 
@@ -266,6 +270,17 @@ public class BrokerController {
                     }
                 }
             }, 10, 60, TimeUnit.MINUTES);
+
+            this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        orphanTransactionManager.handleOrphanTransaction();
+                    } catch (Exception e) {
+                        log.error("Schedule handleOrphanTransaction", e);
+                    }
+                }
+            }, 10, 10, TimeUnit.SECONDS);
 
             if (this.brokerConfig.getNamesrvAddr() != null) {
                 this.brokerOuterAPI.updateNameServerAddressList(this.brokerConfig.getNamesrvAddr());

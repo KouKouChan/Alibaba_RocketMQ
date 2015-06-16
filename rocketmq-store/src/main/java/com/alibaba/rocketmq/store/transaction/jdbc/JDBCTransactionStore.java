@@ -13,9 +13,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,12 +40,20 @@ public class JDBCTransactionStore implements TransactionStore {
 
     private static final String SQL_CREATE_TRANSACTION_TABLE = "CREATE TABLE IF NOT EXISTS t_transaction (" +
             "offset NUMERIC(20) NOT NULL PRIMARY KEY, " +
-            "producer_group_id INT NOT NULL)";
+            "producer_group_id INT NOT NULL," +
+            "create_time TIME NOT NULL)";
 
     private static final String SQL_CREATE_PRODUCER_GROUP_TABLE = "CREATE TABLE IF NOT EXISTS t_producer_group (" +
             "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
             "name VARCHAR(64) NOT NULL, " +
             "CONSTRAINT uniq_producer_group_name UNIQUE(name))";
+
+
+    /**
+     * TODO: This SQL uses NOW(), stopping MySQL from using cache. Need optimization.
+     */
+    private static final String SQL_QUERY_LAGGED_TRANSACTION_RECORDS = "SELECT * FROM t_transaction WHERE create_time < NOW() - INTERVAL 30 SECOND";
+
 
     private static final String SQL_INSERT_PRODUCER_GROUP =
             "INSERT INTO t_producer_group (id, name) VALUES (NULL, ?)";
@@ -372,5 +383,39 @@ public class JDBCTransactionStore implements TransactionStore {
                 }
             }
         }
+    }
+
+    public Map<String, Set<Long>> getLaggedTransaction() {
+        if (null != connection) {
+            Statement statement = null;
+            try {
+                statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery(SQL_QUERY_LAGGED_TRANSACTION_RECORDS);
+                Map<String, Set<Long>> result = new HashMap<String, Set<Long>>();
+                while (resultSet.next()) {
+                    String producerGroup = getProducerGroup(resultSet.getInt("producer_group_id"));
+                    if (result.containsKey(producerGroup)) {
+                        result.get(producerGroup).add(resultSet.getLong("offset"));
+                    } else {
+                        Set<Long> offsets = new HashSet<Long>();
+                        result.put(producerGroup, offsets);
+                        offsets.add(resultSet.getLong("offset"));
+                    }
+                }
+                return result;
+            } catch (SQLException e) {
+                log.error("Failed to create statement.", e);
+            } finally {
+                if (null != statement) {
+                    try {
+                        statement.close();
+                    } catch (SQLException e) {
+                        log.error("Error while closing statement", e);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }
