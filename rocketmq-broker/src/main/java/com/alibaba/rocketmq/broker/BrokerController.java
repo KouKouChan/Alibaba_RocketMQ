@@ -20,7 +20,7 @@ import com.alibaba.rocketmq.broker.client.ConsumerIdsChangeListener;
 import com.alibaba.rocketmq.broker.client.ConsumerManager;
 import com.alibaba.rocketmq.broker.client.DefaultConsumerIdsChangeListener;
 import com.alibaba.rocketmq.broker.client.ProducerManager;
-import com.alibaba.rocketmq.broker.client.OrphanTransactionManager;
+import com.alibaba.rocketmq.broker.transaction.DefaultTransactionStateChecker;
 import com.alibaba.rocketmq.broker.client.net.Broker2Client;
 import com.alibaba.rocketmq.broker.client.rebalance.RebalanceLockManager;
 import com.alibaba.rocketmq.broker.filtersrv.FilterServerManager;
@@ -38,6 +38,7 @@ import com.alibaba.rocketmq.broker.processor.SendMessageProcessor;
 import com.alibaba.rocketmq.broker.slave.SlaveSynchronize;
 import com.alibaba.rocketmq.broker.subscription.SubscriptionGroupManager;
 import com.alibaba.rocketmq.broker.topic.TopicConfigManager;
+import com.alibaba.rocketmq.broker.transaction.TransactionStateChecker;
 import com.alibaba.rocketmq.common.BrokerConfig;
 import com.alibaba.rocketmq.common.DataVersion;
 import com.alibaba.rocketmq.common.MixAll;
@@ -95,12 +96,12 @@ public class BrokerController {
     private final ConsumerOffsetManager consumerOffsetManager;
     private final ConsumerManager consumerManager;
     private final ProducerManager producerManager;
-    private final OrphanTransactionManager orphanTransactionManager;
+    private final TransactionStateChecker transactionStateChecker;
     private final ClientHousekeepingService clientHousekeepingService;
     private final PullMessageProcessor pullMessageProcessor;
     private final PullRequestHoldService pullRequestHoldService;
     private final Broker2Client broker2Client;
-    private final ScheduledExecutorService broker2ClientExecutorService;
+    private final ScheduledExecutorService txCallbackProducerExecutorService;
     private final SubscriptionGroupManager subscriptionGroupManager;
     private final ConsumerIdsChangeListener consumerIdsChangeListener;
     private final RebalanceLockManager rebalanceLockManager = new RebalanceLockManager();
@@ -173,9 +174,9 @@ public class BrokerController {
             .getNettyServerConfig().getListenPort()));
 
         this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
-        this.orphanTransactionManager = new OrphanTransactionManager(this);
+        this.transactionStateChecker = new DefaultTransactionStateChecker(this);
 
-        broker2ClientExecutorService = Executors.newScheduledThreadPool(brokerConfig.getBroker2ClientThreadPoolNums(),
+        txCallbackProducerExecutorService = Executors.newScheduledThreadPool(brokerConfig.getBroker2ClientThreadPoolNums(),
                 new ThreadFactoryImpl("Broker2ClientService_"));
     }
 
@@ -275,13 +276,13 @@ public class BrokerController {
                 }
             }, 10, 60, TimeUnit.MINUTES);
 
-            this.broker2ClientExecutorService.scheduleAtFixedRate(new Runnable() {
+            this.txCallbackProducerExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        orphanTransactionManager.handleOrphanTransaction();
+                        transactionStateChecker.check();
                     } catch (Exception e) {
-                        log.error("Schedule handleOrphanTransaction", e);
+                        log.error("Schedule check", e);
                     }
                 }
             }, 30, 30, TimeUnit.SECONDS);
@@ -594,8 +595,7 @@ public class BrokerController {
             public void run() {
                 try {
                     BrokerController.this.registerBrokerAll(true, false);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     log.error("registerBrokerAll Exception", e);
                 }
             }
@@ -836,7 +836,7 @@ public class BrokerController {
         this.storeHost = storeHost;
     }
 
-    public ScheduledExecutorService getBroker2ClientExecutorService() {
-        return broker2ClientExecutorService;
+    public ScheduledExecutorService getTxCallbackProducerExecutorService() {
+        return txCallbackProducerExecutorService;
     }
 }
