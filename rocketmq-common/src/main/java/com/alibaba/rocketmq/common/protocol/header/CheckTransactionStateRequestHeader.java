@@ -14,6 +14,7 @@ import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
 public class CheckTransactionStateRequestHeader implements CommandCustomHeader {
 
     @Deprecated
+    @CFNotNull
     private Long tranStateTableOffset;
 
     @CFNotNull

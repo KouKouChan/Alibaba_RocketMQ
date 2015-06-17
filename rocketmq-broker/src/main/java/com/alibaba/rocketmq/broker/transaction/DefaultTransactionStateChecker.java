@@ -61,6 +61,9 @@ public class DefaultTransactionStateChecker implements TransactionStateChecker {
                             // Send check transaction state request to the chosen producer.
                             CheckTransactionStateRequestHeader requestHeader = new CheckTransactionStateRequestHeader();
                             requestHeader.setCommitLogOffset(offset);
+                            requestHeader.setTranStateTableOffset(-1L);
+                            requestHeader.setMsgId("NOT-USED");
+                            requestHeader.setTransactionId("NOT-USED");
 
                             LOGGER.info("Try to check producer transaction state against Producer ID: {}, Remoting Address: {}, for Message commit log offset: {}",
                                     clientChannelInfo.getClientId(),
