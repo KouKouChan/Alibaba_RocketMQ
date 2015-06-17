@@ -467,7 +467,6 @@ public class MQClientAPIImpl {
 
             SendResult sendResult = new SendResult(sendStatus, responseHeader.getMsgId(), messageQueue,
                 responseHeader.getQueueOffset(), projectGroupPrefix);
-            sendResult.setTransactionId(responseHeader.getTransactionId());
             return sendResult;
         }
         default:

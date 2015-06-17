@@ -187,7 +187,6 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
             msgInner.setSysFlag(MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(),
                 requestHeader.getCommitOrRollback()));
 
-            msgInner.setQueueOffset(requestHeader.getTranStateTableOffset());
             msgInner.setPreparedTransactionOffset(requestHeader.getCommitLogOffset());
             msgInner.setStoreTimestamp(msgExt.getStoreTimestamp());
             if (MessageSysFlag.TransactionRollbackType == requestHeader.getCommitOrRollback()) {

@@ -29,9 +29,6 @@ public class SendResult {
     private String msgId;
     private MessageQueue messageQueue;
     private long queueOffset;
-    private String transactionId;
-
-
 
     public SendResult() {
     }
@@ -87,15 +84,6 @@ public class SendResult {
 
     public void setQueueOffset(long queueOffset) {
         this.queueOffset = queueOffset;
-    }
-
-
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
     }
 
     @Override

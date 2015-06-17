@@ -17,8 +17,6 @@ public class EndTransactionRequestHeader implements CommandCustomHeader {
     @CFNotNull
     private String producerGroup;
     @CFNotNull
-    private Long tranStateTableOffset;
-    @CFNotNull
     private Long commitLogOffset;
     @CFNotNull
     private Integer commitOrRollback; // TransactionCommitType
@@ -30,8 +28,6 @@ public class EndTransactionRequestHeader implements CommandCustomHeader {
 
     @CFNotNull
     private String msgId;
-
-    private String transactionId;
 
     @Override
     public void checkFields() throws RemotingCommandException {
@@ -58,16 +54,6 @@ public class EndTransactionRequestHeader implements CommandCustomHeader {
 
     public void setProducerGroup(String producerGroup) {
         this.producerGroup = producerGroup;
-    }
-
-
-    public Long getTranStateTableOffset() {
-        return tranStateTableOffset;
-    }
-
-
-    public void setTranStateTableOffset(Long tranStateTableOffset) {
-        this.tranStateTableOffset = tranStateTableOffset;
     }
 
 
@@ -110,18 +96,10 @@ public class EndTransactionRequestHeader implements CommandCustomHeader {
         this.msgId = msgId;
     }
 
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
-    }
-
     @Override
     public String toString() {
         return "EndTransactionRequestHeader [producerGroup=" + producerGroup + ", tranStateTableOffset="
-                + tranStateTableOffset + ", commitLogOffset=" + commitLogOffset + ", commitOrRollback="
+                + commitLogOffset + ", commitOrRollback="
                 + commitOrRollback + ", fromTransactionCheck=" + fromTransactionCheck + ", msgId=" + msgId
                 + "]";
     }
