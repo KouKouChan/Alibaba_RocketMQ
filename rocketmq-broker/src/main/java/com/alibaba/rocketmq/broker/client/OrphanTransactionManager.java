@@ -31,10 +31,10 @@ public class OrphanTransactionManager {
         LOGGER.info("Start to handle orphan transactions");
         Map<String, Set<Long>> orphanTransactions = brokerController.getJdbcTransactionStore().getLaggedTransaction();
         if (null == orphanTransactions || orphanTransactions.isEmpty()) {
-            LOGGER.debug("No orphan transactions found.");
+            LOGGER.info("No orphan transactions found.");
             return;
         } else {
-            LOGGER.debug("Found {} orphan transactions", orphanTransactions.size());
+            LOGGER.info("Found {} orphan transactions", orphanTransactions.size());
         }
 
         HashMap<String, HashMap<Channel, ClientChannelInfo>> groupChannelTable = brokerController.getProducerManager().getGroupChannelTable();
