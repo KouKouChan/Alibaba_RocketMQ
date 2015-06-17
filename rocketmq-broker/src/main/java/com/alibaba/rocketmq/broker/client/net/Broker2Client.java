@@ -15,18 +15,6 @@
  */
 package com.alibaba.rocketmq.broker.client.net;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.FileRegion;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alibaba.rocketmq.broker.BrokerController;
 import com.alibaba.rocketmq.broker.client.ClientChannelInfo;
 import com.alibaba.rocketmq.broker.client.ConsumerGroupInfo;
@@ -49,6 +37,16 @@ import com.alibaba.rocketmq.remoting.exception.RemotingSendRequestException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.store.SelectMapedBufferResult;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.FileRegion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -59,6 +57,12 @@ import com.alibaba.rocketmq.store.SelectMapedBufferResult;
  */
 public class Broker2Client {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BrokerLoggerName);
+
+    /**
+     * Pipe transaction related log properly.
+     */
+    private static final Logger TRANSACTION_LOG = LoggerFactory.getLogger(LoggerName.TransactionLoggerName);
+
     private final BrokerController brokerController;
 
 
@@ -88,13 +92,12 @@ public class Broker2Client {
                 public void operationComplete(ChannelFuture future) throws Exception {
                     selectMapedBufferResult.release();
                     if (!future.isSuccess()) {
-                        log.error("invokeProducer failed,", future.cause());
+                        TRANSACTION_LOG.error("invokeProducer failed,", future.cause());
                     }
                 }
             });
-        }
-        catch (Throwable e) {
-            log.error("invokeProducer exception", e);
+        } catch (Throwable e) {
+            TRANSACTION_LOG.error("invokeProducer exception", e);
             selectMapedBufferResult.release();
         }
     }
