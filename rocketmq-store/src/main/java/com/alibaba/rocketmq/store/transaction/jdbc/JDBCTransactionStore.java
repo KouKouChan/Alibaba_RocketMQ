@@ -12,7 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +42,7 @@ public class JDBCTransactionStore implements TransactionStore {
     private static final String SQL_CREATE_TRANSACTION_TABLE = "CREATE TABLE IF NOT EXISTS t_transaction (" +
             "offset NUMERIC(20) NOT NULL PRIMARY KEY, " +
             "producer_group_id INT NOT NULL," +
-            "create_time TIME NOT NULL)";
+            "create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)";
 
     private static final String SQL_CREATE_PRODUCER_GROUP_TABLE = "CREATE TABLE IF NOT EXISTS t_producer_group (" +
             "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
@@ -349,7 +349,7 @@ public class JDBCTransactionStore implements TransactionStore {
             for (TransactionRecord tr : trs) {
                 statement.setLong(1, tr.getOffset());
                 statement.setInt(2, producerGroupIdMap.get(tr.getProducerGroup()));
-                statement.setTime(3, new Time(System.currentTimeMillis()));
+                statement.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
                 statement.addBatch();
             }
             int[] executeBatch = statement.executeBatch();

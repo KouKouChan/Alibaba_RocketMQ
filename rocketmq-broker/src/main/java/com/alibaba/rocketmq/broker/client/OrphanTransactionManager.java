@@ -19,7 +19,7 @@ import java.util.Set;
 
 public class OrphanTransactionManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.BrokerLoggerName);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.TransactionLoggerName);
 
     private final BrokerController brokerController;
 
@@ -66,12 +66,13 @@ public class OrphanTransactionManager {
                 //The following two fields are no longer used. Set for compatible purpose only.
                 requestHeader.setTranStateTableOffset(-1L);
                 requestHeader.setTransactionId("NO-LONGER-USED");
-                LOGGER.debug("check producer transaction state against broker {} for Message ID: {}", clientChannelInfo.getClientId(), messageExt.getMsgId());
+                LOGGER.info("check producer transaction state against broker {} for Message ID: {}", clientChannelInfo.getClientId(), messageExt.getMsgId());
                 brokerController.getBroker2Client().checkProducerTransactionState(channel, requestHeader, selectMapedBufferResult);
+                LOGGER.info("Check producer transaction state completed.");
             }
         }
 
-        LOGGER.info("End of processing orphan transactions");
+        LOGGER.info("End of handling orphan transactions");
     }
 
 }
