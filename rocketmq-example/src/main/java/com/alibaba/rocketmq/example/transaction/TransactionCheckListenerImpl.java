@@ -32,6 +32,17 @@ public class TransactionCheckListenerImpl implements TransactionCheckListener {
     @Override
     public LocalTransactionState checkLocalTransactionState(MessageExt msg) {
         System.out.println("server checking TrMsg " + msg.toString());
-        return LocalTransactionState.COMMIT_MESSAGE;
+        transactionIndex.incrementAndGet();
+        if (transactionIndex.get() % 3 == 0) {
+            System.out.println("Commit the lagged TX message");
+            return LocalTransactionState.COMMIT_MESSAGE;
+        } else if (transactionIndex.get() % 3 == 1) {
+            System.out.println("Rollback the lagged TX message");
+            return LocalTransactionState.COMMIT_MESSAGE;
+        }
+
+        System.out.println("Still Unknown to the lagged TX message.");
+        return LocalTransactionState.UNKNOW;
+
     }
 }
