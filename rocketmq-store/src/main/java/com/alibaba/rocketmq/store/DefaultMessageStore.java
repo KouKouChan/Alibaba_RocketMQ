@@ -1686,7 +1686,7 @@ public class DefaultMessageStore implements MessageStore {
                         break;
 
                     case MessageSysFlag.TransactionRollbackType:
-                        rollbackPKs.add(req.getCommitLogOffset());
+                        rollbackPKs.add(req.getPreparedTransactionOffset());
                         break;
                     }
                 }

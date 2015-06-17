@@ -100,6 +100,7 @@ public class BrokerController {
     private final PullMessageProcessor pullMessageProcessor;
     private final PullRequestHoldService pullRequestHoldService;
     private final Broker2Client broker2Client;
+    private final ScheduledExecutorService broker2ClientExecutorService;
     private final SubscriptionGroupManager subscriptionGroupManager;
     private final ConsumerIdsChangeListener consumerIdsChangeListener;
     private final RebalanceLockManager rebalanceLockManager = new RebalanceLockManager();
@@ -156,7 +157,7 @@ public class BrokerController {
 
         if (this.brokerConfig.getNamesrvAddr() != null) {
             this.brokerOuterAPI.updateNameServerAddressList(this.brokerConfig.getNamesrvAddr());
-            log.info("user specfied name server address: {}", this.brokerConfig.getNamesrvAddr());
+            log.info("user specified name server address: {}", this.brokerConfig.getNamesrvAddr());
         }
 
         this.slaveSynchronize = new SlaveSynchronize(this);
@@ -173,6 +174,9 @@ public class BrokerController {
 
         this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
         this.orphanTransactionManager = new OrphanTransactionManager(this);
+
+        broker2ClientExecutorService = Executors.newScheduledThreadPool(brokerConfig.getBroker2ClientThreadPoolNums(),
+                new ThreadFactoryImpl("Broker2ClientService_"));
     }
 
 
@@ -271,7 +275,7 @@ public class BrokerController {
                 }
             }, 10, 60, TimeUnit.MINUTES);
 
-            this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+            this.broker2ClientExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -790,7 +794,7 @@ public class BrokerController {
             public void run() {
                 int removedTopicCnt =
                         BrokerController.this.messageStore.cleanUnusedTopic(BrokerController.this
-                            .getTopicConfigManager().getTopicConfigTable().keySet());
+                                .getTopicConfigManager().getTopicConfigTable().keySet());
                 log.info("addDeleteTopicTask removed topic count {}", removedTopicCnt);
             }
         }, 5, TimeUnit.MINUTES);
@@ -830,5 +834,9 @@ public class BrokerController {
 
     public void setStoreHost(InetSocketAddress storeHost) {
         this.storeHost = storeHost;
+    }
+
+    public ScheduledExecutorService getBroker2ClientExecutorService() {
+        return broker2ClientExecutorService;
     }
 }

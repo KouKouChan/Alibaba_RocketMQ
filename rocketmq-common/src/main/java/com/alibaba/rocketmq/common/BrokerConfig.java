@@ -60,6 +60,7 @@ public class BrokerConfig {
     private int pullMessageThreadPoolNums = 16 + Runtime.getRuntime().availableProcessors() * 2;
     private int adminBrokerThreadPoolNums = 16;
     private int clientManageThreadPoolNums = 16;
+    private int broker2ClientThreadPoolNums = 4;
 
     private int flushConsumerOffsetInterval = 1000 * 5;
 
@@ -375,6 +376,13 @@ public class BrokerConfig {
         this.clientManageThreadPoolNums = clientManageThreadPoolNums;
     }
 
+    public int getBroker2ClientThreadPoolNums() {
+        return broker2ClientThreadPoolNums;
+    }
+
+    public void setBroker2ClientThreadPoolNums(int broker2ClientThreadPoolNums) {
+        this.broker2ClientThreadPoolNums = broker2ClientThreadPoolNums;
+    }
 
     public boolean isOffsetCheckInSlave() {
         return offsetCheckInSlave;

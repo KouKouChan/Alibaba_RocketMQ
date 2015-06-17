@@ -37,45 +37,53 @@ public class OrphanTransactionManager {
             LOGGER.info("Found {} orphan transactions", orphanTransactions.size());
         }
 
-        HashMap<String, HashMap<Channel, ClientChannelInfo>> groupChannelTable = brokerController.getProducerManager().getGroupChannelTable();
-
+        HashMap<String, HashMap<Channel, ClientChannelInfo>> groupChannelTable = brokerController.getProducerManager()
+                .getGroupChannelTable();
         for (Map.Entry<String, Set<Long>> next : orphanTransactions.entrySet()) {
-            if (!groupChannelTable.containsKey(next.getKey())) { // All producer instances belonging to this group are dead.
+            if (!groupChannelTable.containsKey(next.getKey())) {
                 LOGGER.warn("ProducerGroup: {} has no producer instances online.", next.getKey());
                 continue;
             }
 
             Set<Long> offsets = next.getValue();
-            HashMap<Channel, ClientChannelInfo> clientChannelMap = groupChannelTable.get(next.getKey());
+            final HashMap<Channel, ClientChannelInfo> clientChannelMap = groupChannelTable.get(next.getKey());
+            for (final Long offset : offsets) {
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        SelectMapedBufferResult selectMapedBufferResult = brokerController.getMessageStore()
+                                .selectOneMessageByOffset(offset);
 
-            for (Long offset : offsets) {
-                SelectMapedBufferResult selectMapedBufferResult = brokerController.getMessageStore().selectOneMessageByOffset(offset);
+                        //Select a channel randomly.
+                        if (clientChannelMap.isEmpty()) {
+                            return;
+                        }
+                        Channel channel = clientChannelMap.keySet().iterator().next();
 
-                //Select a channel randomly.
-                if (clientChannelMap.isEmpty()) {
-                    break;
-                }
-                Channel channel = clientChannelMap.keySet().iterator().next();
+                        ClientChannelInfo clientChannelInfo = clientChannelMap.get(channel);
+                        CheckTransactionStateRequestHeader requestHeader = new CheckTransactionStateRequestHeader();
+                        requestHeader.setCommitLogOffset(offset);
+                        MessageExt messageExt = MessageDecoder.decode(selectMapedBufferResult.getByteBuffer());
+                        requestHeader.setMsgId(messageExt.getMsgId());
 
-                ClientChannelInfo clientChannelInfo = clientChannelMap.get(channel);
-                CheckTransactionStateRequestHeader requestHeader = new CheckTransactionStateRequestHeader();
-                requestHeader.setCommitLogOffset(offset);
-                MessageExt messageExt = MessageDecoder.decode(selectMapedBufferResult.getByteBuffer());
-                requestHeader.setMsgId(messageExt.getMsgId());
+                        //The following two fields are no longer used. Set for compatible purpose only.
+                        requestHeader.setTranStateTableOffset(-1L);
+                        requestHeader.setTransactionId("NO-LONGER-USED");
 
-                //The following two fields are no longer used. Set for compatible purpose only.
-                requestHeader.setTranStateTableOffset(-1L);
-                requestHeader.setTransactionId("NO-LONGER-USED");
-                LOGGER.info("check producer transaction state against Producer ID: {}, Remoting Address: {}, for Message ID: {}",
-                        clientChannelInfo.getClientId(),
-                        clientChannelInfo.getChannel().remoteAddress(),
-                        messageExt.getMsgId());
-                brokerController.getBroker2Client().checkProducerTransactionState(clientChannelInfo.getChannel(), requestHeader, selectMapedBufferResult);
-                LOGGER.info("Check producer transaction state completed.");
+                        LOGGER.info("check producer transaction state against Producer ID: {}, Remoting Address: {}, for Message ID: {}",
+                                clientChannelInfo.getClientId(),
+                                clientChannelInfo.getChannel().remoteAddress(),
+                                messageExt.getMsgId());
+                        brokerController.getBroker2Client().checkProducerTransactionState(clientChannelInfo.getChannel(), requestHeader, selectMapedBufferResult);
+                        LOGGER.info("Check transaction state request sent to {}.", clientChannelInfo.getChannel().remoteAddress());
+
+                    }
+                };
+                brokerController.getBroker2ClientExecutorService().submit(runnable);
             }
         }
 
-        LOGGER.info("End of handling orphan transactions");
+        LOGGER.info("Broker2Client tasks submitted");
     }
 
 }
