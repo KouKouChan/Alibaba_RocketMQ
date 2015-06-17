@@ -33,7 +33,7 @@ public class DefaultTransactionStateChecker implements TransactionStateChecker {
             LOGGER.info("No lagged transactions found.");
             return;
         } else {
-            LOGGER.info("Found {} lagged transactions", laggedTransaction.size());
+            LOGGER.info("Lagged transactions found");
         }
 
         for (final Map.Entry<String, Set<Long>> next : laggedTransaction.entrySet()) {

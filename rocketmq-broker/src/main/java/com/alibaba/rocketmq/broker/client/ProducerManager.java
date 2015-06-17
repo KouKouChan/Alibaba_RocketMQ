@@ -73,7 +73,10 @@ public class ProducerManager {
         try {
             if (this.groupChannelLock.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS)) {
                 try {
-                    map.putAll(groupChannelTable.get(producerGroup));
+                    Map<Channel, ClientChannelInfo> matchedMap = groupChannelTable.get(producerGroup);
+                    if (null != matchedMap) {
+                        map.putAll(matchedMap);
+                    }
                 } finally {
                     groupChannelLock.unlock();
                 }

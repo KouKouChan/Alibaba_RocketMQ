@@ -31,7 +31,7 @@ public class TransactionExecuterImpl implements LocalTransactionExecuter {
 
     @Override
     public LocalTransactionState executeLocalTransactionBranch(final Message msg, final Object arg) {
-        System.out.println("About to commit...");
-        return LocalTransactionState.ROLLBACK_MESSAGE;
+        System.out.println("About to respond unknown...");
+        return LocalTransactionState.UNKNOW;
     }
 }
