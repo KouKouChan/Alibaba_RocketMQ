@@ -66,7 +66,10 @@ public class OrphanTransactionManager {
                 //The following two fields are no longer used. Set for compatible purpose only.
                 requestHeader.setTranStateTableOffset(-1L);
                 requestHeader.setTransactionId("NO-LONGER-USED");
-                LOGGER.info("check producer transaction state against producer {} for Message ID: {}", clientChannelInfo.getClientId(), messageExt.getMsgId());
+                LOGGER.info("check producer transaction state against Producer ID: {}, Remoting Address: {}, for Message ID: {}",
+                        clientChannelInfo.getClientId(),
+                        clientChannelInfo.getChannel().remoteAddress(),
+                        messageExt.getMsgId());
                 brokerController.getBroker2Client().checkProducerTransactionState(clientChannelInfo.getChannel(), requestHeader, selectMapedBufferResult);
                 LOGGER.info("Check producer transaction state completed.");
             }
