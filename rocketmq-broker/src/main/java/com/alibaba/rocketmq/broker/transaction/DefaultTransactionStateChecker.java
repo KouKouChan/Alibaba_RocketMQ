@@ -6,8 +6,6 @@ package com.alibaba.rocketmq.broker.transaction;
 import com.alibaba.rocketmq.broker.BrokerController;
 import com.alibaba.rocketmq.broker.client.ClientChannelInfo;
 import com.alibaba.rocketmq.common.constant.LoggerName;
-import com.alibaba.rocketmq.common.message.MessageDecoder;
-import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.protocol.header.CheckTransactionStateRequestHeader;
 import com.alibaba.rocketmq.store.SelectMapedBufferResult;
 import org.slf4j.Logger;
@@ -47,7 +45,7 @@ public class DefaultTransactionStateChecker implements TransactionStateChecker {
                             ClientChannelInfo clientChannelInfo = brokerController.getProducerManager()
                                     .pickProducerChannelRandomly(next.getKey());
                             if (clientChannelInfo == null) {
-                                LOGGER.warn("No online producer instances belonging to {} is found.", next.getKey());
+                                LOGGER.warn("No online producer instances of {} is found.", next.getKey());
                                 return;
                             }
 
@@ -63,17 +61,11 @@ public class DefaultTransactionStateChecker implements TransactionStateChecker {
                             // Send check transaction state request to the chosen producer.
                             CheckTransactionStateRequestHeader requestHeader = new CheckTransactionStateRequestHeader();
                             requestHeader.setCommitLogOffset(offset);
-                            MessageExt messageExt = MessageDecoder.decode(selectMapedBufferResult.getByteBuffer());
-                            requestHeader.setMsgId(messageExt.getMsgId());
 
-                            // The following two fields are no longer used. Set for compatible purpose only.
-                            requestHeader.setTranStateTableOffset(-1L);
-                            requestHeader.setTransactionId("NO-LONGER-USED");
-
-                            LOGGER.info("Try to check producer transaction state against Producer ID: {}, Remoting Address: {}, for Message ID: {}",
+                            LOGGER.info("Try to check producer transaction state against Producer ID: {}, Remoting Address: {}, for Message commit log offset: {}",
                                     clientChannelInfo.getClientId(),
                                     clientChannelInfo.getChannel().remoteAddress(),
-                                    messageExt.getMsgId());
+                                    offset);
 
                             brokerController.getBroker2Client().checkProducerTransactionState(
                                     clientChannelInfo.getChannel(), // SocketChannel

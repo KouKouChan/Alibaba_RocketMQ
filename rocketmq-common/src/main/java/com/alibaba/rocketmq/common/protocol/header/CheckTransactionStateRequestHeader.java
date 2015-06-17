@@ -12,11 +12,17 @@ import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
  * @author shijia.wxr<vintage.wang@gmail.com>
  */
 public class CheckTransactionStateRequestHeader implements CommandCustomHeader {
-    @CFNotNull
+
+    @Deprecated
     private Long tranStateTableOffset;
+
     @CFNotNull
     private Long commitLogOffset;
+
+    @Deprecated
     private String msgId;
+
+    @Deprecated
     private String transactionId;
 
 
@@ -25,11 +31,13 @@ public class CheckTransactionStateRequestHeader implements CommandCustomHeader {
     }
 
 
+    @Deprecated
     public Long getTranStateTableOffset() {
         return tranStateTableOffset;
     }
 
 
+    @Deprecated
     public void setTranStateTableOffset(Long tranStateTableOffset) {
         this.tranStateTableOffset = tranStateTableOffset;
     }
@@ -44,18 +52,22 @@ public class CheckTransactionStateRequestHeader implements CommandCustomHeader {
         this.commitLogOffset = commitLogOffset;
     }
 
+    @Deprecated
     public String getMsgId() {
         return msgId;
     }
 
+    @Deprecated
     public void setMsgId(String msgId) {
         this.msgId = msgId;
     }
 
+    @Deprecated
     public String getTransactionId() {
         return transactionId;
     }
 
+    @Deprecated
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
     }
