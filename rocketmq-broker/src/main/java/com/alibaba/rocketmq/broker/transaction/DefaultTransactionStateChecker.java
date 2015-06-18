@@ -78,7 +78,7 @@ public class DefaultTransactionStateChecker implements TransactionStateChecker {
                         }
                     }
                 };
-                brokerController.getTxCallbackProducerExecutorService().submit(runnable);
+                brokerController.getCheckTransactionStateExecutorService().submit(runnable);
             }
         }
 

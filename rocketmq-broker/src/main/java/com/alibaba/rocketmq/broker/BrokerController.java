@@ -101,7 +101,7 @@ public class BrokerController {
     private final PullMessageProcessor pullMessageProcessor;
     private final PullRequestHoldService pullRequestHoldService;
     private final Broker2Client broker2Client;
-    private final ScheduledExecutorService txCallbackProducerExecutorService;
+    private final ScheduledExecutorService checkTransactionStateExecutorService;
     private final SubscriptionGroupManager subscriptionGroupManager;
     private final ConsumerIdsChangeListener consumerIdsChangeListener;
     private final RebalanceLockManager rebalanceLockManager = new RebalanceLockManager();
@@ -176,7 +176,7 @@ public class BrokerController {
         this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
         this.transactionStateChecker = new DefaultTransactionStateChecker(this);
 
-        txCallbackProducerExecutorService = Executors.newScheduledThreadPool(brokerConfig.getBroker2ClientThreadPoolNums(),
+        checkTransactionStateExecutorService = Executors.newScheduledThreadPool(brokerConfig.getBroker2ClientThreadPoolNums(),
                 new ThreadFactoryImpl("Broker2ClientService_"));
     }
 
@@ -276,17 +276,6 @@ public class BrokerController {
                 }
             }, 10, 60, TimeUnit.MINUTES);
 
-            this.txCallbackProducerExecutorService.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        transactionStateChecker.check();
-                    } catch (Exception e) {
-                        log.error("Schedule check", e);
-                    }
-                }
-            }, 30, 30, TimeUnit.SECONDS);
-
             if (this.brokerConfig.getNamesrvAddr() != null) {
                 this.brokerOuterAPI.updateNameServerAddressList(this.brokerConfig.getNamesrvAddr());
             }
@@ -327,8 +316,18 @@ public class BrokerController {
                         }
                     }
                 }, 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
-            }
-            else {
+            } else {
+                this.checkTransactionStateExecutorService.scheduleAtFixedRate(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            transactionStateChecker.check();
+                        } catch (Exception e) {
+                            log.error("Schedule check", e);
+                        }
+                    }
+                }, 30, 30, TimeUnit.SECONDS);
+
                 this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
                     @Override
@@ -836,7 +835,7 @@ public class BrokerController {
         this.storeHost = storeHost;
     }
 
-    public ScheduledExecutorService getTxCallbackProducerExecutorService() {
-        return txCallbackProducerExecutorService;
+    public ScheduledExecutorService getCheckTransactionStateExecutorService() {
+        return checkTransactionStateExecutorService;
     }
 }
