@@ -409,7 +409,12 @@ public class CommitLog {
                 // Normal data
                 if (size > 0) {
                     mapedFileOffset += size;
-                    this.defaultMessageStore.putDispatchRequest(dispatchRequest);
+                    int transactionType = MessageSysFlag.getTransactionValue(dispatchRequest.getSysFlag());
+                    if (transactionType == MessageSysFlag.TransactionNotType) {
+                        this.defaultMessageStore.putDispatchRequest(dispatchRequest);
+                    } else {
+                        log.debug("Transaction message found. DispatchRequest skipped.");
+                    }
                 }
                 // Intermediate file read error
                 else if (size == -1) {
