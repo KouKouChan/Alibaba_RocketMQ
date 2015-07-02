@@ -628,8 +628,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
 
         // Topic名字是否与保留字段冲突
         if (requestHeader.getTopic().equals(this.brokerController.getBrokerConfig().getBrokerClusterName())) {
-            String errorMsg =
-                    "the topic[" + requestHeader.getTopic() + "] is conflict with system reserved words.";
+            String errorMsg = "the topic[" + requestHeader.getTopic() + "] is conflict with system reserved words.";
             log.warn(errorMsg);
             response.setCode(ResponseCode.SYSTEM_ERROR);
             response.setRemark(errorMsg);

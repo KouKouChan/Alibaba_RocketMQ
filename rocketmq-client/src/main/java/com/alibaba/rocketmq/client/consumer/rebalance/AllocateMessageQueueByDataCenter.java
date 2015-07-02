@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
 
@@ -45,6 +46,17 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
     private static final Logger LOGGER = ClientLogger.getLog();
 
     private DefaultMQPushConsumer defaultMQPushConsumer;
+
+    private ConcurrentHashMap<String, Previous> previous = new ConcurrentHashMap<String, Previous>();
+
+    class Previous {
+        List<MessageQueue> previousMQ;
+
+        List<String> previousCIDs;
+
+        HashMap<String, List<MessageQueue>> previousResult;
+    }
+
 
     public AllocateMessageQueueByDataCenter(DefaultMQPushConsumer defaultMQPushConsumer) {
         this.defaultMQPushConsumer = defaultMQPushConsumer;
@@ -97,6 +109,30 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
     public List<MessageQueue> allocate(String consumerGroup, String currentConsumerID, List<MessageQueue> mqAll,
             List<String> allConsumerIDs) {
         Helper.checkRebalanceParameters(consumerGroup, currentConsumerID, mqAll, allConsumerIDs);
+
+        Previous prev;
+        String topic = mqAll.get(0).getTopic();
+        if (!previous.containsKey(topic)) {
+            prev = new Previous();
+            if (null != previous.putIfAbsent(topic, prev)) {
+                prev = previous.get(topic);
+            }
+        } else {
+            prev = previous.get(topic);
+        }
+
+        if (!mqAll.equals(prev.previousMQ)) {
+            System.out.println("Topic: " + topic + ", Old MQ all: " + prev.previousMQ);
+            System.out.println("Topic: " + topic + ", New MQ all: " + mqAll);
+        }
+
+        if (!allConsumerIDs.equals(prev.previousCIDs)) {
+            System.out.println("Topic:" + topic + ", Old CIDs: " + prev.previousCIDs);
+            System.out.println("Topic: " + topic + ", New CIDs: " + allConsumerIDs);
+        }
+
+        prev.previousCIDs = allConsumerIDs;
+        prev.previousMQ = mqAll;
 
         if (!allConsumerIDs.contains(currentConsumerID)) {
             LOGGER.info("[BUG] ConsumerGroup: {} The consumerId: {} not in cidAll: {}", //
@@ -265,8 +301,8 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
             }
         }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Allocation Result:");
+        if (LOGGER.isInfoEnabled() && !result.equals(prev.previousResult)) {
+            LOGGER.info("Topic: " + topic + "\nNew Allocation Result:");
             for (Map.Entry<String, List<MessageQueue>> row : result.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (MessageQueue messageQueue : row.getValue()) {
@@ -274,11 +310,13 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
                             .append(", ");
                 }
                 if (stringBuilder.length() > 2) {
-                    LOGGER.debug(row.getKey() + " --> " + stringBuilder.substring(0, stringBuilder.length() - 2));
+                    LOGGER.info(row.getKey() + " --> " + stringBuilder.substring(0, stringBuilder.length() - 2));
                 }
             }
-            LOGGER.debug("Allocation End.");
+            LOGGER.info("Allocation End.");
         }
+        prev.previousResult = result;
+
         return null == result.get(currentConsumerID) ? new ArrayList<MessageQueue>()
                 : result.get(currentConsumerID);
     }

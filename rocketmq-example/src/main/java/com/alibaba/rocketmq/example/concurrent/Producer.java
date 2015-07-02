@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,7 +62,7 @@ public class Producer {
                         @Override
                         public void run() {
                             try {
-                                Message[] messages = buildMessages(RANDOM.nextInt(400));
+                                Message[] messages = buildMessages(RANDOM.nextInt(120));
                                 producer.send(messages);
                                 adder.incrementAndGet();
                                 if (adder.longValue() % 1000 == 0) {
@@ -71,7 +72,7 @@ public class Producer {
                                 LOGGER.error("Message manufacture caught an exception.", e);
                             }
                         }
-                    }, 3000, 100, TimeUnit.MILLISECONDS);
+                    }, 3000, 1000, TimeUnit.MILLISECONDS);
         } else {
             long start = System.currentTimeMillis();
             Message[] messages = buildMessages(count);
@@ -85,6 +86,7 @@ public class Producer {
         for (int i = 0; i < n; i++) {
             messages[i] = new Message("T_QuickStart", messageBody);
             messages[i].putUserProperty("sequenceId", String.valueOf(SEQUENCE_GENERATOR.incrementAndGet()));
+            messages[i].setKey(UUID.randomUUID().toString());
         }
         return messages;
     }

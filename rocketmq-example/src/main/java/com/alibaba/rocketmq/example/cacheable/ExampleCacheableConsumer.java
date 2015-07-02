@@ -7,12 +7,15 @@ import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel;
 
-import java.util.Random;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ExampleCacheableConsumer {
 
     static class ExampleMessageHandler extends MessageHandler {
-        private Random random = new Random();
+
+        private Set<String> keySet = new HashSet<String>();
+
         public ExampleMessageHandler() {
         }
 
@@ -25,13 +28,23 @@ public class ExampleCacheableConsumer {
          */
         @Override
         public int handle(MessageExt message) {
-            System.out.println(message);
+
+            if (null == message.getKeys()) {
+                return 0;
+            }
+
+            if (keySet.contains(message.getKeys())) {
+                System.out.println("Duplicate message" + message);
+            } else {
+                keySet.add(message.getKeys());
+            }
+
             return 0;
         }
     }
 
     public static void main(String[] args) throws MQClientException, InterruptedException {
-        CacheableConsumer cacheableConsumer = new CacheableConsumer("CG_QuickStart");
+        CacheableConsumer cacheableConsumer = new CacheableConsumer("CG_QuickStart", 1);
 
         MessageHandler exampleMessageHandler = new ExampleMessageHandler();
 
