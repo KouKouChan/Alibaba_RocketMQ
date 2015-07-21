@@ -49,7 +49,7 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
 
     private static final String DOCKER_DC_INDEX_ENV_KEY = "ROCKETMQ_DC_INDEX";
 
-    private static final String DOCKER_DC_INDEX_KEY = "DCIndex";
+    private static final String DOCKER_DC_INDEX_KEY = "RocketMQDataCenterIndex";
 
     private String dispatchStrategy = "BY_LOCATION";
 
