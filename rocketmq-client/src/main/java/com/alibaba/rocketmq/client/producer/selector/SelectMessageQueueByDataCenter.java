@@ -47,11 +47,15 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
 
     private float locationRatio = 0.8f;
 
+    private static final String DOCKER_DC_INDEX_ENV_KEY = "ROCKETMQ_DC_INDEX";
+
+    private static final String DOCKER_DC_INDEX_KEY = "DCIndex";
+
     private String dispatchStrategy = "BY_LOCATION";
 
     private final AtomicInteger roundRobin = new AtomicInteger(0);
 
-    private static final String LOCAL_DATA_CENTER_ID = RemotingUtil.getLocalAddress(false).split("\\.")[1];
+    private static String LOCAL_DATA_CENTER_ID = RemotingUtil.getLocalAddress(false).split("\\.")[1];
 
     private List<Pair<String, Float>> dispatcherList = new ArrayList<Pair<String, Float>>();
 
@@ -62,6 +66,17 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
     private static final long OUTPUT_WARNING_PER_COUNT = 1000L;
 
     private AtomicLong strategyWarnCounter = new AtomicLong(0L);
+
+    static {
+        String dcIndex = System.getenv(DOCKER_DC_INDEX_ENV_KEY);
+        if (null == dcIndex) {
+            dcIndex = System.getProperty(DOCKER_DC_INDEX_KEY);
+        }
+
+        if (null != dcIndex && dcIndex.trim().length() > 0) {
+            LOCAL_DATA_CENTER_ID = dcIndex;
+        }
+    }
 
     public SelectMessageQueueByDataCenter(DefaultMQProducer defaultMQProducer) {
         this.defaultMQProducer = defaultMQProducer;
