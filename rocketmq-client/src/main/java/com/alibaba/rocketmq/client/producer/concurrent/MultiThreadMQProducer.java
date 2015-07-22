@@ -261,6 +261,15 @@ public class MultiThreadMQProducer {
     }
 
     protected void send(Message message, boolean hasToken) {
+
+        if (null == message) {
+            if (hasToken) {
+                semaphore.release();
+            }
+
+            return;
+        }
+
         if (hasToken) {
             try {
                 if (messageQueue.remainingCapacity() > 0) {
