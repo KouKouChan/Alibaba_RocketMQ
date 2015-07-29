@@ -31,6 +31,7 @@
 		<module>rocketmq-srvutil</module>
 		<module>rocketmq-babel</module>
         <module>rocketmq-stalker</module>
+		<module>rocketmq-mqtt</module>
     </modules>
 
 	<developers>
