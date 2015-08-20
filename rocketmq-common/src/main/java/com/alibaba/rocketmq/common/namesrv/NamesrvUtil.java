@@ -7,4 +7,5 @@ package com.alibaba.rocketmq.common.namesrv;
 public class NamesrvUtil {
     public static final String NAMESPACE_ORDER_TOPIC_CONFIG = "ORDER_TOPIC_CONFIG";
     public static final String NAMESPACE_PROJECT_CONFIG = "PROJECT_CONFIG";
+    public static final String NAMESPACE_PRODUCER_GROUP_FILTER_CONFIG = "PRODUCER_GROUP_FILTER_CONFIG";
 }

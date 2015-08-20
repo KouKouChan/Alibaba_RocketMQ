@@ -11,6 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
+
 package com.alibaba.rocketmq.client.producer.selector;
 
 import com.alibaba.rocketmq.client.impl.MQClientAPIImpl;
@@ -34,7 +35,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 
 /**
  * 发送消息，根据数据中心选择队列
@@ -70,18 +70,19 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
 
     private void startConfigUpdater() {
         new Thread(new Runnable() {
+
             @Override
             public void run() {
                 try {
-                    while (defaultMQProducer.getDefaultMQProducerImpl().getServiceState() != ServiceState.SHUTDOWN_ALREADY) {
+                    while ( defaultMQProducer.getDefaultMQProducerImpl().getServiceState() != ServiceState.SHUTDOWN_ALREADY ) {
                         try {
                             KVTable kvTable = getMQClientAPIImpl().getKVListByNamespace("DC_SELECTOR", 3000);
                             Map<String, String> configMap = kvTable.getTable();
                             String strategy = configMap.get(NSConfigKey.DC_DISPATCH_STRATEGY.getKey());
 
-                            if ("BY_LOCATION".equals(strategy)) {
+                            if ( "BY_LOCATION".equals(strategy) ) {
                                 String locationRatio = configMap.get(NSConfigKey.DC_DISPATCH_STRATEGY_LOCATION_RATIO.getKey());
-                                if (null == locationRatio || locationRatio.trim().isEmpty()) {
+                                if ( null == locationRatio || locationRatio.trim().isEmpty() ) {
                                     dispatchStrategy = "AVERAGE";
                                     break;
                                 }
@@ -91,31 +92,30 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
                                     dispatchStrategy = strategy;
                                     LOGGER.info("Data center choosing strategy set to: " + dispatchStrategy);
                                     LOGGER.info("Fetched location ratio: " + locationRatio);
-                                } catch (Exception e) {
-                                    LOGGER.warn("DC_DISPATCH_STRATEGY_LOCATION_RATIO parse error: {}",
-                                            SelectMessageQueueByDataCenter.this.locationRatio);
+                                } catch ( Exception e ) {
+                                    LOGGER.warn("DC_DISPATCH_STRATEGY_LOCATION_RATIO parse error: {}", SelectMessageQueueByDataCenter.this.locationRatio);
                                 }
-                            } else if ("BY_RATIO".equals(strategy)) {
+                            } else if ( "BY_RATIO".equals(strategy) ) {
                                 String dispatchRatio = configMap.get(NSConfigKey.DC_DISPATCH_RATIO.getKey());
                                 LOGGER.info("Fetched by-ratio values: " + dispatchRatio);
-                                if (dispatchRatio != null && !dispatchRatio.trim().isEmpty()) {
+                                if ( dispatchRatio != null && !dispatchRatio.trim().isEmpty() ) {
                                     String[] values = dispatchRatio.split(",");
                                     List<Pair<String, Float>> newList = new ArrayList<Pair<String, Float>>();
-                                    for (String value : values) {
+                                    for ( String value : values ) {
                                         String keyValue[] = value.split(":");
-                                        if (keyValue.length != 2) {
+                                        if ( keyValue.length != 2 ) {
                                             LOGGER.warn("DC_DISPATCH_RATIO parse error: {}", dispatchRatio);
                                             continue;
                                         }
                                         Float dcRatio = null;
                                         try {
                                             dcRatio = Float.parseFloat(keyValue[1]);
-                                        } catch (NumberFormatException e) {
+                                        } catch ( NumberFormatException e ) {
                                             LOGGER.warn("DC_DISPATCH_RATIO parse error: {}", dispatchRatio);
                                             continue;
                                         }
 
-                                        if (null != dcRatio && dcRatio > 0) {
+                                        if ( null != dcRatio && dcRatio > 0 ) {
                                             newList.add(new Pair<String, Float>(keyValue[0], dcRatio));
                                         }
                                     }
@@ -129,8 +129,8 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
                                     });
 
                                     //Convert percent to percentile.
-                                    if (newList.size() > 0) {
-                                        for (int i = 1; i < newList.size(); i++) {
+                                    if ( newList.size() > 0 ) {
+                                        for ( int i = 1; i < newList.size(); i++ ) {
                                             Pair<String, Float> pair = newList.get(i);
                                             pair.setObject2(pair.getObject2() + newList.get(i - 1).getObject2());
                                         }
@@ -141,7 +141,7 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
                                         dispatchStrategy = strategy;
                                         LOGGER.info("Data center choosing strategy set to: " + dispatchStrategy);
                                         LOGGER.info("Data center percentile as follows:");
-                                        for (Pair<String, Float> item : getDispatcherList()) {
+                                        for ( Pair<String, Float> item : getDispatcherList() ) {
                                             LOGGER.info(item.getObject1() + " --> " + item.getObject2());
                                         }
                                     }
@@ -152,9 +152,9 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
                                 dispatchStrategy = "AVERAGE";
                                 LOGGER.warn("Unknown data center choosing strategy.");
                             }
-                        } catch (Exception e) {
+                        } catch ( Exception e ) {
                             dispatchStrategy = "AVERAGE";
-                            if (e.getMessage().contains("DC_SELECTOR")) {
+                            if ( e.getMessage().contains("DC_SELECTOR") ) {
                                 LOGGER.error(e.getMessage());
                             } else {
                                 LOGGER.error("Failed to select message queue to send message.", e);
@@ -163,7 +163,7 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
                         //Sleep 60 seconds per loop, be it successful or not.
                         Thread.sleep(60 * 1000);
                     }
-                } catch (InterruptedException e) {
+                } catch ( InterruptedException e ) {
                     e.printStackTrace();
                 }
             }
@@ -173,8 +173,9 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
 
     /**
      * This method always return a message queue for producer to send message. Exceptions are strictly prohibited.
-     *
+     * <p/>
      * TODO Use <code>arg</code> to support order message.
+     *
      * @param mqs All available message queues.
      * @param msg message to send.
      * @param arg It may be null or instance of {@link com.alibaba.rocketmq.client.producer.SendCallback}.
@@ -185,56 +186,56 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
         try {
             float r = random.nextFloat();
             List<MessageQueue> dataCenterQueues = new ArrayList<MessageQueue>();
-            if ("BY_LOCATION".equals(dispatchStrategy)) {
-                for (MessageQueue messageQueue : mqs) {
+            if ( "BY_LOCATION".equals(dispatchStrategy) ) {
+                for ( MessageQueue messageQueue : mqs ) {
 
                     /**
                      * Broker name pattern: ClusterName_{DataCenterNumber}_broker{BrokerNumber}[_optional_extra_info]
                      * Sample broker name: DefaultCluster_1_broker1
                      */
                     String[] brokerNameSegments = messageQueue.getBrokerName().split("_");
-                    if (3 > brokerNameSegments.length) {
+                    if ( 3 > brokerNameSegments.length ) {
                         warningCounter.incrementAndGet();
-                        if (1 == warningCounter.longValue() || warningCounter.longValue() % OUTPUT_WARNING_PER_COUNT == 0) {
+                        if ( 1 == warningCounter.longValue() || warningCounter.longValue() % OUTPUT_WARNING_PER_COUNT == 0 ) {
                             LOGGER.warn("Issue: broker name is not properly named. Check " + messageQueue.getBrokerName());
                         }
                         //Round-robin all message queues as broker name is not properly named.
                         break;
                     }
 
-                    if (r > locationRatio && !brokerNameSegments[1].equals(LOCAL_DATA_CENTER_ID)) {
+                    if ( r > locationRatio && !brokerNameSegments[1].equals(LOCAL_DATA_CENTER_ID) ) {
                         dataCenterQueues.add(messageQueue);
-                    } else if (r <= locationRatio && brokerNameSegments[1].equals(LOCAL_DATA_CENTER_ID)) {
+                    } else if ( r <= locationRatio && brokerNameSegments[1].equals(LOCAL_DATA_CENTER_ID) ) {
                         dataCenterQueues.add(messageQueue);
                     }
                 }
                 return roundRobin(dataCenterQueues, mqs);
-            } else if ("BY_RATIO".equals(dispatchStrategy)) {
+            } else if ( "BY_RATIO".equals(dispatchStrategy) ) {
                 List<Pair<String, Float>> list = getDispatcherList();
                 String dc = list.get(0).getObject1();
-                for (Pair<String, Float> item : list) {
-                    if (r <= item.getObject2()) {
+                for ( Pair<String, Float> item : list ) {
+                    if ( r <= item.getObject2() ) {
                         dc = item.getObject1();
                         break;
                     }
                 }
 
-                for (MessageQueue messageQueue : mqs) {
+                for ( MessageQueue messageQueue : mqs ) {
                     String[] brokerNameSegments = messageQueue.getBrokerName().split("_");
-                    if (brokerNameSegments[1].equals(dc)) {
+                    if ( brokerNameSegments[1].equals(dc) ) {
                         dataCenterQueues.add(messageQueue);
                     }
                 }
                 return roundRobin(dataCenterQueues, mqs);
             } else {
 
-                if (strategyWarnCounter.incrementAndGet() % 10000 == 1) {
+                if ( strategyWarnCounter.incrementAndGet() % 10000 == 1 ) {
                     LOGGER.warn("Consume averagely, please double check.");
                 }
 
                 return roundRobin(mqs, mqs);
             }
-        } catch (Exception e) {
+        } catch ( Exception e ) {
             // Round robin all message queues, namely, average consuming in case of any error.
             return roundRobin(mqs, mqs);
         }
@@ -243,12 +244,13 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
     /**
      * This method first tries to round robin <code>preferableMessageQueues</code> in case it's not null nor empty.
      * If previous step fails, it tries to round robin all message queues specified by <code>availableMessageQueues</code>.
+     *
      * @param preferableMessageQueues Preferable message queues.
-     * @param availableMessageQueues All message queues available.
+     * @param availableMessageQueues  All message queues available.
      * @return The chosen message queue.
      */
     private MessageQueue roundRobin(List<MessageQueue> preferableMessageQueues, List<MessageQueue> availableMessageQueues) {
-        if (null == preferableMessageQueues || preferableMessageQueues.isEmpty()) {
+        if ( null == preferableMessageQueues || preferableMessageQueues.isEmpty() ) {
             return availableMessageQueues.get(roundRobin.incrementAndGet() % availableMessageQueues.size());
         }
         return preferableMessageQueues.get(roundRobin.incrementAndGet() % preferableMessageQueues.size());

@@ -1,7 +1,9 @@
 /**
- * 
+ *
  */
 package com.alibaba.rocketmq.common.constant;
+
+import com.alibaba.rocketmq.common.namesrv.NamesrvUtil;
 
 /**
  * @author holly, Lien
@@ -22,12 +24,16 @@ public enum NSConfigKey {
   STALKER_LEVEL("STALKER", "LEVEL"),
 
   // IP range enabled.
-  STALKER_IP_RANGE("STALKER", "IP_RANGE");
+  STALKER_IP_RANGE("STALKER", "IP_RANGE"),
+
+  /*MQ Filter*/
+  PG_MQ_FILETER_BY_DC (NamesrvUtil.NAMESPACE_PRODUCER_GROUP_FILTER_CONFIG,"DATA_CENTER_FILTER"),
+  PG_MQ_FILETER_BY_BROKER (NamesrvUtil.NAMESPACE_PRODUCER_GROUP_FILTER_CONFIG,"BROKER_FILTER");
 
 
   private String namespace;
   private String key;
-  
+
   private NSConfigKey(String namespace,String key){
     this.namespace = namespace;
     this.key = key;
@@ -40,5 +46,5 @@ public enum NSConfigKey {
   public String getKey() {
     return key;
   }
-  
+
 }

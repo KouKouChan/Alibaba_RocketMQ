@@ -107,7 +107,7 @@ public class StormProducer {
         final AtomicLong successCount = new AtomicLong(0L);
         final AtomicLong lastSent = new AtomicLong(0L);
         final MultiThreadMQProducer producer = MultiThreadMQProducer.configure()
-                .configureProducerGroup("PG_YMREDIRECTOR_QUEUE_TRACE_EVENT")
+                .configureProducerGroup("PG_YMREDIRECTOR_QUEUE_TRACE_EVENT")//CG_EAGLE_QUEUE_TRACE_EVENT
                 .configureRetryTimesBeforeSendingFailureClaimed(3)
                 .configureSendMessageTimeOutInMilliSeconds(3000)
                 .configureDefaultTopicQueueNumber(16)
@@ -134,6 +134,7 @@ public class StormProducer {
                             try {
                                 Message[] messages = buildMessages(RANDOM.nextInt(400));
                                 producer.send(messages);
+                                System.out.println("send OK");
                                 adder.incrementAndGet();
                                 if (adder.longValue() % 10 == 0) {
                                     LOGGER.info(messages.length + " messages from client are required to send.");

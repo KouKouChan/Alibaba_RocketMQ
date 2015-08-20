@@ -103,6 +103,26 @@ public class TopicPublishInfo {
         }
     }
 
+    public MessageQueue selectOneMessageQueueFromCustomList(final String lastBrokerName, final List<MessageQueue> messageQueueList){
+        if (lastBrokerName != null) {
+            int index = this.sendWhichQueue.getAndIncrement();
+            for (int i = 0; i < messageQueueList.size(); i++) {
+                int pos = Math.abs(index++) % messageQueueList.size();
+                MessageQueue mq = messageQueueList.get(pos);
+                if (!mq.getBrokerName().equals(lastBrokerName)) {
+                    return mq;
+                }
+            }
+
+            return null;
+        }
+        else {
+            int index = this.sendWhichQueue.getAndIncrement();
+            int pos = Math.abs(index) % messageQueueList.size();
+            return messageQueueList.get(pos);
+        }
+    }
+
 
     @Override
     public String toString() {

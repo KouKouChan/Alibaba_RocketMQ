@@ -27,16 +27,8 @@ import com.alibaba.rocketmq.client.impl.CommunicationMode;
 import com.alibaba.rocketmq.client.impl.MQClientManager;
 import com.alibaba.rocketmq.client.impl.factory.MQClientInstance;
 import com.alibaba.rocketmq.client.log.ClientLogger;
-import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
-import com.alibaba.rocketmq.client.producer.LocalTransactionExecutor;
-import com.alibaba.rocketmq.client.producer.LocalTransactionState;
-import com.alibaba.rocketmq.client.producer.MessageQueueSelector;
-import com.alibaba.rocketmq.client.producer.SendCallback;
-import com.alibaba.rocketmq.client.producer.SendResult;
-import com.alibaba.rocketmq.client.producer.SendStatus;
-import com.alibaba.rocketmq.client.producer.TransactionCheckListener;
-import com.alibaba.rocketmq.client.producer.TransactionMQProducer;
-import com.alibaba.rocketmq.client.producer.TransactionSendResult;
+import com.alibaba.rocketmq.client.producer.*;
+import com.alibaba.rocketmq.client.producer.filter.FilterMessageQueueByBroker;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.ServiceState;
 import com.alibaba.rocketmq.common.UtilAll;
@@ -93,6 +85,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     protected ExecutorService checkExecutor;
     private ServiceState serviceState = ServiceState.CREATE_JUST;
     private MQClientInstance mQClientFactory;
+    private MessageQueueFilter messageQueueFilter;
 
     /**
      * 发送每条消息会回调
@@ -112,6 +105,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     public DefaultMQProducerImpl(final DefaultMQProducer defaultMQProducer, RPCHook rpcHook) {
         this.defaultMQProducer = defaultMQProducer;
         this.rpcHook = rpcHook;
+        this.messageQueueFilter = new FilterMessageQueueByBroker(defaultMQProducer);//default
     }
 
 
@@ -517,9 +511,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             int times = 0;
             // 记录投递的BrokerName
             String[] brokersSent = new String[timesTotal];
+            List<MessageQueue> filteredMessageQueueList = this.messageQueueFilter.filter(topicPublishInfo.getMessageQueueList(),null);
             for (; times < timesTotal && (endTimestamp - beginTimestamp) < maxTimeout; times++) {
                 String lastBrokerName = null == mq ? null : mq.getBrokerName();
-                MessageQueue messageQueue = topicPublishInfo.selectOneMessageQueue(lastBrokerName);
+//                MessageQueue messageQueue = topicPublishInfo.selectOneMessageQueue(lastBrokerName);
+                MessageQueue messageQueue = topicPublishInfo.selectOneMessageQueueFromCustomList(lastBrokerName,filteredMessageQueueList);
                 if (messageQueue != null) {
                     mq = messageQueue;
                     brokersSent[times] = mq.getBrokerName();
@@ -890,7 +886,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         if (topicPublishInfo != null && topicPublishInfo.isOK()) {
             MessageQueue mq = null;
             try {
-                mq = selector.select(topicPublishInfo.getMessageQueueList(), msg, arg);
+                List<MessageQueue> mqs = messageQueueFilter.filter(topicPublishInfo.getMessageQueueList(),null);
+                mq = selector.select(mqs, msg, arg);
             } catch (Throwable e) {
                 throw new MQClientException("select message queue thrown exception.", e);
             }
