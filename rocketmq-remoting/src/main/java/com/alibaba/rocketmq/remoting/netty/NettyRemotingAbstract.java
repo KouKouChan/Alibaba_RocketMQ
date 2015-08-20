@@ -31,6 +31,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -376,6 +377,51 @@ public abstract class NettyRemotingAbstract {
                 else {
                     throw new RemotingSendRequestException(RemotingHelper.parseChannelRemoteAddr(channel),
                         responseFuture.getCause());
+                }
+            }
+
+            return responseCommand;
+        }
+        finally {
+            this.responseTable.remove(request.getOpaque());
+        }
+    }
+
+
+    public RemotingCommand invokeSyncImpl(final ChannelGroup channelGroup, final RemotingCommand request,
+                                          final long timeoutMillis)
+            throws InterruptedException, RemotingSendRequestException, RemotingTimeoutException {
+        try {
+            final ResponseFuture responseFuture = new ResponseFuture(request.getOpaque(), timeoutMillis, null, null);
+            this.responseTable.put(request.getOpaque(), responseFuture);
+            channelGroup.writeAndFlush(request).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture f) throws Exception {
+                    if (f.isSuccess()) {
+                        responseFuture.setSendRequestOK(true);
+                        return;
+                    }
+                    else {
+                        responseFuture.setSendRequestOK(false);
+                    }
+
+                    responseTable.remove(request.getOpaque());
+                    responseFuture.setCause(f.cause());
+                    responseFuture.putResponse(null);
+                    LOGGER.warn("send a request command to channel group <" + channelGroup.name() + "> failed.");
+                    LOGGER.warn(request.toString());
+                }
+            });
+
+            RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);
+            if (null == responseCommand) {
+                // 发送请求成功，读取应答超时
+                if (responseFuture.isSendRequestOK()) {
+                    throw new RemotingTimeoutException(channelGroup.name(), timeoutMillis, responseFuture.getCause());
+                }
+                // 发送请求失败
+                else {
+                    throw new RemotingSendRequestException(channelGroup.name(), responseFuture.getCause());
                 }
             }
 
