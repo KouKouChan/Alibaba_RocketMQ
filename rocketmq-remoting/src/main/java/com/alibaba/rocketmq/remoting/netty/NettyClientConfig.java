@@ -37,9 +37,12 @@ public class NettyClientConfig {
 
     private int clientSocketSndBufSize = NettySystemConfig.SocketSndbufSize;
     private int clientSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
-    private boolean clientPooledByteBufAllocatorEnable = false;
+
+    private boolean clientPooledByteBufAllocatorEnable = NettySystemConfig.NettyPooledByteBufAllocatorEnable;
 
     private boolean ssl = false;
+
+    private int parallelism = NettySystemConfig.CLIENT_CONNECTION_PARALLELISM;
 
     public NettyClientConfig() {
         ssl = CommandOption.hasOption(CommandOption.OPTION_SSL);
@@ -150,5 +153,13 @@ public class NettyClientConfig {
 
     public void setSsl(boolean ssl) {
         this.ssl = ssl;
+    }
+
+    public int getParallelism() {
+        return parallelism;
+    }
+
+    public void setParallelism(int parallelism) {
+        this.parallelism = parallelism;
     }
 }

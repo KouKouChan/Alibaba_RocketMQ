@@ -25,4 +25,10 @@ public class NettySystemConfig {
             "com.rocketmq.remoting.clientOnewaySemaphoreValue";
     public static int ClientOnewaySemaphoreValue = //
             Integer.parseInt(System.getProperty(SystemPropertyClientOnewaySemaphoreValue, "2048"));
+
+
+    public static final String SYSTEM_PROPERTY_CLIENT_CONNECTION_PARALLELISM_KEY =
+            "com.rocketmq.remoting.clientParallelismKey";
+    public static int CLIENT_CONNECTION_PARALLELISM =
+            Integer.parseInt(System.getProperty(SYSTEM_PROPERTY_CLIENT_CONNECTION_PARALLELISM_KEY, "3"));
 }

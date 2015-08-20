@@ -34,7 +34,7 @@ public class NettyServerConfig {
 
     private int serverSocketSndBufSize = NettySystemConfig.SocketSndbufSize;
     private int serverSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
-    private boolean serverPooledByteBufAllocatorEnable = false;
+    private boolean serverPooledByteBufAllocatorEnable = NettySystemConfig.NettyPooledByteBufAllocatorEnable;
 
     private boolean ssl = false;
 
