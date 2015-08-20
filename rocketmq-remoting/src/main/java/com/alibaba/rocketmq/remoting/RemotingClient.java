@@ -19,6 +19,7 @@ import com.alibaba.rocketmq.remoting.exception.RemotingConnectException;
 import com.alibaba.rocketmq.remoting.exception.RemotingSendRequestException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTooMuchRequestException;
+import com.alibaba.rocketmq.remoting.netty.ChannelSelection;
 import com.alibaba.rocketmq.remoting.netty.NettyRequestProcessor;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 
@@ -40,9 +41,13 @@ public interface RemotingClient extends RemotingService {
     public List<String> getNameServerAddressList();
 
 
-    public RemotingCommand invokeSync(final String addr, final RemotingCommand request,
-            final long timeoutMillis) throws InterruptedException, RemotingConnectException,
+    public RemotingCommand invokeSync(final String addr, ChannelSelection selection, final RemotingCommand request,
+                                      final long timeoutMillis) throws InterruptedException, RemotingConnectException,
             RemotingSendRequestException, RemotingTimeoutException;
+
+    public RemotingCommand invokeSync(final String addr, final RemotingCommand request, final long timeoutMillis)
+            throws InterruptedException, RemotingConnectException, RemotingSendRequestException,
+            RemotingTimeoutException;
 
 
     public void invokeAsync(final String addr, final RemotingCommand request, final long timeoutMillis,

@@ -39,6 +39,8 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -47,6 +49,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,6 +112,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     private RPCHook rpcHook;
 
     class CompositeChannel {
+
+        private ChannelGroup channelGroup;
+
         private volatile int parallelism;
 
         private int maxParallelism;
@@ -125,6 +131,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             this.address = address;
             this.maxParallelism = maxParallelism;
             channelWrappers = new ArrayList<ChannelWrapper>(maxParallelism);
+            channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
         }
 
         public boolean containsChannel(Channel channel) {
@@ -167,6 +174,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                     if (channelFuture.awaitUninterruptibly(nettyClientConfig.getConnectTimeoutMillis(), TimeUnit.MILLISECONDS)) {
                         if (null != channelFuture.channel() && channelFuture.channel().isActive()) {
                             log.info("createChannel: connect remote host[{}] success, {}", address, channelFuture.toString());
+                            channelGroup.add(channelFuture.channel());
                             return channelFuture.channel();
                         }
                     } else {
@@ -276,6 +284,14 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
 
         public boolean allowedToCreateChannel() {
             return parallelism < maxParallelism;
+        }
+
+        public List<ChannelWrapper> getChannelWrappers() {
+            return channelWrappers;
+        }
+
+        public ChannelGroup getChannelGroup() {
+            return channelGroup;
         }
     }
 
@@ -560,13 +576,25 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         }
     }
 
+    private ChannelGroup getChannelGroup(final String address) {
+        if (null == address) {
+            return null;
+        }
+
+        CompositeChannel compositeChannel = channelTables.get(address);
+        if (null == compositeChannel) {
+            return null;
+        }
+
+        return compositeChannel.getChannelGroup();
+    }
 
     private Channel getAndCreateChannel(final String address, int parallelism) throws InterruptedException {
         if (null == address) {
             return getAndCreateNameServerChannel();
         }
 
-        CompositeChannel compositeChannel = this.channelTables.get(address);
+        CompositeChannel compositeChannel = channelTables.get(address);
         if (compositeChannel == null || compositeChannel.allowedToCreateChannel()) {
             return createChannel(address, parallelism);
         }
@@ -691,6 +719,65 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         this.processorTable.put(requestCode, pair);
     }
 
+
+    @Override
+    public RemotingCommand invokeSync(String addr, ChannelSelection selection, RemotingCommand request,
+                                      long timeoutMillis)
+            throws InterruptedException, RemotingConnectException, RemotingSendRequestException,
+            RemotingTimeoutException {
+
+        switch (selection) {
+            case ALL:
+                ChannelGroup channelGroup = getChannelGroup(addr);
+                return invokeSync(channelGroup, request, timeoutMillis);
+
+            case ANY:
+                return invokeSync(addr, request, timeoutMillis);
+
+            default:
+                log.warn("Unsupported channel selection strategy: {}", selection);
+                throw new RemotingConnectException("Unsupported channel selection strategy");
+        }
+    }
+
+
+    /**
+     * TODO better exception handling required.
+     *
+     * @param channelGroup
+     * @param request
+     * @param timeoutMillis
+     * @return
+     * @throws InterruptedException
+     * @throws RemotingConnectException
+     * @throws RemotingSendRequestException
+     * @throws RemotingTimeoutException
+     */
+    private RemotingCommand invokeSync(ChannelGroup channelGroup, final RemotingCommand request, long timeoutMillis)
+            throws InterruptedException, RemotingConnectException, RemotingSendRequestException,
+            RemotingTimeoutException {
+        if (channelGroup != null && !channelGroup.isEmpty()) {
+            try {
+                if (this.rpcHook != null) {
+                    this.rpcHook.doBeforeRequest(channelGroup.name(), request);
+                }
+                RemotingCommand response = this.invokeSyncImpl(channelGroup, request, timeoutMillis);
+                if (this.rpcHook != null) {
+                    this.rpcHook.doAfterResponse(request, response);
+                }
+                return response;
+            } catch (RemotingSendRequestException e) {
+                log.warn("invokeSync across channel group exception", e);
+                throw e;
+            } catch (RemotingTimeoutException e) {
+                log.warn("invokeSync across channel group exception", e);
+                throw e;
+            }
+        } else {
+            log.warn("invokeSync across channel groups, but found channel group being null or empty");
+            throw new RemotingConnectException("ChannelGroup being null or empty");
+        }
+    }
 
     @Override
     public RemotingCommand invokeSync(String addr, final RemotingCommand request, long timeoutMillis)
