@@ -41,7 +41,12 @@ import javax.net.ssl.SSLContext;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -246,6 +251,17 @@ public abstract class NettyRemotingAbstract {
         if (responseFuture != null) {
             responseFuture.setResponseCommand(cmd);
 
+            if (responseFuture instanceof GroupResponseFuture) {
+                GroupResponseFuture groupResponseFuture = (GroupResponseFuture)responseFuture;
+                try {
+                    if (!groupResponseFuture.countDown()) {
+                        return;
+                    }
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Error while handling GroupResponseFuture", e);
+                }
+            }
+
             responseFuture.release();
 
             // 异步调用
@@ -394,36 +410,35 @@ public abstract class NettyRemotingAbstract {
                                           final long timeoutMillis)
             throws InterruptedException, RemotingSendRequestException, RemotingTimeoutException {
         try {
-            final ResponseFuture responseFuture = new ResponseFuture(request.getOpaque(), timeoutMillis, null, null);
-            this.responseTable.put(request.getOpaque(), responseFuture);
+            final GroupResponseFuture groupResponseFuture = new GroupResponseFuture(request.getOpaque(), timeoutMillis, null, null, channelGroup.size());
+            this.responseTable.put(request.getOpaque(), groupResponseFuture);
             channelGroup.writeAndFlush(request).addListener(new ChannelGroupFutureListener() {
                 @Override
                 public void operationComplete(ChannelGroupFuture f) throws Exception {
                     if (f.isSuccess()) {
-                        responseFuture.setSendRequestOK(true);
+                        groupResponseFuture.setSendRequestOK(true);
                         return;
-                    }
-                    else {
-                        responseFuture.setSendRequestOK(false);
+                    } else {
+                        groupResponseFuture.setSendRequestOK(false);
                     }
 
                     responseTable.remove(request.getOpaque());
-                    responseFuture.setCause(f.cause());
-                    responseFuture.putResponse(null);
+                    groupResponseFuture.setCause(f.cause());
+                    groupResponseFuture.putResponse(null);
                     LOGGER.warn("send a request command to channel group <" + channelGroup.name() + "> failed.");
                     LOGGER.warn(request.toString());
                 }
             });
 
-            RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);
+            RemotingCommand responseCommand = groupResponseFuture.waitResponse(timeoutMillis);
             if (null == responseCommand) {
                 // 发送请求成功，读取应答超时
-                if (responseFuture.isSendRequestOK()) {
-                    throw new RemotingTimeoutException(channelGroup.name(), timeoutMillis, responseFuture.getCause());
+                if (groupResponseFuture.isSendRequestOK()) {
+                    throw new RemotingTimeoutException(channelGroup.name(), timeoutMillis, groupResponseFuture.getCause());
                 }
                 // 发送请求失败
                 else {
-                    throw new RemotingSendRequestException(channelGroup.name(), responseFuture.getCause());
+                    throw new RemotingSendRequestException(channelGroup.name(), groupResponseFuture.getCause());
                 }
             }
 
