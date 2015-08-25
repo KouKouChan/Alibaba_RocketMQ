@@ -56,7 +56,8 @@ public class FrontController implements MessageListenerConcurrently {
      * This thread wraps messages from message queue into ProcessMessageTask items and submit them into
      */
     class JobSubmitter implements Runnable {
-        private boolean running = true;
+
+        private volatile boolean running = true;
 
         @Override
         public void run() {
