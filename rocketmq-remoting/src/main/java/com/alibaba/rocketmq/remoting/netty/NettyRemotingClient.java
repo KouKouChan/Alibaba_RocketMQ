@@ -153,11 +153,11 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             try {
                 ChannelFuture channelFuture = null;
                 if (lock.tryLock() || lock.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS)) {
-                    if (!allowedToCreateChannel()) {
-                        return getChannel();
-                    }
-
                     try {
+                        if (!allowedToCreateChannel()) {
+                            return getChannel();
+                        }
+
                         channelFuture = bootstrap.connect(RemotingHelper.string2SocketAddress(address));
                         log.info("createChannel: begin to connect remote host[{}] asynchronously", address);
                         ChannelWrapper channelWrapper = new ChannelWrapper(channelFuture);
@@ -582,8 +582,15 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         }
 
         CompositeChannel compositeChannel = channelTables.get(address);
+
         if (null == compositeChannel) {
-            return null;
+            try {
+                getAndCreateChannel(address, nettyClientConfig.getParallelism());
+            } catch (InterruptedException e) {
+                log.info("Error while creating connection", e);
+                return null;
+            }
+            compositeChannel = channelTables.get(address);
         }
 
         return compositeChannel.getChannelGroup();
