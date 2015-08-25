@@ -150,7 +150,7 @@ public class MultiThreadMQProducer {
                             float tps = (successSendingCounter.longValue() - lastSuccessfulSendingCount) * 1000.0F
                                     / (System.currentTimeMillis() - lastStatsTimeStamp);
 
-                            LOGGER.debug("Current TPS: " + tps +
+                            LOGGER.info("Current TPS: " + tps +
                                     "; Number of message pending to send is: " + messageQueue.size() +
                                     "; Number of message stashed to local message store is: " + localMessageStore.getNumberOfMessageStashed() +
                                     "; Number of message already sent is: " + successSendingCounter.longValue());
@@ -266,7 +266,6 @@ public class MultiThreadMQProducer {
             if (hasToken) {
                 semaphore.release();
             }
-
             return;
         }
 
@@ -274,12 +273,12 @@ public class MultiThreadMQProducer {
             try {
                 if (messageQueue.remainingCapacity() > 0) {
                     if (!messageQueue.offer(message, 50, TimeUnit.MILLISECONDS)) {
-                        semaphore.release();
                         localMessageStore.stash(message);
+                        semaphore.release();
                     }
                 } else {
-                    semaphore.release();
                     localMessageStore.stash(message);
+                    semaphore.release();
                 }
             } catch (InterruptedException e) {
                 handleSendMessageFailure(message, e);
@@ -289,12 +288,12 @@ public class MultiThreadMQProducer {
                 try {
                     if (messageQueue.remainingCapacity() > 0) {
                         if (!messageQueue.offer(message, 50, TimeUnit.MILLISECONDS)) {
-                            semaphore.release();
                             localMessageStore.stash(message);
+                            semaphore.release();
                         }
                     } else {
-                        semaphore.release();
                         localMessageStore.stash(message);
+                        semaphore.release();
                     }
                 } catch (InterruptedException e) {
                     handleSendMessageFailure(message, e);
