@@ -14,9 +14,7 @@ import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatisti
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -34,13 +32,7 @@ public class CacheableConsumer {
 
     private final ConcurrentHashMap<String, MessageHandler> topicHandlerMap;
 
-    private static final AtomicLong CONSUMER_NAME_COUNTER = new AtomicLong();
-
-    private static final String BASE_INSTANCE_NAME = "CacheableConsumer";
-
-    private static final int NUMBER_OF_CONSUMER = 4;
-
-    private List<DefaultMQPushConsumer> defaultMQPushConsumers = new ArrayList<DefaultMQPushConsumer>();
+    private DefaultMQPushConsumer defaultMQPushConsumer = new DefaultMQPushConsumer();
 
     private ClientStatus status = ClientStatus.CREATED;
 
@@ -92,24 +84,11 @@ public class CacheableConsumer {
 
     private AtomicLong failureCounter = new AtomicLong(0L);
 
-    private static String getInstanceName() {
-        return BASE_INSTANCE_NAME + "_" + CONSUMER_NAME_COUNTER.incrementAndGet();
-    }
-
-    /**
-     * Constructor with group name and default number of embedded consumer clients.
-     * @param consumerGroupName Consumer group name.
-     */
-    public CacheableConsumer(String consumerGroupName) {
-        this(consumerGroupName, NUMBER_OF_CONSUMER);
-    }
-
     /**
      * Constructor with consumer group name and specified number of embedded {@link DefaultMQPushConsumer} clients.
      * @param consumerGroupName consumer group name.
-     * @param numberOfEmbeddedConsumers number of embedded consumer clients.
      */
-    public CacheableConsumer(String consumerGroupName, int numberOfEmbeddedConsumers) {
+    public CacheableConsumer(String consumerGroupName) {
         try {
             if (null == consumerGroupName || consumerGroupName.trim().isEmpty()) {
                 throw new RuntimeException("ConsumerGroupName cannot be null or empty.");
@@ -118,16 +97,11 @@ public class CacheableConsumer {
             this.consumerGroupName = consumerGroupName;
             this.topicHandlerMap = new ConcurrentHashMap<String, MessageHandler>();
 
-            for (int i = 0; i < numberOfEmbeddedConsumers; i++) {
-                DefaultMQPushConsumer defaultMQPushConsumer = new DefaultMQPushConsumer(consumerGroupName);
-                defaultMQPushConsumer.setAllocateMessageQueueStrategy(new AllocateMessageQueueByDataCenter(defaultMQPushConsumer));
-                defaultMQPushConsumer.setInstanceName(getInstanceName());
-                defaultMQPushConsumer.setMessageModel(messageModel);
-                defaultMQPushConsumer.setConsumeFromWhere(consumeFromWhere);
-                defaultMQPushConsumer.setPullBatchSize(pullBatchSize);
-                defaultMQPushConsumer.setConsumeMessageBatchMaxSize(consumeMessageMaxBatchSize);
-                defaultMQPushConsumers.add(defaultMQPushConsumer);
-            }
+            defaultMQPushConsumer.setAllocateMessageQueueStrategy(new AllocateMessageQueueByDataCenter(defaultMQPushConsumer));
+            defaultMQPushConsumer.setMessageModel(messageModel);
+            defaultMQPushConsumer.setConsumeFromWhere(consumeFromWhere);
+            defaultMQPushConsumer.setPullBatchSize(pullBatchSize);
+            defaultMQPushConsumer.setConsumeMessageBatchMaxSize(consumeMessageMaxBatchSize);
 
             executorWorkerService = new ThreadPoolExecutor(
                     corePoolSizeForWorkTasks,
@@ -191,11 +165,8 @@ public class CacheableConsumer {
 
         topicHandlerMap.putIfAbsent(messageHandler.getTopic(), messageHandler);
 
-        for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-            defaultMQPushConsumer.subscribe(messageHandler.getTopic(),
-                    null != messageHandler.getTag() ? messageHandler.getTag() : "*");
-        }
-
+        defaultMQPushConsumer.subscribe(messageHandler.getTopic(),
+                null != messageHandler.getTag() ? messageHandler.getTag() : "*");
         return this;
     }
 
@@ -212,24 +183,10 @@ public class CacheableConsumer {
             throw new RuntimeException("Please at least configure one message handler to subscribe one topic");
         }
 
-        //We may have only one embedded consumer for broadcasting scenario.
-        if (MessageModel.BROADCASTING == messageModel) {
-            int i = 0;
-            DefaultMQPushConsumer defaultMQPushConsumer = defaultMQPushConsumers.get(i);
-            while (null == defaultMQPushConsumer && i < defaultMQPushConsumers.size()) {
-                defaultMQPushConsumer = defaultMQPushConsumers.get(i++);
-            }
-            defaultMQPushConsumers.clear();
-            defaultMQPushConsumers.add(defaultMQPushConsumer);
-        }
-
         messageQueue = new LinkedBlockingQueue<MessageExt>(maximumNumberOfMessageBuffered);
         inProgressMessageQueue = new LinkedBlockingQueue<MessageExt>(maximumNumberOfMessageBuffered);
-
-        for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-            defaultMQPushConsumer.registerMessageListener(frontController);
-            defaultMQPushConsumer.start();
-        }
+        defaultMQPushConsumer.registerMessageListener(frontController);
+        defaultMQPushConsumer.start();
         startPopThread();
         addShutdownHook();
         status = ClientStatus.ACTIVE;
@@ -283,11 +240,7 @@ public class CacheableConsumer {
             throw new RuntimeException("Please set message model before start");
         }
 
-        for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-            if (null != defaultMQPushConsumer) {
-                defaultMQPushConsumer.setMessageModel(messageModel);
-            }
-        }
+        defaultMQPushConsumer.setMessageModel(messageModel);
     }
 
     public void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) {
@@ -296,12 +249,7 @@ public class CacheableConsumer {
         if (status != ClientStatus.CREATED) {
             throw new RuntimeException("Please set consume-from-where before start");
         }
-
-        for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-            if (null != defaultMQPushConsumer) {
-                defaultMQPushConsumer.setConsumeFromWhere(consumeFromWhere);
-            }
-        }
+        defaultMQPushConsumer.setConsumeFromWhere(consumeFromWhere);
     }
 
     public void setConsumeMessageMaxBatchSize(int consumeMessageMaxBatchSize) {
@@ -310,12 +258,7 @@ public class CacheableConsumer {
         if (status != ClientStatus.CREATED) {
             throw new RuntimeException("Please set consumeMessageMaxBatchSize before start");
         }
-
-        for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-            if (null != defaultMQPushConsumer) {
-                defaultMQPushConsumer.setConsumeMessageBatchMaxSize(consumeMessageMaxBatchSize);
-            }
-        }
+        defaultMQPushConsumer.setConsumeMessageBatchMaxSize(consumeMessageMaxBatchSize);
     }
 
     public int getConsumeMessageMaxBatchSize() {
@@ -331,12 +274,7 @@ public class CacheableConsumer {
         if (status != ClientStatus.CREATED) {
             throw new RuntimeException("Please set pullBatchSize before start");
         }
-
-        for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-            if (null != defaultMQPushConsumer) {
-                defaultMQPushConsumer.setPullBatchSize(pullBatchSize);
-            }
-        }
+        defaultMQPushConsumer.setPullBatchSize(pullBatchSize);
     }
 
     public String getConsumerGroupName() {
@@ -401,10 +339,7 @@ public class CacheableConsumer {
 
     protected void stopReceiving() throws InterruptedException {
         if (status == ClientStatus.ACTIVE || status == ClientStatus.SUSPENDED) {
-            //Stop pulling messages from broker server.
-            for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-                defaultMQPushConsumer.shutdown();
-            }
+            defaultMQPushConsumer.shutdown();
 
             //Stop popping messages from local message store.
             scheduledExecutorDelayService.shutdown();
@@ -445,10 +380,7 @@ public class CacheableConsumer {
         }
 
         if (ClientStatus.ACTIVE == status) {
-            for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-                defaultMQPushConsumer.suspend();
-            }
-
+            defaultMQPushConsumer.suspend();
             localMessageStore.suspend();
             status = ClientStatus.SUSPENDED;
         }
@@ -458,9 +390,7 @@ public class CacheableConsumer {
         if (ClientStatus.SUSPENDED == status) {
             status = ClientStatus.ACTIVE;
             localMessageStore.resume();
-            for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
-                defaultMQPushConsumer.resume();
-            }
+            defaultMQPushConsumer.resume();
         }
     }
 }
