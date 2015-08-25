@@ -32,7 +32,7 @@ public class CacheableConsumer {
 
     private final ConcurrentHashMap<String, MessageHandler> topicHandlerMap;
 
-    private DefaultMQPushConsumer defaultMQPushConsumer = new DefaultMQPushConsumer();
+    private DefaultMQPushConsumer defaultMQPushConsumer;
 
     private ClientStatus status = ClientStatus.CREATED;
 
@@ -96,7 +96,7 @@ public class CacheableConsumer {
 
             this.consumerGroupName = consumerGroupName;
             this.topicHandlerMap = new ConcurrentHashMap<String, MessageHandler>();
-
+            this.defaultMQPushConsumer = new DefaultMQPushConsumer(consumerGroupName);
             defaultMQPushConsumer.setAllocateMessageQueueStrategy(new AllocateMessageQueueByDataCenter(defaultMQPushConsumer));
             defaultMQPushConsumer.setMessageModel(messageModel);
             defaultMQPushConsumer.setConsumeFromWhere(consumeFromWhere);
