@@ -20,7 +20,6 @@ import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 
 import java.lang.ref.WeakReference;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -41,9 +40,6 @@ public class ClientConfig {
     private ClientType clientType;
     private WeakReference weakReference;
 
-    private static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger(0);
-
-
     public String buildMQClientId() {
         StringBuilder sb = new StringBuilder();
         sb.append(this.getClientIP());
@@ -54,13 +50,11 @@ public class ClientConfig {
         return sb.toString();
     }
 
-
     public void changeInstanceNameToPID() {
         if (this.instanceName.equals("DEFAULT")) {
-            this.instanceName = String.valueOf(UtilAll.getPid()) + "_" + INSTANCE_COUNTER.incrementAndGet();
+            this.instanceName = String.valueOf(UtilAll.getPid());
         }
     }
-
 
     public void resetClientConfig(final ClientConfig cc) {
         this.namesrvAddr = cc.namesrvAddr;
@@ -89,66 +83,53 @@ public class ClientConfig {
         return cc;
     }
 
-
     public String getNamesrvAddr() {
         return namesrvAddr;
     }
-
 
     public void setNamesrvAddr(String namesrvAddr) {
         this.namesrvAddr = namesrvAddr;
     }
 
-
     public String getClientIP() {
         return clientIP;
     }
-
 
     public void setClientIP(String clientIP) {
         this.clientIP = clientIP;
     }
 
-
     public String getInstanceName() {
         return instanceName;
     }
-
 
     public void setInstanceName(String instanceName) {
         this.instanceName = instanceName;
     }
 
-
     public int getClientCallbackExecutorThreads() {
         return clientCallbackExecutorThreads;
     }
-
 
     public void setClientCallbackExecutorThreads(int clientCallbackExecutorThreads) {
         this.clientCallbackExecutorThreads = clientCallbackExecutorThreads;
     }
 
-
     public int getPollNameServerInterval() {
         return pollNameServerInterval;
     }
-
 
     public void setPollNameServerInterval(int pollNameServerInterval) {
         this.pollNameServerInterval = pollNameServerInterval;
     }
 
-
     public int getHeartbeatBrokerInterval() {
         return heartbeatBrokerInterval;
     }
 
-
     public void setHeartbeatBrokerInterval(int heartbeatBrokerInterval) {
         this.heartbeatBrokerInterval = heartbeatBrokerInterval;
     }
-
 
     public int getPersistConsumerOffsetInterval() {
         return persistConsumerOffsetInterval;
