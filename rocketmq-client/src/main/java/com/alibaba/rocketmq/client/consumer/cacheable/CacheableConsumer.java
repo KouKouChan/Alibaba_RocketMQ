@@ -63,7 +63,7 @@ public class CacheableConsumer {
 
     private FrontController frontController;
 
-    private static final int DEFAULT_MAXIMUM_NUMBER_OF_MESSAGE_BUFFERED = 20000;
+    private static final int DEFAULT_MAXIMUM_NUMBER_OF_MESSAGE_BUFFERED = 1000;
 
     private int maximumNumberOfMessageBuffered = DEFAULT_MAXIMUM_NUMBER_OF_MESSAGE_BUFFERED;
 
