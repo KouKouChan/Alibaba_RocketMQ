@@ -43,8 +43,7 @@ public class ConsumerGroupInfo {
     private final String groupName;
     private final ConcurrentHashMap<String/* Topic */, SubscriptionData> subscriptionTable =
             new ConcurrentHashMap<String, SubscriptionData>();
-    private final ConcurrentHashMap<Channel, ClientChannelInfo> channelInfoTable =
-            new ConcurrentHashMap<Channel, ClientChannelInfo>(16);
+    private final ConcurrentHashMap<Channel, ClientChannelInfo> channelInfoTable = new ConcurrentHashMap<Channel, ClientChannelInfo>(16);
     private volatile ConsumeType consumeType;
     private volatile MessageModel messageModel;
     private volatile ConsumeFromWhere consumeFromWhere;
@@ -95,7 +94,9 @@ public class ConsumerGroupInfo {
 
         for (Entry<Channel, ClientChannelInfo> entry : this.channelInfoTable.entrySet()) {
             ClientChannelInfo clientChannelInfo = entry.getValue();
-            result.add(clientChannelInfo.getClientId());
+            if (!result.contains(clientChannelInfo.getClientId())) {
+                result.add(clientChannelInfo.getClientId());
+            }
         }
 
         return result;
