@@ -28,6 +28,10 @@ public class ProcessMessageTask implements Runnable {
     public void run() {
         try {
             long start = System.currentTimeMillis();
+
+            cacheableConsumer.getTxIdSet().add(message.getKeys());
+            LOGGER.info("TX-ID Count: {}", cacheableConsumer.getTxIdSet().size());
+
             int result = messageHandler.handle(message);
             if (0 == result) {
                 cacheableConsumer.getStatistics().addValue(System.currentTimeMillis() - start);

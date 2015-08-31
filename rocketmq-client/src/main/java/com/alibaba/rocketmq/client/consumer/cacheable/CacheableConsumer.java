@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -91,6 +92,12 @@ public class CacheableConsumer {
     private AtomicLong successCounter = new AtomicLong(0L);
 
     private AtomicLong failureCounter = new AtomicLong(0L);
+
+    private ConcurrentSkipListSet<String> txIdSet = new ConcurrentSkipListSet<String>();
+
+    public ConcurrentSkipListSet<String> getTxIdSet() {
+        return txIdSet;
+    }
 
     private static String getInstanceName() {
         return BASE_INSTANCE_NAME + "_" + CONSUMER_NAME_COUNTER.incrementAndGet();
