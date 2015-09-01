@@ -38,15 +38,13 @@ public class ProcessMessageTask implements Runnable {
                 cacheableConsumer.getSuccessCounter().incrementAndGet();
             } else if (result > 0) {
                 cacheableConsumer.getFailureCounter().incrementAndGet();
-
-                // Stash failure handling messages, which will be re-handled later after popping out from local store.
-                cacheableConsumer.getLocalMessageStore().stash(message);
+                cacheableConsumer.getMessageQueue().put(message);
             } else {
                 LOGGER.error("Unable to process returning result: " + result);
             }
         } catch (Exception e) {
             cacheableConsumer.getLocalMessageStore().stash(message);
-            LOGGER.error("Yuck! Business processing logic is buggy; stash the message for now.");
+            LOGGER.error("Yuck! Business processing logic is buggy; Stash the message for now.");
             LOGGER.error("ProcessMessageTask failed! Automatic retry scheduled.", e);
         } finally {
             cacheableConsumer.getInProgressMessageQueue().remove(message);
