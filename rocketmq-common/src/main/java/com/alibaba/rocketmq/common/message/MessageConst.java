@@ -37,6 +37,11 @@ public class MessageConst {
     public static final String PROPERTY_DELAY_TIME_LEVEL = "DELAY";
 
     /**
+     * 消息延时投递时间
+     */
+    public static final String PROPERTY_DELAY_DELIVERY_TIME = "DELAY_DELIVERY_TIME";
+
+    /**
      * 内部使用
      */
     public static final String PROPERTY_RETRY_TOPIC = "RETRY_TOPIC";
@@ -62,6 +67,7 @@ public class MessageConst {
         systemKeySet.add(PROPERTY_TAGS);
         systemKeySet.add(PROPERTY_WAIT_STORE_MSG_OK);
         systemKeySet.add(PROPERTY_DELAY_TIME_LEVEL);
+        systemKeySet.add(PROPERTY_DELAY_DELIVERY_TIME);
         systemKeySet.add(PROPERTY_RETRY_TOPIC);
         systemKeySet.add(PROPERTY_REAL_TOPIC);
         systemKeySet.add(PROPERTY_REAL_QUEUE_ID);
