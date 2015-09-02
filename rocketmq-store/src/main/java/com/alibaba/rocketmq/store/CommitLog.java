@@ -515,6 +515,8 @@ public class CommitLog {
 
                 msg.setTopic(topic);
                 msg.setQueueId(queueId);
+            } else if (msg.getDelayDeliveryTime() > System.currentTimeMillis()) {
+
             }
         }
 

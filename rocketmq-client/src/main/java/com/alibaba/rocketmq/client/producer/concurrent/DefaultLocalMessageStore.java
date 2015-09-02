@@ -907,6 +907,10 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         messageExt.setTopic(message.getTopic());
         messageExt.setFlag(message.getFlag());
         messageExt.setBody(message.getBody());
+
+        // Allow broker to decide.
+        messageExt.setQueueId(-1);
+
         MessageAccessor.setProperties(messageExt, message.getProperties());
 
         messageExt.setBornHost(new InetSocketAddress(0));

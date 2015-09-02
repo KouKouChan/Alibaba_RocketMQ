@@ -197,6 +197,11 @@ public class Message implements Serializable {
         this.putProperty(MessageConst.PROPERTY_DELAY_TIME_LEVEL, String.valueOf(level));
     }
 
+    public long getDelayDeliveryTime() {
+        String delayDeliveryTime = getProperty(MessageConst.PROPERTY_DELAY_DELIVERY_TIME);
+        return null == delayDeliveryTime ? 0 : Long.parseLong(delayDeliveryTime);
+    }
+
     public void setDelayDeliveryTime(long deliveryTime) {
         if (deliveryTime > System.currentTimeMillis()) {
             putProperty(MessageConst.PROPERTY_DELAY_DELIVERY_TIME, String.valueOf(deliveryTime));
