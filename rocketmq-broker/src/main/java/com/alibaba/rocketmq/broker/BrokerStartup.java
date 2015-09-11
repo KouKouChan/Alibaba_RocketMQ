@@ -29,6 +29,7 @@ import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
 import com.alibaba.rocketmq.store.config.BrokerRole;
 import com.alibaba.rocketmq.store.config.MessageStoreConfig;
+import com.alibaba.rocketmq.store.transaction.jdbc.JDBCTransactionStoreConfig;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -114,6 +115,8 @@ public class BrokerStartup {
                 messageStoreConfig.setAccessMessageInMemoryMaxRatio(ratio);
             }
 
+            final JDBCTransactionStoreConfig jdbcTransactionStoreConfig = new JDBCTransactionStoreConfig();
+
             // 打印默认配置
             if (commandLine.hasOption('p')) {
                 MixAll.printObjectProperties(null, brokerConfig);
@@ -142,6 +145,7 @@ public class BrokerStartup {
                     MixAll.properties2Object(properties, nettyServerConfig);
                     MixAll.properties2Object(properties, nettyClientConfig);
                     MixAll.properties2Object(properties, messageStoreConfig);
+                    MixAll.properties2Object(properties, jdbcTransactionStoreConfig);
 
                     BrokerPathConfigHelper.setBrokerConfigPath(file);
 
@@ -211,7 +215,8 @@ public class BrokerStartup {
                 brokerConfig, //
                 nettyServerConfig, //
                 nettyClientConfig, //
-                messageStoreConfig);
+                messageStoreConfig, //
+                jdbcTransactionStoreConfig);
             boolean initResult = controller.initialize();
             if (!initResult) {
                 controller.shutdown();

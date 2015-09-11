@@ -47,8 +47,6 @@ import com.alibaba.rocketmq.store.PutMessageResult;
  */
 public class EndTransactionProcessor implements NettyRequestProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(LoggerName.BrokerLoggerName);
-
     private final BrokerController brokerController;
 
 
@@ -178,11 +176,13 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
             }
 
             // 校验Transaction State Table Offset
+            /*
             if (msgExt.getQueueOffset() != requestHeader.getTranStateTableOffset()) {
                 response.setCode(ResponseCode.SYSTEM_ERROR);
                 response.setRemark("the transaction state table offset wrong");
                 return response;
             }
+            */
 
             // 校验Commit Log Offset
             if (msgExt.getCommitLogOffset() != requestHeader.getCommitLogOffset()) {
@@ -193,9 +193,8 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
 
             MessageExtBrokerInner msgInner = this.endMessageTransaction(msgExt);
             msgInner.setSysFlag(MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(),
-                requestHeader.getCommitOrRollback()));
+                    requestHeader.getCommitOrRollback()));
 
-            msgInner.setQueueOffset(requestHeader.getTranStateTableOffset());
             msgInner.setPreparedTransactionOffset(requestHeader.getCommitLogOffset());
             msgInner.setStoreTimestamp(msgExt.getStoreTimestamp());
             if (MessageSysFlag.TransactionRollbackType == requestHeader.getCommitOrRollback()) {
@@ -205,6 +204,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
             final MessageStore messageStore = this.brokerController.getMessageStore();
             final PutMessageResult putMessageResult = messageStore.putMessage(msgInner);
             if (putMessageResult != null) {
+                boolean sendOK = false;
                 switch (putMessageResult.getPutMessageStatus()) {
                 // Success
                 case PUT_OK:
@@ -213,6 +213,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
                 case SLAVE_NOT_AVAILABLE:
                     response.setCode(ResponseCode.SUCCESS);
                     response.setRemark(null);
+                    sendOK = true;
                     break;
 
                 // Failed
@@ -236,6 +237,14 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
                     response.setCode(ResponseCode.SYSTEM_ERROR);
                     response.setRemark("UNKNOWN_ERROR DEFAULT");
                     break;
+                }
+
+                if (sendOK) {
+                    if (this.brokerController.getBrokerConfig().isLongPollingEnable()) {
+                        this.brokerController.getPullRequestHoldService().notifyMessageArriving(
+                                msgExt.getTopic(), msgExt.getQueueId(),
+                                msgExt.getQueueOffset());
+                    }
                 }
 
                 return response;

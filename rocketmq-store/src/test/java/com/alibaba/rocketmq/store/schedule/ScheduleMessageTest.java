@@ -77,7 +77,7 @@ public class ScheduleMessageTest {
         messageStoreConfig.setMaxHashSlotNum(100);
         messageStoreConfig.setMaxIndexNum(1000 * 10);
 
-        MessageStore master = new DefaultMessageStore(messageStoreConfig, null);
+        MessageStore master = new DefaultMessageStore(messageStoreConfig, null, null);
         // 第一步，load已有数据
         boolean load = master.load();
         assertTrue(load);

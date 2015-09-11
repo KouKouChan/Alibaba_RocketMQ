@@ -107,7 +107,7 @@ public class RecoverTest {
         messageStoreConfig.setMappedFileSizeConsumeQueue(100 * 20);
         messageStoreConfig.setMessageIndexEnable(false);
 
-        MessageStore messageStore = new DefaultMessageStore(messageStoreConfig, null);
+        MessageStore messageStore = new DefaultMessageStore(messageStoreConfig, null, null);
         if (first) {
             this.storeWrite1 = messageStore;
         }
@@ -166,7 +166,7 @@ public class RecoverTest {
         messageStoreConfig.setMappedFileSizeConsumeQueue(100 * 20);
         messageStoreConfig.setMessageIndexEnable(false);
 
-        storeRead = new DefaultMessageStore(messageStoreConfig, null);
+        storeRead = new DefaultMessageStore(messageStoreConfig, null, null);
         // 第一步，load已有数据
         boolean loadResult = storeRead.load();
         assertTrue(loadResult);

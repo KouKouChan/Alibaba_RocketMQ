@@ -357,7 +357,6 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 final EndTransactionRequestHeader thisHeader = new EndTransactionRequestHeader();
                 thisHeader.setCommitLogOffset(checkRequestHeader.getCommitLogOffset());
                 thisHeader.setProducerGroup(producerGroup);
-                thisHeader.setTranStateTableOffset(checkRequestHeader.getTranStateTableOffset());
                 thisHeader.setFromTransactionCheck(true);
                 thisHeader.setMsgId(message.getMsgId());
                 switch (localTransactionState) {
@@ -1024,7 +1023,6 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         }
 
         requestHeader.setProducerGroup(this.defaultMQProducer.getProducerGroup());
-        requestHeader.setTranStateTableOffset(sendResult.getQueueOffset());
         requestHeader.setMsgId(sendResult.getMsgId());
         String remark =
                 localException != null ? ("executeLocalTransactionBranch exception: " + localException

@@ -1,4 +1,6 @@
-package com.alibaba.rocketmq.broker.transaction;
+package com.alibaba.rocketmq.store.transaction;
+
+import com.alibaba.rocketmq.store.transaction.TransactionRecord;
 
 import java.util.List;
 

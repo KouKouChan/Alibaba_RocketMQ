@@ -317,6 +317,9 @@ public class CommitLog {
             long tagsCode = 0;
             String keys = "";
 
+            // producer group.
+            String producerGroup = "";
+
             // 17 properties
             short propertiesLength = byteBuffer.getShort();
             if (propertiesLength > 0) {
@@ -331,6 +334,8 @@ public class CommitLog {
                             MessageExtBrokerInner.tagsString2tagsCode(
                                     MessageExt.parseTopicFilterType(sysFlag), tags);
                 }
+
+                producerGroup = propertiesMap.get(MessageConst.PROPERTY_PRODUCER_GROUP);
 
                 // 定时消息处理
                 {
@@ -361,7 +366,8 @@ public class CommitLog {
                     queueOffset,// 7
                     keys,// 8
                     sysFlag,// 9
-                    preparedTransactionOffset// 10
+                    preparedTransactionOffset, // 10
+                    producerGroup
             );
         } catch (BufferUnderflowException e) {
             byteBuffer.position(byteBuffer.limit());
@@ -403,7 +409,12 @@ public class CommitLog {
                 // 正常数据
                 if (size > 0) {
                     mappedFileOffset += size;
-                    this.defaultMessageStore.putDispatchRequest(dispatchRequest);
+                    int transactionType = MessageSysFlag.getTransactionValue(dispatchRequest.getSysFlag());
+                    if (transactionType == MessageSysFlag.TransactionNotType) {
+                        this.defaultMessageStore.putDispatchRequest(dispatchRequest);
+                    } else {
+                        LOGGER.debug("Transaction message found. DispatchRequest skipped.");
+                    }
                 }
                 // 文件中间读到错误
                 else if (size == -1) {
@@ -573,7 +584,9 @@ public class CommitLog {
                      * 事务部分
                      */
                     msg.getSysFlag(),// 9
-                    msg.getPreparedTransactionOffset());// 10
+                    msg.getPreparedTransactionOffset(), // 10
+                    msg.getProperty(MessageConst.PROPERTY_PRODUCER_GROUP)
+            );
 
             this.defaultMessageStore.putDispatchRequest(dispatchRequest);
 

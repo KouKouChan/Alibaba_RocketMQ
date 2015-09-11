@@ -29,7 +29,8 @@ public class SendMessageTest {
             new BrokerConfig(), //
             new NettyServerConfig(), //
             new NettyClientConfig(), //
-            new MessageStoreConfig());
+            new MessageStoreConfig(), //
+            null);
         boolean initResult = brokerController.initialize();
         System.out.println("initialize " + initResult);
 

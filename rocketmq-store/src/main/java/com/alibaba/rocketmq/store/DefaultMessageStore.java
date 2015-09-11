@@ -34,6 +34,8 @@ import com.alibaba.rocketmq.store.index.IndexService;
 import com.alibaba.rocketmq.store.index.QueryOffsetResult;
 import com.alibaba.rocketmq.store.schedule.ScheduleMessageService;
 import com.alibaba.rocketmq.store.stats.BrokerStatsManager;
+import com.alibaba.rocketmq.store.transaction.TransactionRecord;
+import com.alibaba.rocketmq.store.transaction.jdbc.JDBCTransactionStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +72,9 @@ public class DefaultMessageStore implements MessageStore {
     private final MessageFilter messageFilter = new DefaultMessageFilter();
     // 存储配置
     private final MessageStoreConfig messageStoreConfig;
+
+    private final JDBCTransactionStore jdbcTransactionStore;
+
     // CommitLog
     private final CommitLog commitLog;
     // ConsumeQueue集合
@@ -114,8 +119,10 @@ public class DefaultMessageStore implements MessageStore {
     private final AtomicLong slaveBrokerHasNoConsumeQueueCounter = new AtomicLong(0L);
 
     public DefaultMessageStore(final MessageStoreConfig messageStoreConfig,
-                               final BrokerStatsManager brokerStatsManager) throws IOException {
+                               final BrokerStatsManager brokerStatsManager,
+                               final JDBCTransactionStore jdbcTransactionStore) throws IOException {
         this.messageStoreConfig = messageStoreConfig;
+        this.jdbcTransactionStore = jdbcTransactionStore;
         this.brokerStatsManager = brokerStatsManager;
         this.allocateMappedFileService = new AllocateMappedFileService();
         this.commitLog = new CommitLog(this);
@@ -1180,6 +1187,9 @@ public class DefaultMessageStore implements MessageStore {
         return runningFlags;
     }
 
+    public JDBCTransactionStore getJdbcTransactionStore() {
+        return jdbcTransactionStore;
+    }
 
     public ConcurrentHashMap<String, ConcurrentHashMap<Integer, ConsumeQueue>> getConsumeQueueTable() {
         return consumeQueueTable;
@@ -1617,6 +1627,11 @@ public class DefaultMessageStore implements MessageStore {
 
         private void doDispatch() {
             if (!this.requestsRead.isEmpty()) {
+                List<TransactionRecord> preparedTransactionRecords = new ArrayList<TransactionRecord>();
+                List<Long> rollbackPKs = new ArrayList<Long>();
+                List<Long> commitPKs = new ArrayList<Long>();
+                TransactionRecord transactionRecord = null;
+
                 for (DispatchRequest req : this.requestsRead) {
 
                     final int tranType = MessageSysFlag.getTransactionValue(req.getSysFlag());
@@ -1628,15 +1643,36 @@ public class DefaultMessageStore implements MessageStore {
                             DefaultMessageStore.this.putMessagePositionInfo(req.getTopic(), req.getQueueId(),
                                     req.getCommitLogOffset(), req.getMsgSize(), req.getTagsCode(),
                                     req.getStoreTimestamp(), req.getConsumeQueueOffset());
+                            commitPKs.add(req.getCommitLogOffset());
                             break;
                         case MessageSysFlag.TransactionPreparedType:
+                            transactionRecord = new TransactionRecord();
+                            transactionRecord.setOffset(req.getCommitLogOffset());
+                            transactionRecord.setProducerGroup(req.getProducerGroup());
+                            preparedTransactionRecords.add(transactionRecord);
+                            break;
                         case MessageSysFlag.TransactionRollbackType:
+                            rollbackPKs.add(req.getPreparedTransactionOffset());
                             break;
                     }
                 }
 
                 if (DefaultMessageStore.this.getMessageStoreConfig().isMessageIndexEnable()) {
                     DefaultMessageStore.this.indexService.putRequest(this.requestsRead.toArray());
+                }
+
+                if (null != jdbcTransactionStore) {
+                    if (!preparedTransactionRecords.isEmpty()) {
+                        jdbcTransactionStore.put(preparedTransactionRecords);
+                    }
+
+                    if (!rollbackPKs.isEmpty()) {
+                        jdbcTransactionStore.remove(rollbackPKs);
+                    }
+
+                    if (!commitPKs.isEmpty()) {
+                        jdbcTransactionStore.remove(commitPKs);
+                    }
                 }
 
                 this.requestsRead.clear();

@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.broker.transaction.jdbc;
+package com.alibaba.rocketmq.store.transaction.jdbc;
 
 public class JDBCTransactionStoreConfig {
     private String jdbcDriverClass = "com.mysql.jdbc.Driver";

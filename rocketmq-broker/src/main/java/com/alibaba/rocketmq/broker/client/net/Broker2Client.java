@@ -57,6 +57,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Broker2Client {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BrokerLoggerName);
+
+    /**
+     * Pipe transaction related log properly.
+     */
+    private static final Logger TRANSACTION_LOG = LoggerFactory.getLogger(LoggerName.TransactionLoggerName);
+
     private final BrokerController brokerController;
 
 
@@ -86,12 +92,12 @@ public class Broker2Client {
                 public void operationComplete(ChannelFuture future) throws Exception {
                     selectMappedBufferResult.release();
                     if (!future.isSuccess()) {
-                        log.error("invokeProducer failed,", future.cause());
+                        TRANSACTION_LOG.error("invokeProducer failed,", future.cause());
                     }
                 }
             });
         } catch (Throwable e) {
-            log.error("invokeProducer exception", e);
+            TRANSACTION_LOG.error("invokeProducer exception", e);
             selectMappedBufferResult.release();
         }
     }

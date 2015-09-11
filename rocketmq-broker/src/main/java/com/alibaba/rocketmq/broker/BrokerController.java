@@ -37,6 +37,8 @@ import com.alibaba.rocketmq.broker.processor.SendMessageProcessor;
 import com.alibaba.rocketmq.broker.slave.SlaveSynchronize;
 import com.alibaba.rocketmq.broker.subscription.SubscriptionGroupManager;
 import com.alibaba.rocketmq.broker.topic.TopicConfigManager;
+import com.alibaba.rocketmq.broker.transaction.DefaultTransactionStateChecker;
+import com.alibaba.rocketmq.broker.transaction.TransactionStateChecker;
 import com.alibaba.rocketmq.common.BrokerConfig;
 import com.alibaba.rocketmq.common.DataVersion;
 import com.alibaba.rocketmq.common.MixAll;
@@ -61,6 +63,8 @@ import com.alibaba.rocketmq.store.config.BrokerRole;
 import com.alibaba.rocketmq.store.config.MessageStoreConfig;
 import com.alibaba.rocketmq.store.stats.BrokerStats;
 import com.alibaba.rocketmq.store.stats.BrokerStatsManager;
+import com.alibaba.rocketmq.store.transaction.jdbc.JDBCTransactionStore;
+import com.alibaba.rocketmq.store.transaction.jdbc.JDBCTransactionStoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +117,8 @@ public class BrokerController {
     // Producer连接管理
     private final ProducerManager producerManager;
 
+    private final TransactionStateChecker transactionStateChecker;
+
     // 检测所有客户端连接
     private final ClientHousekeepingService clientHousekeepingService;
 
@@ -122,6 +128,8 @@ public class BrokerController {
 
     // Broker主动调用Client
     private final Broker2Client broker2Client;
+
+    private final ScheduledExecutorService checkTransactionStateExecutorService;
 
     // 订阅组配置管理
     private final SubscriptionGroupManager subscriptionGroupManager;
@@ -179,16 +187,23 @@ public class BrokerController {
     private final BrokerStatsManager brokerStatsManager;
 
 
+    private JDBCTransactionStoreConfig jdbcTransactionStoreConfig;
+
+    private JDBCTransactionStore jdbcTransactionStore;
+
+
     public BrokerController(//
             final BrokerConfig brokerConfig, //
             final NettyServerConfig nettyServerConfig, //
             final NettyClientConfig nettyClientConfig, //
-            final MessageStoreConfig messageStoreConfig //
+            final MessageStoreConfig messageStoreConfig, //
+            final JDBCTransactionStoreConfig jdbcTransactionStoreConfig //
     ) {
         this.brokerConfig = brokerConfig;
         this.nettyServerConfig = nettyServerConfig;
         this.nettyClientConfig = nettyClientConfig;
         this.messageStoreConfig = messageStoreConfig;
+        this.jdbcTransactionStoreConfig = jdbcTransactionStoreConfig;
         this.consumerOffsetManager = new ConsumerOffsetManager(this);
         this.topicConfigManager = new TopicConfigManager(this);
         this.pullMessageProcessor = new PullMessageProcessor(this);
@@ -216,6 +231,13 @@ public class BrokerController {
                 new LinkedBlockingQueue<Runnable>(this.brokerConfig.getPullThreadPoolQueueCapacity());
 
         this.brokerStatsManager = new BrokerStatsManager(this.brokerConfig.getBrokerClusterName());
+
+        this.jdbcTransactionStore = new JDBCTransactionStore(jdbcTransactionStoreConfig);
+
+        this.transactionStateChecker = new DefaultTransactionStateChecker(this);
+
+        checkTransactionStateExecutorService = Executors.newScheduledThreadPool(brokerConfig.getBroker2ClientThreadPoolNums(),
+                new ThreadFactoryImpl("Broker2ClientService_"));
     }
 
 
@@ -230,10 +252,14 @@ public class BrokerController {
         // 加载Consumer subscription
         result = result && this.subscriptionGroupManager.load();
 
+        if (result) {
+            result = jdbcTransactionStore.open();
+        }
+
         // 初始化存储层
         if (result) {
             try {
-                this.messageStore = new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager);
+                this.messageStore = new DefaultMessageStore(this.messageStoreConfig, this.brokerStatsManager, jdbcTransactionStore);
             }
             catch (IOException e) {
                 result = false;
@@ -246,8 +272,7 @@ public class BrokerController {
 
         if (result) {
             // 初始化通信层
-            this.remotingServer =
-                    new NettyRemotingServer(this.nettyServerConfig, this.clientHousekeepingService);
+            this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.clientHousekeepingService);
 
             // 初始化线程池
             this.sendMessageExecutor = new ThreadPoolExecutor(//
@@ -366,6 +391,18 @@ public class BrokerController {
             }
             // 如果是Master，增加统计日志
             else {
+
+                this.checkTransactionStateExecutorService.scheduleAtFixedRate(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            transactionStateChecker.check();
+                        } catch (Exception e) {
+                            log.error("Schedule check", e);
+                        }
+                    }
+                }, 30, 30, TimeUnit.SECONDS);
+
                 this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
                     @Override
@@ -487,6 +524,14 @@ public class BrokerController {
         return messageStoreConfig;
     }
 
+    public JDBCTransactionStoreConfig getJdbcTransactionStoreConfig() {
+        return jdbcTransactionStoreConfig;
+    }
+
+    public JDBCTransactionStore getJdbcTransactionStore() {
+        return jdbcTransactionStore;
+    }
+
 
     public NettyServerConfig getNettyServerConfig() {
         return nettyServerConfig;
@@ -579,10 +624,10 @@ public class BrokerController {
 
     private void unregisterBrokerAll() {
         this.brokerOuterAPI.unregisterBrokerAll(//
-            this.brokerConfig.getBrokerClusterName(), //
-            this.getBrokerAddr(), //
-            this.brokerConfig.getBrokerName(), //
-            this.brokerConfig.getBrokerId());
+                this.brokerConfig.getBrokerClusterName(), //
+                this.getBrokerAddr(), //
+                this.brokerConfig.getBrokerName(), //
+                this.brokerConfig.getBrokerId());
     }
 
 
@@ -636,8 +681,7 @@ public class BrokerController {
             public void run() {
                 try {
                     BrokerController.this.registerBrokerAll(true);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     log.error("registerBrokerAll Exception", e);
                 }
             }
@@ -847,7 +891,7 @@ public class BrokerController {
             public void run() {
                 int removedTopicCnt =
                         BrokerController.this.messageStore.cleanUnusedTopic(BrokerController.this
-                            .getTopicConfigManager().getTopicConfigTable().keySet());
+                                .getTopicConfigManager().getTopicConfigTable().keySet());
                 log.info("addDeleteTopicTask removed topic count {}", removedTopicCnt);
             }
         }, 5, TimeUnit.MINUTES);
@@ -880,4 +924,10 @@ public class BrokerController {
     public void registerClientRPCHook(RPCHook rpcHook) {
         this.getBrokerOuterAPI().registerRPCHook(rpcHook);
     }
+
+
+    public ScheduledExecutorService getCheckTransactionStateExecutorService() {
+        return checkTransactionStateExecutorService;
+    }
+
 }

@@ -16,14 +16,16 @@ import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
 public class EndTransactionRequestHeader implements CommandCustomHeader {
     @CFNotNull
     private String producerGroup;
-    @CFNotNull
-    private Long tranStateTableOffset;
+
     @CFNotNull
     private Long commitLogOffset;
+
+    /**
+     * TransactionRollbackType
+     * TransactionNotType
+     */
     @CFNotNull
     private Integer commitOrRollback; // TransactionCommitType
-    // TransactionRollbackType
-    // TransactionNotType
 
     @CFNullable
     private Boolean fromTransactionCheck = false;
@@ -57,16 +59,6 @@ public class EndTransactionRequestHeader implements CommandCustomHeader {
 
     public void setProducerGroup(String producerGroup) {
         this.producerGroup = producerGroup;
-    }
-
-
-    public Long getTranStateTableOffset() {
-        return tranStateTableOffset;
-    }
-
-
-    public void setTranStateTableOffset(Long tranStateTableOffset) {
-        this.tranStateTableOffset = tranStateTableOffset;
     }
 
 
@@ -112,9 +104,8 @@ public class EndTransactionRequestHeader implements CommandCustomHeader {
 
     @Override
     public String toString() {
-        return "EndTransactionRequestHeader [producerGroup=" + producerGroup + ", tranStateTableOffset="
-                + tranStateTableOffset + ", commitLogOffset=" + commitLogOffset + ", commitOrRollback="
-                + commitOrRollback + ", fromTransactionCheck=" + fromTransactionCheck + ", msgId=" + msgId
-                + "]";
+        return "EndTransactionRequestHeader [producerGroup=" + producerGroup + ", commitLogOffset=" + commitLogOffset
+                + ", commitOrRollback=" + commitOrRollback + ", fromTransactionCheck=" + fromTransactionCheck
+                + ", msgId=" + msgId + "]";
     }
 }

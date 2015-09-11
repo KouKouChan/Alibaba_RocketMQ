@@ -78,7 +78,7 @@ public class DefaultMessageStoreTest {
         messageStoreConfig.setMaxHashSlotNum(100);
         messageStoreConfig.setMaxIndexNum(100 * 10);
 
-        MessageStore master = new DefaultMessageStore(messageStoreConfig, null);
+        MessageStore master = new DefaultMessageStore(messageStoreConfig, null, null);
         // 第一步，load已有数据
         boolean load = master.load();
         assertTrue(load);
@@ -133,7 +133,7 @@ public class DefaultMessageStoreTest {
         // 开启GroupCommit功能
         messageStoreConfig.setFlushDiskType(FlushDiskType.SYNC_FLUSH);
 
-        MessageStore master = new DefaultMessageStore(messageStoreConfig, null);
+        MessageStore master = new DefaultMessageStore(messageStoreConfig, null, null);
         // 第一步，load已有数据
         boolean load = master.load();
         assertTrue(load);
