@@ -18,6 +18,9 @@ package com.alibaba.rocketmq.common.message;
 import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.common.sysflag.MessageSysFlag;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -25,10 +28,7 @@ import java.net.UnknownHostException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -264,6 +264,36 @@ public class MessageDecoder {
         return sb.toString();
     }
 
+    public static String messageProperties2StringSafe(Map<String, String> properties) {
+        if (null == properties || properties.isEmpty()) {
+            return "";
+        }
+        ByteArrayOutputStream byteArrayOutputStream = null;
+        try {
+            byteArrayOutputStream = new ByteArrayOutputStream();
+            byteArrayOutputStream.write(int2ByteArray(properties.size()));
+            for (Map.Entry<String, String> next : properties.entrySet()) {
+                byte[] key = next.getKey().getBytes(Charset.forName("UTF-8"));
+                byte[] value = next.getValue().getBytes(Charset.forName("UTF-8"));
+                byteArrayOutputStream.write(int2ByteArray(key.length));
+                byteArrayOutputStream.write(key);
+                byteArrayOutputStream.write(int2ByteArray(value.length));
+                byteArrayOutputStream.write(value);
+            }
+            return new String(byteArrayOutputStream.toByteArray(), Charset.forName("UTF-8"));
+        } catch (IOException e) {
+            throw new RuntimeException("Error while serializing message properties");
+        } finally {
+            if (null != byteArrayOutputStream) {
+                try {
+                    byteArrayOutputStream.close();
+                } catch (IOException e) {
+                    //Ignore.
+                }
+            }
+        }
+    }
+
 
     public static Map<String, String> string2messageProperties(final String properties) {
         Map<String, String> map = new HashMap<String, String>();
@@ -279,4 +309,38 @@ public class MessageDecoder {
 
         return map;
     }
+
+
+    public static Map<String, String> string2messagePropertiesSafe(final String properties) {
+        Map<String, String> map = new HashMap<String, String>();
+        if (null == properties || properties.isEmpty()) {
+            return map;
+        }
+
+        Charset charset = Charset.forName("UTF-8");
+        byte[] data = properties.getBytes(charset);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+        int size = byteBuffer.getInt();
+        for (int i = 0; i < size; i++) {
+            int keyLength = byteBuffer.getInt();
+            byte[] key = new byte[keyLength];
+            byteBuffer.get(key);
+
+            int valueLength = byteBuffer.getInt();
+            byte[] value = new byte[valueLength];
+            byteBuffer.get(value);
+
+            map.put(new String(key, charset), new String(value, charset));
+        }
+
+        return map;
+    }
+
+    private static byte[] int2ByteArray(int i) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(4);
+        byteBuffer.putInt(i);
+        byteBuffer.flip();
+        return byteBuffer.array();
+    }
+
 }
