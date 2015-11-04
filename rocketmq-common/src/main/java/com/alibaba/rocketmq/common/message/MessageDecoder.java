@@ -241,27 +241,8 @@ public class MessageDecoder {
         return msgExts;
     }
 
-    /**
-     * 序列化消息属性
-     */
-    public static final char NAME_VALUE_SEPARATOR = 1;
-    public static final char PROPERTY_SEPARATOR = 2;
-
-
     public static String messageProperties2String(Map<String, String> properties) {
-        StringBuilder sb = new StringBuilder();
-        if (properties != null) {
-            for (final Map.Entry<String, String> entry : properties.entrySet()) {
-                final String name = entry.getKey();
-                final String value = entry.getValue();
-
-                sb.append(name);
-                sb.append(NAME_VALUE_SEPARATOR);
-                sb.append(value);
-                sb.append(PROPERTY_SEPARATOR);
-            }
-        }
-        return sb.toString();
+        return messageProperties2StringSafe(properties);
     }
 
     public static String messageProperties2StringSafe(Map<String, String> properties) {
@@ -296,18 +277,7 @@ public class MessageDecoder {
 
 
     public static Map<String, String> string2messageProperties(final String properties) {
-        Map<String, String> map = new HashMap<String, String>();
-        if (properties != null) {
-            String[] items = properties.split(String.valueOf(PROPERTY_SEPARATOR));
-            for (String i : items) {
-                String[] nv = i.split(String.valueOf(NAME_VALUE_SEPARATOR));
-                if (2 == nv.length) {
-                    map.put(nv[0], nv[1]);
-                }
-            }
-        }
-
-        return map;
+        return string2messagePropertiesSafe(properties);
     }
 
 
