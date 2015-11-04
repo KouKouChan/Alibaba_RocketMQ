@@ -41,6 +41,7 @@ public class Producer {
 
                 //Unique key may be used to query message using command line and web console.
                 msg.setKeys("Key-A");
+                msg.putUserProperty("中文", "中文");
                 SendResult sendResult = producer.send(msg);
                 System.out.println(sendResult);
             } catch (Exception e) {

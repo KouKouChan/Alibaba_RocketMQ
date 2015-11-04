@@ -21,6 +21,7 @@ import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
 import com.alibaba.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
+import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel;
 
@@ -49,7 +50,9 @@ public class Consumer {
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
                     ConsumeConcurrentlyContext context) {
                 System.out.print(Thread.currentThread().getName() + " Receive New Messages: " + msgs);
-                String sendT = msgs.get(0).getProperty("sendT");
+                Message msg = msgs.get(0);
+                String sendT = msg.getProperty("sendT");
+                System.out.print(msg.getProperty("中文"));
                 if (null != sendT) {
                     System.out.println(", MQ Time:" + (System.currentTimeMillis() - Long.parseLong(sendT)) + "ms");
                 } else {
