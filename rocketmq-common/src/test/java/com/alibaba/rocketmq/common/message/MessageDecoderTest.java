@@ -10,27 +10,23 @@ import static org.junit.Assert.*;
 
 public class MessageDecoderTest {
 
-    @Test
-    public void testString2messageProperties() throws Exception {
+    private Map<String, String> createMap() {
         Map<String, String> properties = new HashMap<String, String>();
+        char[] chars = {1, 2, 3, 4};
+
+        properties.put("abc", new String(chars) + "中文");
         properties.put("中文", "中文");
         properties.put("test", "中文");
         properties.put("英文", "English");
 
-        String encodedText = MessageDecoder.messageProperties2String(properties);
+        return properties;
+    }
 
-        Map<String, String> map = MessageDecoder.string2messageProperties(encodedText);
-        for (Map.Entry<String, String> next : map.entrySet()) {
-            Assert.assertTrue(properties.containsKey(next.getKey()));
-            Assert.assertEquals(next.getValue(), properties.get(next.getKey()));
-        }
-
-
-        encodedText = MessageDecoder.messageProperties2StringSafe(properties);
-        map = MessageDecoder.string2messagePropertiesSafe(encodedText);
-        for (Map.Entry<String, String> next : map.entrySet()) {
-            Assert.assertTrue(properties.containsKey(next.getKey()));
-            Assert.assertEquals(next.getValue(), properties.get(next.getKey()));
-        }
+    @Test
+    public void testString2messageProperties() throws Exception {
+        Map<String, String> properties = createMap();
+        String encodedText = MessageDecoder.messageProperties2StringSafe(properties);
+        Map<String, String> map = MessageDecoder.string2messagePropertiesSafe(encodedText);
+        Assert.assertEquals(properties, map);
     }
 }
