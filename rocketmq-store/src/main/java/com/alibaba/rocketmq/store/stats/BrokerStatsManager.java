@@ -121,7 +121,7 @@ public class BrokerStatsManager {
 
     public void recordDiskFallBehind(final String group, final String topic, final int queueId,
             final long fallBehind) {
-        final String statsKey = String.format("@%s@%s%d", group, topic, queueId);
+        final String statsKey = String.format("%d@%s@%s", queueId, topic, group);
         this.momentStatsItemSet.getAndCreateStatsItem(statsKey).getValue().set(fallBehind);
     }
 }

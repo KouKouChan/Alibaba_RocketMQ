@@ -1069,7 +1069,6 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public BrokerStatsData ViewBrokerStatsData(String brokerAddr, String statsName, String statsKey)
             throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
             MQClientException, InterruptedException {
-        return this.mqClientInstance.getMQClientAPIImpl().ViewBrokerStatsData(brokerAddr, statsName,
-            statsKey, 3000);
+        return this.mqClientInstance.getMQClientAPIImpl().ViewBrokerStatsData(brokerAddr, statsName, statsKey, 3000);
     }
 }

@@ -99,13 +99,10 @@ public class StatsAllSubCommand implements SubCommand {
                     if (masterAddr != null) {
                         try {
                             String statsKey = String.format("%s@%s", topic, group);
-                            BrokerStatsData bsd =
-                                    admin.ViewBrokerStatsData(masterAddr, BrokerStatsManager.GROUP_GET_NUMS,
-                                        statsKey);
+                            BrokerStatsData bsd = admin.ViewBrokerStatsData(masterAddr, BrokerStatsManager.GROUP_GET_NUMS, statsKey);
                             outTPS += bsd.getStatsMinute().getTps();
                             outMsgCntToday += compute24HourSum(bsd);
-                        }
-                        catch (Exception e) {
+                        } catch (Exception e) {
                         }
                     }
                 }
