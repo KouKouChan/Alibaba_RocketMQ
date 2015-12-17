@@ -183,7 +183,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
 
             // 查看Broker统计信息
         case RequestCode.VIEW_BROKER_STATS_DATA:
-            return ViewBrokerStatsData(ctx, request);
+            return viewBrokerStatsData(ctx, request);
         default:
             break;
         }
@@ -192,7 +192,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
     }
 
 
-    private RemotingCommand ViewBrokerStatsData(ChannelHandlerContext ctx, RemotingCommand request)
+    private RemotingCommand viewBrokerStatsData(ChannelHandlerContext ctx, RemotingCommand request)
             throws RemotingCommandException {
         final ViewBrokerStatsDataRequestHeader requestHeader = (ViewBrokerStatsDataRequestHeader) request
                 .decodeCommandCustomHeader(ViewBrokerStatsDataRequestHeader.class);
@@ -275,9 +275,8 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
             newRequest.setExtFields(request.getExtFields());
             newRequest.setBody(request.getBody());
 
-            RemotingCommand consumerResponse =
-                    this.brokerController.getBroker2Client().callClient(clientChannelInfo.getChannel(),
-                        newRequest);
+            RemotingCommand consumerResponse = this.brokerController.getBroker2Client()
+                    .callClient(clientChannelInfo.getChannel(), newRequest);
             return consumerResponse;
         }
         catch (RemotingTimeoutException e) {

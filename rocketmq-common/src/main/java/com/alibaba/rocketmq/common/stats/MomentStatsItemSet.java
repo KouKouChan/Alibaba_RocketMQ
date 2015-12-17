@@ -12,8 +12,7 @@ import com.alibaba.rocketmq.common.UtilAll;
 
 
 public class MomentStatsItemSet {
-    private final ConcurrentHashMap<String/* key */, MomentStatsItem> statsItemTable =
-            new ConcurrentHashMap<String, MomentStatsItem>(128);
+    private final ConcurrentHashMap<String/* key */, MomentStatsItem> statsItemTable = new ConcurrentHashMap<String, MomentStatsItem>(128);
 
     private final String statsName;
     private final ScheduledExecutorService scheduledExecutorService;
@@ -31,8 +30,7 @@ public class MomentStatsItemSet {
     public MomentStatsItem getAndCreateStatsItem(final String statsKey) {
         MomentStatsItem statsItem = this.statsItemTable.get(statsKey);
         if (null == statsItem) {
-            statsItem =
-                    new MomentStatsItem(this.statsName, statsKey, this.scheduledExecutorService, this.log);
+            statsItem = new MomentStatsItem(this.statsName, statsKey, this.scheduledExecutorService, this.log);
             MomentStatsItem prev = this.statsItemTable.put(statsKey, statsItem);
             // 说明是第一次插入
             if (null == prev) {
