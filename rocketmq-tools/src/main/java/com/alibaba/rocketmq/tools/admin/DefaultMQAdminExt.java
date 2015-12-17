@@ -26,16 +26,7 @@ import com.alibaba.rocketmq.common.admin.RollbackStats;
 import com.alibaba.rocketmq.common.admin.TopicStatsTable;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.message.MessageQueue;
-import com.alibaba.rocketmq.common.protocol.body.ClusterInfo;
-import com.alibaba.rocketmq.common.protocol.body.ConsumeMessageDirectlyResult;
-import com.alibaba.rocketmq.common.protocol.body.ConsumerConnection;
-import com.alibaba.rocketmq.common.protocol.body.ConsumerRunningInfo;
-import com.alibaba.rocketmq.common.protocol.body.GroupList;
-import com.alibaba.rocketmq.common.protocol.body.KVTable;
-import com.alibaba.rocketmq.common.protocol.body.ProducerConnection;
-import com.alibaba.rocketmq.common.protocol.body.QueueTimeSpan;
-import com.alibaba.rocketmq.common.protocol.body.SubscriptionGroupWrapper;
-import com.alibaba.rocketmq.common.protocol.body.TopicList;
+import com.alibaba.rocketmq.common.protocol.body.*;
 import com.alibaba.rocketmq.common.protocol.route.TopicRouteData;
 import com.alibaba.rocketmq.common.subscription.SubscriptionGroupConfig;
 import com.alibaba.rocketmq.remoting.RPCHook;
@@ -629,5 +620,11 @@ public class DefaultMQAdminExt extends ClientConfig implements MQAdminExt {
     public void cloneGroupOffset(String srcGroup, String destGroup, String topic, boolean isOffline, long timeoutMillis)
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
         this.defaultMQAdminExtImpl.cloneGroupOffset(srcGroup, destGroup, topic, isOffline, timeoutMillis);
+    }
+
+    @Override
+    public BrokerStatsData ViewBrokerStatsData(String brokerAddr, String statsName, String statsKey)
+            throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
+        return this.defaultMQAdminExtImpl.ViewBrokerStatsData(brokerAddr, statsName, statsKey);
     }
 }

@@ -37,6 +37,8 @@ import com.alibaba.rocketmq.common.protocol.header.*;
 import com.alibaba.rocketmq.common.protocol.header.filtersrv.RegisterFilterServerRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.filtersrv.RegisterFilterServerResponseHeader;
 import com.alibaba.rocketmq.common.protocol.heartbeat.SubscriptionData;
+import com.alibaba.rocketmq.common.stats.StatsItem;
+import com.alibaba.rocketmq.common.stats.StatsSnapshot;
 import com.alibaba.rocketmq.common.subscription.SubscriptionGroupConfig;
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
 import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
@@ -179,11 +181,70 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         case RequestCode.CLONE_GROUP_OFFSET:
             return this.cloneGroupOffset(ctx, request);
 
+            // 查看Broker统计信息
+        case RequestCode.VIEW_BROKER_STATS_DATA:
+            return ViewBrokerStatsData(ctx, request);
         default:
             break;
         }
 
         return null;
+    }
+
+
+    private RemotingCommand ViewBrokerStatsData(ChannelHandlerContext ctx, RemotingCommand request)
+            throws RemotingCommandException {
+        final ViewBrokerStatsDataRequestHeader requestHeader =
+                (ViewBrokerStatsDataRequestHeader) request
+                    .decodeCommandCustomHeader(ViewBrokerStatsDataRequestHeader.class);
+        final RemotingCommand response = RemotingCommand.createResponseCommand(null);
+        DefaultMessageStore messageStore = (DefaultMessageStore) this.brokerController.getMessageStore();
+
+        StatsItem statsItem =
+                messageStore.getBrokerStatsManager().getStatsItem(requestHeader.getStatsName(),
+                    requestHeader.getStatsKey());
+        if (null == statsItem) {
+            response.setCode(ResponseCode.SYSTEM_ERROR);
+            response.setRemark(String.format("The stats <%s> <%s> not exist", requestHeader.getStatsName(),
+                requestHeader.getStatsKey()));
+            return response;
+        }
+
+        BrokerStatsData brokerStatsData = new BrokerStatsData();
+        // 分钟
+        {
+            BrokerStatsItem it = new BrokerStatsItem();
+            StatsSnapshot ss = statsItem.getStatsDataInMinute();
+            it.setSum(ss.getSum());
+            it.setTps(ss.getTps());
+            it.setAvgpt(ss.getAvgpt());
+            brokerStatsData.setStatsMinute(it);
+        }
+
+        // 小时
+        {
+            BrokerStatsItem it = new BrokerStatsItem();
+            StatsSnapshot ss = statsItem.getStatsDataInHour();
+            it.setSum(ss.getSum());
+            it.setTps(ss.getTps());
+            it.setAvgpt(ss.getAvgpt());
+            brokerStatsData.setStatsHour(it);
+        }
+
+        // 天
+        {
+            BrokerStatsItem it = new BrokerStatsItem();
+            StatsSnapshot ss = statsItem.getStatsDataInDay();
+            it.setSum(ss.getSum());
+            it.setTps(ss.getTps());
+            it.setAvgpt(ss.getAvgpt());
+            brokerStatsData.setStatsDay(it);
+        }
+
+        response.setBody(brokerStatsData.encode());
+        response.setCode(ResponseCode.SUCCESS);
+        response.setRemark(null);
+        return response;
     }
 
 

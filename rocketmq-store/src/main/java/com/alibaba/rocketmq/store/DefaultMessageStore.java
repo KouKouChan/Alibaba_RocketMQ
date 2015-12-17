@@ -1911,4 +1911,9 @@ public class DefaultMessageStore implements MessageStore {
         }
         return false;
     }
+
+
+    public BrokerStatsManager getBrokerStatsManager() {
+        return brokerStatsManager;
+    }
 }

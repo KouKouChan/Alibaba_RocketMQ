@@ -7,6 +7,7 @@ import com.alibaba.rocketmq.common.stats.StatsItemSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -64,6 +65,8 @@ public class BrokerStatsManager {
     private final StatsItemSet sndbckPutNums = new StatsItemSet(SEND_BACK_PUT_NUMS, this.scheduledExecutorService, log);
 
 
+    private final HashMap<String, StatsItemSet> statsTable = new HashMap<String, StatsItemSet>();
+
     public BrokerStatsManager(String clusterName) {
         // Broker Put Nums
         this.brokerPutNums = new StatsItem(BROKER_PUT_NUMS, //
@@ -88,6 +91,16 @@ public class BrokerStatsManager {
 
     public void shutdown() {
         this.scheduledExecutorService.shutdown();
+    }
+
+
+    public StatsItem getStatsItem(final String statsName, final String statsKey) {
+        try {
+            return this.statsTable.get(statsName).getStatsItem(statsKey);
+        } catch (Exception e) {
+        }
+
+        return null;
     }
 
 
