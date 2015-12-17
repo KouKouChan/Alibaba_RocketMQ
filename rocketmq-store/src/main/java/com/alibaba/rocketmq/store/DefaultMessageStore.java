@@ -467,6 +467,9 @@ public class DefaultMessageStore implements MessageStore {
 
         GetMessageResult getResult = new GetMessageResult();
 
+        // 有个读写锁，所以只访问一次，避免锁开销影响性能
+        final long maxOffsetPy = this.commitLog.getMaxOffset();
+
         ConsumeQueue consumeQueue = findConsumeQueue(topic, queueId);
         if (consumeQueue != null) {
             minOffset = consumeQueue.getMinOffsetInQueue();
@@ -515,6 +518,7 @@ public class DefaultMessageStore implements MessageStore {
 
                         int i = 0;
                         final int MaxFilterMessageCount = 16000;
+                        boolean diskFallRecorded = false;
                         for (; i < bufferConsumeQueue.getSize() && i < MaxFilterMessageCount;
                              i += ConsumeQueue.CQStoreUnitSize) {
                             long offsetPy = bufferConsumeQueue.getByteBuffer().getLong();
@@ -530,7 +534,7 @@ public class DefaultMessageStore implements MessageStore {
                             }
 
                             // 判断是否拉磁盘数据
-                            boolean isInDisk = checkInDiskByCommitOffset(offsetPy);
+                            boolean isInDisk = checkInDiskByCommitOffset(offsetPy, maxOffsetPy);
                             // 此批消息达到上限了
                             if (this.isTheBatchFull(sizePy, maxMsgNums, getResult.getBufferTotalSize(),
                                     getResult.getMessageCount(), isInDisk)) {
@@ -548,11 +552,12 @@ public class DefaultMessageStore implements MessageStore {
                                     status = GetMessageStatus.FOUND;
                                     nextPhyFileStartOffset = Long.MIN_VALUE;
 
-                                    // 统计消息数据
-                                    if (isInDisk && brokerStatsManager != null) {
-                                        brokerStatsManager.incGroupGetFromDiskNums(group, topic, 1);
-                                        brokerStatsManager.incGroupGetFromDiskSize(group, topic, selectResult.getSize());
-                                        brokerStatsManager.incBrokerGetFromDiskNums(1);
+                                    // 统计读取磁盘落后情况
+                                    if (diskFallRecorded) {
+                                        diskFallRecorded = true;
+                                        long fallBehind = consumeQueue.getMaxPhysicOffset() - offsetPy;
+                                        brokerStatsManager.recordDiskFallBehind(group, topic, queueId,
+                                            fallBehind);
                                     }
                                 } else {
                                     if (getResult.getBufferTotalSize() == 0) {
@@ -1881,25 +1886,28 @@ public class DefaultMessageStore implements MessageStore {
     }
 
 
-    private boolean checkInDiskByCommitOffset(long offsetPy) {
-        long maxOffsetPy = this.commitLog.getMaxOffset();
-        long memory = (long) (StoreUtil.TotalPhysicalMemorySize * (this.messageStoreConfig
-                .getAccessMessageInMemoryMaxRatio() / 100.0));
+    private boolean checkInDiskByCommitOffset(long offsetPy, long maxOffsetPy) {
+        long memory = (long) (StoreUtil.TotalPhysicalMemorySize * (this.messageStoreConfig.getAccessMessageInMemoryMaxRatio() / 100.0));
         return maxOffsetPy - offsetPy > memory;
     }
 
 
     @Override
     public boolean checkInDiskByConsumeOffset(final String topic, final int queueId, long consumeOffset) {
+
+        // 有个读写锁，所以只访问一次，避免锁开销影响性能
+        final long maxOffsetPy = this.commitLog.getMaxOffset();
+
         ConsumeQueue consumeQueue = findConsumeQueue(topic, queueId);
         if (consumeQueue != null) {
             SelectMappedBufferResult bufferConsumeQueue = consumeQueue.getIndexBuffer(consumeOffset);
             if (bufferConsumeQueue != null) {
                 try {
-                    int i = 0;
-                    for (; i < bufferConsumeQueue.getSize(); i += ConsumeQueue.CQStoreUnitSize) {
+                    for (int i = 0; i < bufferConsumeQueue.getSize(); i += ConsumeQueue.CQStoreUnitSize) {
                         long offsetPy = bufferConsumeQueue.getByteBuffer().getLong();
-                        return checkInDiskByCommitOffset(offsetPy);
+                        if (checkInDiskByCommitOffset(offsetPy, maxOffsetPy)) {
+                            return true;
+                        }
                     }
                 } finally {
                     // 必须释放资源
