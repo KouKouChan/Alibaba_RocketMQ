@@ -284,8 +284,7 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                         backTopic = correctTopic;
                     }
 
-                    this.brokerController.getBrokerStatsManager().incSendBackNums(requestHeader.getGroup(),
-                            backTopic);
+                    this.brokerController.getBrokerStatsManager().incSendBackNums(requestHeader.getGroup(), backTopic);
 
                     response.setCode(ResponseCode.SUCCESS);
                     response.setRemark(null);

@@ -194,19 +194,17 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
 
     private RemotingCommand ViewBrokerStatsData(ChannelHandlerContext ctx, RemotingCommand request)
             throws RemotingCommandException {
-        final ViewBrokerStatsDataRequestHeader requestHeader =
-                (ViewBrokerStatsDataRequestHeader) request
-                    .decodeCommandCustomHeader(ViewBrokerStatsDataRequestHeader.class);
+        final ViewBrokerStatsDataRequestHeader requestHeader = (ViewBrokerStatsDataRequestHeader) request
+                .decodeCommandCustomHeader(ViewBrokerStatsDataRequestHeader.class);
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
         DefaultMessageStore messageStore = (DefaultMessageStore) this.brokerController.getMessageStore();
 
-        StatsItem statsItem =
-                messageStore.getBrokerStatsManager().getStatsItem(requestHeader.getStatsName(),
-                    requestHeader.getStatsKey());
+        StatsItem statsItem = messageStore.getBrokerStatsManager().getStatsItem(requestHeader.getStatsName(),
+                requestHeader.getStatsKey());
         if (null == statsItem) {
             response.setCode(ResponseCode.SYSTEM_ERROR);
             response.setRemark(String.format("The stats <%s> <%s> not exist", requestHeader.getStatsName(),
-                requestHeader.getStatsKey()));
+                    requestHeader.getStatsKey()));
             return response;
         }
 

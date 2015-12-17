@@ -62,11 +62,10 @@ public class StatsAllSubCommand implements SubCommand {
     }
 
 
-    public static void printTopicDetail(final DefaultMQAdminExt admin, final String topic,
-            final boolean activeTopic) throws RemotingException, MQClientException, InterruptedException,
-            MQBrokerException {
-        TopicRouteData topicRouteData = admin.examineTopicRouteInfo(topic);
+    public static void printTopicDetail(final DefaultMQAdminExt admin, final String topic, final boolean activeTopic)
+            throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
 
+        TopicRouteData topicRouteData = admin.examineTopicRouteInfo(topic);
         GroupList groupList = admin.queryTopicConsumeByWho(topic);
 
         double inTPS = 0;
@@ -78,12 +77,10 @@ public class StatsAllSubCommand implements SubCommand {
             String masterAddr = bd.getBrokerAddrs().get(MixAll.MASTER_ID);
             if (masterAddr != null) {
                 try {
-                    BrokerStatsData bsd =
-                            admin.ViewBrokerStatsData(masterAddr, BrokerStatsManager.TOPIC_PUT_NUMS, topic);
+                    BrokerStatsData bsd = admin.ViewBrokerStatsData(masterAddr, BrokerStatsManager.TOPIC_PUT_NUMS, topic);
                     inTPS += bsd.getStatsMinute().getTps();
                     inMsgCntToday += compute24HourSum(bsd);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                 }
             }
         }
@@ -168,8 +165,7 @@ public class StatsAllSubCommand implements SubCommand {
 
                 try {
                     printTopicDetail(defaultMQAdminExt, topic, activeTopic);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                 }
             }
         }
@@ -183,7 +179,7 @@ public class StatsAllSubCommand implements SubCommand {
 
 
     public static void main(String[] args) {
-        System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, "10.101.87.102:9876");
+        System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, "172.30.30.233:9876");
         MQAdminStartup.main(new String[] { new StatsAllSubCommand().commandName() });
     }
 }
