@@ -58,8 +58,8 @@ public class MomentStatsItemSet {
             public void run() {
                 try {
                     printAtMinutes();
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
+                    // ignore
                 }
             }
         }, Math.abs(UtilAll.computNextMinutesTimeMillis() - System.currentTimeMillis()), //
@@ -68,9 +68,7 @@ public class MomentStatsItemSet {
 
 
     private void printAtMinutes() {
-        Iterator<Entry<String, MomentStatsItem>> it = this.statsItemTable.entrySet().iterator();
-        while (it.hasNext()) {
-            Entry<String, MomentStatsItem> next = it.next();
+        for (Entry<String, MomentStatsItem> next : this.statsItemTable.entrySet()) {
             next.getValue().printAtMinutes();
         }
     }

@@ -518,7 +518,6 @@ public class DefaultMessageStore implements MessageStore {
 
                         int i = 0;
                         final int MaxFilterMessageCount = 16000;
-                        boolean diskFallRecorded = false;
                         for (; i < bufferConsumeQueue.getSize() && i < MaxFilterMessageCount;
                              i += ConsumeQueue.CQStoreUnitSize) {
                             long offsetPy = bufferConsumeQueue.getByteBuffer().getLong();
@@ -543,21 +542,17 @@ public class DefaultMessageStore implements MessageStore {
 
                             // 消息过滤
                             if (this.messageFilter.isMessageMatched(subscriptionData, tagsCode)) {
-                                SelectMappedBufferResult selectResult =
-                                        this.commitLog.getMessage(offsetPy, sizePy);
+                                SelectMappedBufferResult selectResult = this.commitLog.getMessage(offsetPy, sizePy);
                                 if (selectResult != null) {
-                                    this.storeStatsService.getGetMessageTransferredMsgCount()
-                                            .incrementAndGet();
+                                    this.storeStatsService.getGetMessageTransferredMsgCount().incrementAndGet();
                                     getResult.addMessage(selectResult);
                                     status = GetMessageStatus.FOUND;
                                     nextPhyFileStartOffset = Long.MIN_VALUE;
 
                                     // 统计读取磁盘落后情况
-                                    if (diskFallRecorded) {
-                                        diskFallRecorded = true;
+                                    if (isInDisk && null != brokerStatsManager) {
                                         long fallBehind = consumeQueue.getMaxPhysicOffset() - offsetPy;
-                                        brokerStatsManager.recordDiskFallBehind(group, topic, queueId,
-                                            fallBehind);
+                                        brokerStatsManager.recordDiskFallBehind(group, topic, queueId, fallBehind);
                                     }
                                 } else {
                                     if (getResult.getBufferTotalSize() == 0) {
