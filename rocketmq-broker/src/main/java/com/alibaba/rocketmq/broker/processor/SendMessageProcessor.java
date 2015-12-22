@@ -379,7 +379,8 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                     requestHeader.getTopic(), //
                     requestHeader.getDefaultTopic(), //
                     RemotingHelper.parseChannelRemoteAddr(ctx.channel()), //
-                    requestHeader.getDefaultTopicQueueNums(), topicSysFlag);
+                    requestHeader.getDefaultTopicQueueNums(),
+                    topicSysFlag);
 
             // 尝试看下是否是失败消息发回
             if (null == topicConfig) {
@@ -536,6 +537,7 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                     }
                 }
 
+                // Notify pull requests from consumers.
                 if (this.brokerController.getBrokerConfig().isLongPollingEnable()) {
                     this.brokerController.getPullRequestHoldService().notifyMessageArriving(
                             requestHeader.getTopic(), queueIdInt,

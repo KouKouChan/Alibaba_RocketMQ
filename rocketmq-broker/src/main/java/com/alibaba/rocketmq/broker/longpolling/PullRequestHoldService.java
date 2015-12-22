@@ -94,7 +94,7 @@ public class PullRequestHoldService extends ServiceThread {
 
                 for (PullRequest request : requestList) {
                     // 查看是否offset OK
-                    if (maxOffset > request.getPullFromThisOffset()) {
+                    if (maxOffset > request.getPullFromOffset()) {
                         try {
                             this.brokerController.getPullMessageProcessor().executeRequestWhenWakeUp(
                                     request.getClientChannel(), request.getRequestCommand());
@@ -108,7 +108,7 @@ public class PullRequestHoldService extends ServiceThread {
                     else {
                         final long newestOffset =
                                 this.brokerController.getMessageStore().getMaxOffsetInQueue(topic, queueId);
-                        if (newestOffset > request.getPullFromThisOffset()) {
+                        if (newestOffset > request.getPullFromOffset()) {
                             try {
                                 this.brokerController.getPullMessageProcessor().executeRequestWhenWakeUp(
                                         request.getClientChannel(), request.getRequestCommand());
