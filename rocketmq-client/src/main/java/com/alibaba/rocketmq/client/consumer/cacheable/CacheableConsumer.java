@@ -4,6 +4,8 @@ import com.alibaba.rocketmq.client.ClientStatus;
 import com.alibaba.rocketmq.client.consumer.DefaultMQPushConsumer;
 import com.alibaba.rocketmq.client.consumer.rebalance.AllocateMessageQueueByDataCenter;
 import com.alibaba.rocketmq.client.exception.MQClientException;
+import com.alibaba.rocketmq.client.impl.MQClientManager;
+import com.alibaba.rocketmq.client.impl.factory.MQClientInstance;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.producer.concurrent.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
@@ -120,7 +122,8 @@ public class CacheableConsumer {
 
             for (int i = 0; i < numberOfEmbeddedConsumers; i++) {
                 DefaultMQPushConsumer defaultMQPushConsumer = new DefaultMQPushConsumer(consumerGroupName);
-                defaultMQPushConsumer.setAllocateMessageQueueStrategy(new AllocateMessageQueueByDataCenter(defaultMQPushConsumer));
+                MQClientInstance clientInstance = MQClientManager.getInstance().getAndCreateMQClientInstance(defaultMQPushConsumer, null);
+                defaultMQPushConsumer.setAllocateMessageQueueStrategy(new AllocateMessageQueueByDataCenter(clientInstance));
                 defaultMQPushConsumer.setInstanceName(getInstanceName());
                 defaultMQPushConsumer.setMessageModel(messageModel);
                 defaultMQPushConsumer.setConsumeFromWhere(consumeFromWhere);
