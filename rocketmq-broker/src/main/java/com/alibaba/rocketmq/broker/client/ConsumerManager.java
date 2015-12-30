@@ -96,7 +96,7 @@ public class ConsumerManager {
                 if (info.getChannelInfoTable().isEmpty()) {
                     ConsumerGroupInfo remove = this.consumerTable.remove(next.getKey());
                     if (remove != null) {
-                        log.info("Unregister consumer isOK, no any connection, and remove consumer group, {}",
+                        log.info("Unregister consumer is OK, no any connection, and remove consumer group, {}",
                                 next.getKey());
                     }
                 }
