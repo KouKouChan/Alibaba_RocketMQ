@@ -524,11 +524,13 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                     this.offsetStore =
                             new LocalFileOffsetStore(this.mQClientFactory,
                                 this.defaultMQPullConsumer.getConsumerGroup());
+                    defaultMQPullConsumer.setOffsetStore(offsetStore);
                     break;
                 case CLUSTERING:
                     this.offsetStore =
                             new RemoteBrokerOffsetStore(this.mQClientFactory,
                                 this.defaultMQPullConsumer.getConsumerGroup());
+                    defaultMQPullConsumer.setOffsetStore(offsetStore);
                     break;
                 default:
                     break;
