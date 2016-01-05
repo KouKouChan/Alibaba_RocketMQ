@@ -307,6 +307,11 @@ public class DefaultMQPullConsumer extends ClientConfig implements MQPullConsume
         this.defaultMQPullConsumerImpl.updateConsumeOffset(mq, offset);
     }
 
+    @Override
+    public void updateConsumeOffset(MessageQueue messageQueue, long offset, boolean increaseOnly)
+            throws MQClientException {
+        this.defaultMQPullConsumerImpl.updateConsumeOffset(messageQueue, offset, increaseOnly);
+    }
 
     @Override
     public long fetchConsumeOffset(MessageQueue mq, boolean fromStore) throws MQClientException {
