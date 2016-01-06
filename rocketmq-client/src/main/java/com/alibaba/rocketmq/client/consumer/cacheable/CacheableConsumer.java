@@ -123,13 +123,11 @@ public class CacheableConsumer {
             for (int i = 0; i < numberOfEmbeddedConsumers; i++) {
                 DefaultMQPushConsumer defaultMQPushConsumer = new DefaultMQPushConsumer(consumerGroupName);
 
-                if (messageModel == MessageModel.CLUSTERING) {
-                    defaultMQPushConsumer.changeInstanceNameToPID();
-                }
+                // instance name should be set before getAndCreateMQClientInstance
+                defaultMQPushConsumer.setInstanceName(getInstanceName());
 
                 MQClientInstance clientInstance = MQClientManager.getInstance().getAndCreateMQClientInstance(defaultMQPushConsumer, null);
                 defaultMQPushConsumer.setAllocateMessageQueueStrategy(new AllocateMessageQueueByDataCenter(clientInstance));
-                defaultMQPushConsumer.setInstanceName(getInstanceName());
                 defaultMQPushConsumer.setMessageModel(messageModel);
                 defaultMQPushConsumer.setConsumeFromWhere(consumeFromWhere);
                 defaultMQPushConsumer.setPullBatchSize(pullBatchSize);
