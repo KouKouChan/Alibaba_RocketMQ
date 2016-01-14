@@ -32,14 +32,13 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import sun.management.ManagementFactory;
+import java.lang.management.ManagementFactory;
 
 import com.sun.management.OperatingSystemMXBean;
 
 
 /**
- * ¸÷ÖÖ·½·¨´óÔÓ»â
+ * ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó»ï¿½
  * 
  * @author vintage.wang@gmail.com shijia.wxr@taobao.com
  * @author lansheng.zj@taobao.com
@@ -287,9 +286,9 @@ public class MixAll {
 
 
     /**
-     * »ñÈ¡»úÆ÷µÄÎïÀíÄÚ´æ
+     * ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½
      * 
-     * @return µ¥Î»×Ö½Ú
+     * @return ï¿½ï¿½Î»ï¿½Ö½ï¿½
      */
     public static long getTotalPhysicalMemorySize() {
         OperatingSystemMXBean osmxb = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
@@ -313,7 +312,7 @@ public class MixAll {
 
 
     /**
-     * ×Ö·û´®×ª»¯³ÉProperties ×Ö·û´®ºÍPropertiesÅäÖÃÎÄ¼þ¸ñÊ½Ò»Ñù
+     * ï¿½Ö·ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½Properties ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Propertiesï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ê½Ò»ï¿½ï¿½
      */
     public static Properties string2Properties(final String str) {
         Properties properties = new Properties();
@@ -335,7 +334,7 @@ public class MixAll {
 
 
     /**
-     * ½«¶ÔÏó¸÷³ÉÔ±ÊôÐÔÖµ×ª»¯ÎªProperties
+     * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½Öµ×ªï¿½ï¿½ÎªProperties
      */
     public static Properties object2Properties(final Object object) {
         Properties properties = new Properties();
@@ -369,7 +368,7 @@ public class MixAll {
 
 
     /**
-     * ½«PropertiesÖÐµÄÖµÐ´ÈëObject
+     * ï¿½ï¿½Propertiesï¿½Ðµï¿½ÖµÐ´ï¿½ï¿½Object
      */
     public static void properties2Object(final Properties p, final Object object) {
         Method[] methods = object.getClass().getMethods();
