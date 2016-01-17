@@ -152,13 +152,15 @@ public class ConsumerOffsetManager extends ConfigManager {
     private void commitOffset(final String key, final int queueId, final long offset) {
         ConcurrentHashMap<Integer, Long> map = this.offsetTable.get(key);
         if (null == map) {
-            map = new ConcurrentHashMap<Integer, Long>(32);
-            map.put(queueId, offset);
-            this.offsetTable.put(key, map);
+            ConcurrentHashMap<Integer, Long> queueOffsets = new ConcurrentHashMap<Integer, Long>(32);
+            if (null == offsetTable.putIfAbsent(key, queueOffsets)) {
+                map = queueOffsets;
+            } else {
+                map = offsetTable.get(key);
+            }
         }
-        else {
-            map.put(queueId, offset);
-        }
+
+        map.put(queueId, offset);
     }
 
 
