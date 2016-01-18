@@ -403,7 +403,7 @@ public class MappedFile extends ReferenceResource {
     /**
      * 清理资源，destroy与调用shutdown的线程必须是同一个
      * 
-     * @return 是否被destory成功，上层调用需要对失败情况处理，失败后尝试重试
+     * @return 是否被destroy成功，上层调用需要对失败情况处理，失败后尝试重试
      */
     public boolean destroy(final long intervalForcibly) {
         this.shutdown(intervalForcibly);

@@ -82,8 +82,7 @@ public class ConsumerOffsetManager extends ConfigManager {
 
         while (it.hasNext() && result) {
             Entry<Integer, Long> next = it.next();
-            long minOffsetInStore =
-                    this.brokerController.getMessageStore().getMinOffsetInQueue(topic, next.getKey());
+            long minOffsetInStore = this.brokerController.getMessageStore().getMinOffsetInQueue(topic, next.getKey());
             long offsetInPersist = next.getValue();
             if (offsetInPersist > minOffsetInStore) {
                 result = false;
@@ -221,15 +220,12 @@ public class ConsumerOffsetManager extends ConfigManager {
             String[] topicGroupArr = topicGroup.split(TOPIC_GROUP_SEPARATOR);
             if (topic.equals(topicGroupArr[0])) {
                 for (Entry<Integer, Long> entry : this.offsetTable.get(topicGroup).entrySet()) {
-                    long minOffset =
-                            this.brokerController.getMessageStore()
-                                .getMinOffsetInQueue(topic, entry.getKey());
+                    long minOffset = this.brokerController.getMessageStore().getMinOffsetInQueue(topic, entry.getKey());
                     if (entry.getValue() >= minOffset) {
                         Long offset = queueMinOffset.get(entry.getKey());
                         if (offset == null) {
                             queueMinOffset.put(entry.getKey(), Math.min(Long.MAX_VALUE, entry.getValue()));
-                        }
-                        else {
+                        } else {
                             queueMinOffset.put(entry.getKey(), Math.min(entry.getValue(), offset));
                         }
                     }
@@ -248,8 +244,7 @@ public class ConsumerOffsetManager extends ConfigManager {
 
 
     public void cloneOffset(final String srcGroup, final String dstGroup, final String topic) {
-        ConcurrentHashMap<Integer, Long> offsets =
-                this.offsetTable.get(topic + TOPIC_GROUP_SEPARATOR + srcGroup);
+        ConcurrentHashMap<Integer, Long> offsets = this.offsetTable.get(topic + TOPIC_GROUP_SEPARATOR + srcGroup);
         if (offsets != null) {
             this.offsetTable.put(topic + TOPIC_GROUP_SEPARATOR + dstGroup, offsets);
         }
