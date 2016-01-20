@@ -3,14 +3,18 @@
  */
 package com.ndpmedia.rocketmq.store.tool;
 
+import com.alibaba.rocketmq.client.exception.MQClientException;
+import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
+import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +26,7 @@ public class LocalMessageStoreVerificationTool {
 
     private static final int MAGIC_CODE = 0xAABBCCDD ^ 1880681586 + 8;
 
+    private static DefaultMQProducer producer;
 
     public static void main(String[] args) throws IOException {
         if (1 != args.length) {
@@ -29,7 +34,18 @@ public class LocalMessageStoreVerificationTool {
             return;
         }
 
+        try {
+            System.setProperty("enable_ssl", "true");
+            producer = new DefaultMQProducer("Tool");
+            producer.start();
+        } catch (MQClientException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
         checkRecursively(new File(args[0]));
+
+        producer.shutdown();
     }
 
     private static void checkRecursively(File file) throws IOException {
@@ -57,8 +73,23 @@ public class LocalMessageStoreVerificationTool {
 
     private static void checkFile(File file) throws IOException {
 
+        File log = new File(new File(System.getProperty("user.home")), "fail.log");
+        if (!log.getParentFile().exists()) {
+            if (!log.getParentFile().mkdirs()) {
+                System.exit(1);
+            }
+        }
+
+        if (!log.exists()) {
+            if (!log.createNewFile()) {
+                System.exit(1);
+            }
+        }
+
+        BufferedWriter bos = new BufferedWriter(new FileWriter(log, true));
         RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
         boolean hasError = false;
+        int count = 0;
         while (randomAccessFile.getFilePointer() + 4 + 4 < randomAccessFile.length()) {
             int msgSize = randomAccessFile.readInt();
             int magicCode = randomAccessFile.readInt();
@@ -67,18 +98,49 @@ public class LocalMessageStoreVerificationTool {
                 System.err.println("Illegal magic code found! Position: " + (randomAccessFile.getFilePointer() - 4));
                 System.err.println("Illegal Code: [" + magicCode + "], Assumed Code: [" + MAGIC_CODE + "]");
                 hasError = true;
-                break;
+                // break;
             }
+            long pos = 0;
+            if (!hasError) {
+                byte[] data = new byte[msgSize - 4 - 4];
+                randomAccessFile.readFully(data);
+                ByteBuffer byteBuffer = ByteBuffer.allocate(msgSize);
+                byteBuffer.putInt(msgSize);
+                byteBuffer.putInt(magicCode);
+                byteBuffer.put(data);
+                byteBuffer.flip();
+                Message message = MessageDecoder.decode(byteBuffer, true, true);
+                System.out.println("Msg Count: " + (++count));
+                if (count > 2012) {
+                    if (message.getTopic().equals("T_YMREDIRECTOR_QUEUE_DRUID")) {
+                        try {
+                            producer.send(message);
+                        } catch (Exception e) {
+                            bos.write(String.valueOf(count));
+                            bos.newLine();
+                            bos.flush();
+                        }
+                        System.out.println(message.getTopic());
+                        System.out.println("Msg Size: " + msgSize);
+                        System.out.println("Msg Body: " + new String(message.getBody(), "UTF-8"));
+                    }
+                }
+            } else {
+                while (randomAccessFile.readInt() != MAGIC_CODE) {
 
-            byte[] data = new byte[msgSize - 4 - 4];
-            randomAccessFile.readFully(data);
-            ByteBuffer byteBuffer = ByteBuffer.allocate(msgSize);
-            byteBuffer.putInt(msgSize);
-            byteBuffer.putInt(magicCode);
-            MessageDecoder.decode(byteBuffer);
-            System.out.println("Msg Size: " + msgSize);
-            System.out.println("MSG Body: " + new String(data, Charset.forName("UTF-8")));
+                    if (randomAccessFile.getFilePointer() >= randomAccessFile.length()) {
+                        break;
+                    }
+
+                    // keep reading
+                }
+                randomAccessFile.seek(randomAccessFile.getFilePointer() - 8);
+                hasError = false;
+            }
         }
+
+        randomAccessFile.close();
+        bos.close();
 
         if (hasError) {
             System.err.println("Fatal: File " + file.getAbsolutePath() + " is tampered!");
