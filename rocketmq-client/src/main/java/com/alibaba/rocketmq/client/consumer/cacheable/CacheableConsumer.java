@@ -16,7 +16,9 @@ import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatisti
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -349,6 +351,7 @@ public class CacheableConsumer {
 
     /**
      * This method shuts down this client properly.
+     * @throws InterruptedException If unable to shut down within 1 minute.
      */
     public void shutdown() {
         LOGGER.info("Start to shutdown");

@@ -127,6 +127,9 @@ public interface MQPullConsumer extends MQConsumer {
     public void updateConsumeOffset(final MessageQueue mq, final long offset) throws MQClientException;
 
 
+    public void updateConsumeOffset(final MessageQueue messageQueue, final long offset, boolean increaseOnly)
+            throws MQClientException;
+
     /**
      * 获取消费进度，返回-1表示出错
      * 

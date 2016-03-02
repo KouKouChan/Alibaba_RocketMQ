@@ -807,18 +807,19 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
                     }
 
                     if (readOffSet.longValue() + 4 > readRandomAccessFile.length()) {
-                        LOGGER.error("Data inconsistent!");
+                        LOGGER.error("Data Inconsistent: offset overflow.");
                         break;
                     }
                     int messageSize = readRandomAccessFile.readInt();
 
                     int magicCode = readRandomAccessFile.readInt();
                     if (magicCode != MessageEncoder.MAGIC_CODE) {
-                        LOGGER.error("Data inconsistent!");
+                        LOGGER.error("Data Inconsistent: Magic Code Illegal.");
+                        break;
                     }
 
                     if (readOffSet.longValue() + messageSize > readRandomAccessFile.length()) {
-                        LOGGER.error("Data inconsistent!");
+                        LOGGER.error("Data Inconsistent: Offset Overflow");
                         break;
                     }
 

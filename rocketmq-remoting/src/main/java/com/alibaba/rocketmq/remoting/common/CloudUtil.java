@@ -6,10 +6,7 @@ package com.alibaba.rocketmq.remoting.common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 
 public final class CloudUtil {
 
@@ -17,9 +14,16 @@ public final class CloudUtil {
 
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
-    private static final String AWS_EC2_QUERY_PUBLIC_IPV4_COMMAND = "ec2metadata --public-ipv4";
+    private static final String AWS_EC2_METADATA_COMMAND = "/usr/bin/ec2metadata";
+
+    private static final String AWS_EC2_QUERY_PUBLIC_IPV4_COMMAND = AWS_EC2_METADATA_COMMAND + " --public-ipv4";
 
     private CloudUtil() {
+    }
+
+    public static boolean isEC2Instance() {
+        File file = new File(AWS_EC2_METADATA_COMMAND);
+        return file.exists() && file.canExecute();
     }
 
     /**
@@ -27,6 +31,10 @@ public final class CloudUtil {
      * @return Public IPv4 address of the current EC2 instance; null if it's not AWS EC2.
      */
     public static String awsEC2QueryPublicIPv4() {
+        if (!isEC2Instance()) {
+            return null;
+        }
+
         return executeCommand(AWS_EC2_QUERY_PUBLIC_IPV4_COMMAND);
     }
 
