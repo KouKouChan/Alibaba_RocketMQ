@@ -415,7 +415,7 @@ public class CacheableConsumer {
 
     public void suspend() {
 
-        if (ClientStatus.ACTIVE != status) {
+        if (ClientStatus.SUSPENDED == status) {
             return;
         }
 

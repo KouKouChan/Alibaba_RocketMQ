@@ -47,8 +47,6 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
 
     private MQClientInstance clientInstance;
 
-    public AllocateMessageQueueByDataCenter(MQClientInstance clientInstance) {
-        this.clientInstance = clientInstance;
     private static final String DOCKER_DC_INDEX_ENV_KEY = "ROCKETMQ_DC_INDEX";
 
     private static final String DOCKER_DC_INDEX_KEY = "DCIndex";
@@ -381,6 +379,14 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
             return -1;
         }
         String clientIP = clientID.split("@")[0];
+
+        String dcIndex = System.getenv(DOCKER_DC_INDEX_ENV_KEY);
+        if (null == dcIndex) {
+            dcIndex = System.getProperty(DOCKER_DC_INDEX_KEY);
+        }
+        if (null != dcIndex && dcIndex.trim().length() > 0) {
+            return Integer.parseInt(dcIndex);
+        }
 
         Matcher matcher = MQHelper.IP_PATTERN.matcher(clientIP);
 
