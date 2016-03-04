@@ -33,6 +33,10 @@ public class NettyClientConfig {
     // channel超过1分钟不被访问 就关闭
     private long channelNotActiveInterval = 1000 * 60;
 
+    /**
+     * IdleStateEvent will be triggered when neither read nor write was performed for
+     * the specified period of this time. Specify {@code 0} to disable
+     */
     private int clientChannelMaxIdleTimeSeconds = 120;
 
     private int clientSocketSndBufSize = NettySystemConfig.SocketSndbufSize;

@@ -34,7 +34,7 @@ public abstract class ServiceThread implements Runnable {
     protected final Thread thread;
 
     // 线程回收时间，默认90S
-    private static final long JoinTime = 90 * 1000;
+    private static final long JOIN_TIME = 90 * 1000;
 
     // 是否已经被Notify过
     protected volatile boolean hasNotified = false;
@@ -157,6 +157,6 @@ public abstract class ServiceThread implements Runnable {
 
 
     public long getJoinTime() {
-        return JoinTime;
+        return JOIN_TIME;
     }
 }

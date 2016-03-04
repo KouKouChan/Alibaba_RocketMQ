@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2010-2013 Alibaba Group Holding Limited
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,16 +24,7 @@ import com.alibaba.rocketmq.common.admin.RollbackStats;
 import com.alibaba.rocketmq.common.admin.TopicStatsTable;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.message.MessageQueue;
-import com.alibaba.rocketmq.common.protocol.body.ClusterInfo;
-import com.alibaba.rocketmq.common.protocol.body.ConsumeMessageDirectlyResult;
-import com.alibaba.rocketmq.common.protocol.body.ConsumerConnection;
-import com.alibaba.rocketmq.common.protocol.body.ConsumerRunningInfo;
-import com.alibaba.rocketmq.common.protocol.body.GroupList;
-import com.alibaba.rocketmq.common.protocol.body.KVTable;
-import com.alibaba.rocketmq.common.protocol.body.ProducerConnection;
-import com.alibaba.rocketmq.common.protocol.body.QueueTimeSpan;
-import com.alibaba.rocketmq.common.protocol.body.SubscriptionGroupWrapper;
-import com.alibaba.rocketmq.common.protocol.body.TopicList;
+import com.alibaba.rocketmq.common.protocol.body.*;
 import com.alibaba.rocketmq.common.protocol.route.TopicRouteData;
 import com.alibaba.rocketmq.common.subscription.SubscriptionGroupConfig;
 import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
@@ -53,7 +44,7 @@ import java.util.Set;
 /**
  * MQ管理类接口，涉及所有与MQ管理相关的对外接口<br>
  * 包括Topic创建、订阅组创建、配置修改等
- * 
+ *
  * @since 2013-7-14
  */
 public interface MQAdminExt extends MQAdmin {
@@ -65,7 +56,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 更新Broker配置
-     * 
+     *
      * @param brokerAddr
      * @param properties
      * @throws MQBrokerException
@@ -85,7 +76,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 向指定Broker创建或者更新Topic配置
-     * 
+     *
      * @param addr
      * @param config
      * @throws MQClientException
@@ -101,7 +92,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 向指定Broker创建或者更新订阅组配置
-     * 
+     *
      * @param addr
      * @param config
      * @throws MQClientException
@@ -113,12 +104,12 @@ public interface MQAdminExt extends MQAdmin {
             throws RemotingException, MQBrokerException, InterruptedException, MQClientException;
 
     public void createAndUpdateSubscriptionGroupConfig(final String addr, final SubscriptionGroupConfig config,
-            final long timeoutMillis)
+                                                       final long timeoutMillis)
             throws RemotingException, MQBrokerException, InterruptedException, MQClientException;
 
     /**
      * 查询指定Broker的订阅组配置
-     * 
+     *
      * @param addr
      * @param group
      * @return
@@ -131,7 +122,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 查询指定Broker的Topic配置
-     * 
+     *
      * @param addr
      * @param topic
      * @return
@@ -141,7 +132,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 查询Topic Offset信息
-     * 
+     *
      * @param topic
      * @return
      */
@@ -153,7 +144,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 从Name Server获取所有Topic列表
-     * 
+     *
      * @return
      * @throws InterruptedException
      * @throws MQClientException
@@ -167,7 +158,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 获取Broker运行时数据
-     * 
+     *
      * @return
      * @throws MQBrokerException
      * @throws InterruptedException
@@ -184,7 +175,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 查询消费进度
-     * 
+     *
      * @param consumerGroup
      * @return
      * @throws InterruptedException
@@ -198,9 +189,10 @@ public interface MQAdminExt extends MQAdmin {
 
     public ConsumeStats examineConsumeStats(final String consumerGroup, final long timeoutMillis) throws RemotingException,
             MQClientException, InterruptedException, MQBrokerException;
+
     /**
      * 查看集群信息
-     * 
+     *
      * @return
      */
     public ClusterInfo examineBrokerClusterInfo() throws InterruptedException, MQBrokerException,
@@ -209,9 +201,10 @@ public interface MQAdminExt extends MQAdmin {
 
     public ClusterInfo examineBrokerClusterInfo(final long timeoutMillis) throws InterruptedException, MQBrokerException,
             RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException;
+
     /**
      * 查看Topic路由信息
-     * 
+     *
      * @param topic
      * @return
      */
@@ -223,7 +216,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 查看Consumer网络连接、订阅关系
-     * 
+     *
      * @param consumerGroup
      * @return
      * @throws MQBrokerException
@@ -244,7 +237,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 查看Producer网络连接
-     * 
+     *
      * @param producerGroup
      * @param topic
      * @return
@@ -257,12 +250,12 @@ public interface MQAdminExt extends MQAdmin {
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
 
     public ProducerConnection examineProducerConnectionInfo(final String producerGroup, final String topic,
-            final long timeoutMillis)
+                                                            final long timeoutMillis)
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
 
     /**
      * 获取Name Server地址列表
-     * 
+     *
      * @return
      */
     public List<String> getNameServerAddressList();
@@ -270,7 +263,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 清除某个Broker的写权限，针对所有Name Server
-     * 
+     *
      * @param brokerName
      * @return 返回清除了多少个topic
      * @throws MQClientException
@@ -290,7 +283,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 向Name Server增加一个配置项
-     * 
+     *
      * @param namespace
      * @param key
      * @param value
@@ -300,7 +293,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 从Name Server获取一个配置项
-     * 
+     *
      * @param namespace
      * @param key
      * @return
@@ -314,7 +307,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 获取指定Namespace下的所有kv
-     * 
+     *
      * @param namespace
      * @return
      * @throws InterruptedException
@@ -329,7 +322,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 删除 broker 上的 topic 信息
-     * 
+     *
      * @param addrs
      * @param topic
      * @throws RemotingException
@@ -346,7 +339,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 删除 broker 上的 topic 信息
-     * 
+     *
      * @param addrs
      * @param topic
      * @param brokerAddresses Broker addresses, null or addresses in form of IP:port, separated by semicolon.
@@ -364,7 +357,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 删除 broker 上的 subscription group 信息
-     * 
+     *
      * @param addr
      * @param groupName
      * @throws RemotingException
@@ -381,7 +374,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 在 namespace 上添加或者更新 KV 配置
-     * 
+     *
      * @param namespace
      * @param key
      * @param value
@@ -399,7 +392,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 删除 namespace 上的 KV 配置
-     * 
+     *
      * @param namespace
      * @param key
      * @throws RemotingException
@@ -415,13 +408,13 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 通过 server ip 获取 project 信息
-     * 
+     *
      * @param ip
+     * @return
      * @throws RemotingException
      * @throws MQBrokerException
      * @throws InterruptedException
      * @throws MQClientException
-     * @return
      */
     public String getProjectGroupByIp(String ip) throws RemotingException, MQBrokerException,
             InterruptedException, MQClientException;
@@ -431,13 +424,13 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 通过 project 获取所有的 server ip 信息
-     * 
+     *
      * @param projectGroup
+     * @return
      * @throws RemotingException
      * @throws MQBrokerException
      * @throws InterruptedException
      * @throws MQClientException
-     * @return
      */
     public String getIpsByProjectGroup(String projectGroup) throws RemotingException, MQBrokerException,
             InterruptedException, MQClientException;
@@ -447,7 +440,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 删除 project group 对应的所有 server ip
-     * 
+     *
      * @param key
      * @throws RemotingException
      * @throws MQBrokerException
@@ -462,50 +455,50 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 按照时间回溯消费进度(客户端需要重启)
-     * 
+     *
      * @param consumerGroup
      * @param topic
      * @param timestamp
      * @param force
+     * @return
      * @throws RemotingException
      * @throws MQBrokerException
      * @throws InterruptedException
      * @throws MQClientException
-     * @return
      */
     public List<RollbackStats> resetOffsetByTimestampOld(String consumerGroup, String topic, long timestamp,
-            boolean force) throws RemotingException, MQBrokerException, InterruptedException,
+                                                         boolean force) throws RemotingException, MQBrokerException, InterruptedException,
             MQClientException;
 
     public List<RollbackStats> resetOffsetByTimestampOld(String consumerGroup, String topic, long timestamp,
-            boolean force, final long timeoutMillis) throws RemotingException, MQBrokerException, InterruptedException,
+                                                         boolean force, final long timeoutMillis) throws RemotingException, MQBrokerException, InterruptedException,
             MQClientException;
 
     /**
      * 按照时间回溯消费进度(客户端不需要重启)
-     * 
+     *
      * @param topic
      * @param brokerAddress Optional broker address to reset offset.
      * @param group
      * @param timestamp
      * @param isForce
+     * @return
      * @throws RemotingException
      * @throws MQBrokerException
      * @throws InterruptedException
      * @throws MQClientException
-     * @return
      */
     public Map<MessageQueue, Long> resetOffsetByTimestamp(String topic, String brokerAddress, String group,
                                                           long timestamp, boolean isForce)
             throws RemotingException, MQBrokerException, InterruptedException, MQClientException;
 
     public Map<MessageQueue, Long> resetOffsetByTimestamp(String topic, String brokerAddress, String group,
-            long timestamp, boolean isForce, final long timeoutMillis)
+                                                          long timestamp, boolean isForce, final long timeoutMillis)
             throws RemotingException, MQBrokerException, InterruptedException, MQClientException;
 
     /**
      * 重置消费进度，无论Consumer是否在线，都可以执行。不保证最终结果是否成功，需要调用方通过消费进度查询来再次确认
-     * 
+     *
      * @param consumerGroup
      * @param topic
      * @param timestamp
@@ -522,7 +515,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 通过客户端查看消费者的消费情况
-     * 
+     *
      * @param topic
      * @param group
      * @param clientAddr
@@ -540,7 +533,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 创建或更新顺序消息的分区配置
-     * 
+     *
      * @param key
      * @param value
      * @param isCluster
@@ -557,7 +550,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 根据Topic查询被哪些订阅组消费
-     * 
+     *
      * @param topic
      * @return
      * @throws MQBrokerException
@@ -578,7 +571,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 根据 topic 和 group 获取消息的时间跨度
-     * 
+     *
      * @param topic
      * @param group
      * @return
@@ -598,9 +591,8 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 触发清理失效的消费队列
-     * 
-     * @param cluster
-     *            null则表示所有集群
+     *
+     * @param cluster null则表示所有集群
      * @return 清理是否成功
      * @throws RemotingConnectException
      * @throws RemotingSendRequestException
@@ -614,7 +606,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 触发指定的broker清理失效的消费队列
-     * 
+     *
      * @param addr
      * @return 清理是否成功
      * @throws RemotingConnectException
@@ -631,7 +623,7 @@ public interface MQAdminExt extends MQAdmin {
 
     /**
      * 查询Consumer内存数据结构
-     * 
+     *
      * @param consumerGroup
      * @param clientId
      * @return
@@ -639,16 +631,20 @@ public interface MQAdminExt extends MQAdmin {
      * @throws MQClientException
      * @throws RemotingException
      */
-    public ConsumerRunningInfo getConsumerRunningInfo(final String consumerGroup, final String clientId,
-            final boolean jstack) throws RemotingException, MQClientException, InterruptedException;
+    public ConsumerRunningInfo getConsumerRunningInfo(final String consumerGroup,
+                                                      final String clientId,
+                                                      final boolean jstack)
+            throws RemotingException, MQClientException, InterruptedException;
 
-    public ConsumerRunningInfo getConsumerRunningInfo(final String consumerGroup, final String clientId,
-            final boolean jstack, final long timeoutMillis) throws RemotingException, MQClientException,
-            InterruptedException;
+    public ConsumerRunningInfo getConsumerRunningInfo(final String consumerGroup,
+                                                      final String clientId,
+                                                      final boolean jstack,
+                                                      final long timeoutMillis)
+            throws RemotingException, MQClientException, InterruptedException;
 
     /**
      * 向指定Consumer发送某条消息
-     * 
+     *
      * @param consumerGroup
      * @param clientId
      * @param msgId
@@ -659,17 +655,17 @@ public interface MQAdminExt extends MQAdmin {
      * @throws MQBrokerException
      */
     public ConsumeMessageDirectlyResult consumeMessageDirectly(String consumerGroup, //
-            String clientId, //
-            String msgId) throws RemotingException, MQClientException, InterruptedException,
-            MQBrokerException;
+                                                               String clientId, //
+                                                               String msgId)
+            throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
 
     public ConsumeMessageDirectlyResult consumeMessageDirectly(String consumerGroup, //
-            String clientId, String msgId, final long timeoutMillis) throws RemotingException, MQClientException,
-            InterruptedException, MQBrokerException;
+                                                               String clientId, String msgId, final long timeoutMillis)
+            throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
 
     /**
      * 查询消息被谁消费了
-     * 
+     *
      * @param msg
      * @return
      * @throws RemotingException
@@ -677,15 +673,16 @@ public interface MQAdminExt extends MQAdmin {
      * @throws InterruptedException
      * @throws MQBrokerException
      */
-    public List<MessageTrack> messageTrackDetail(MessageExt msg) throws RemotingException, MQClientException,
-            InterruptedException, MQBrokerException;
+    public List<MessageTrack> messageTrackDetail(MessageExt msg)
+            throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
 
-    public List<MessageTrack> messageTrackDetail(MessageExt msg, final long timeoutMillis) throws RemotingException,
-            MQClientException, InterruptedException, MQBrokerException;
+    public List<MessageTrack> messageTrackDetail(MessageExt msg,
+                                                 final long timeoutMillis)
+            throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
 
     /**
      * 克隆某一个组的消费进度到新的组
-     * 
+     *
      * @param srcGroup
      * @param destGroup
      * @param topic
@@ -695,9 +692,34 @@ public interface MQAdminExt extends MQAdmin {
      * @throws InterruptedException
      * @throws MQBrokerException
      */
-    public void cloneGroupOffset(String srcGroup, String destGroup, String topic, boolean isOffline)
+    public void cloneGroupOffset(String srcGroup,
+                                 String destGroup,
+                                 String topic,
+                                 boolean isOffline)
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
 
-    public void cloneGroupOffset(String srcGroup, String destGroup, String topic, boolean isOffline, final long timeoutMillis)
+    public void cloneGroupOffset(String srcGroup,
+                                 String destGroup,
+                                 String topic,
+                                 boolean isOffline,
+                                 final long timeoutMillis)
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
+
+    /**
+     * 服务器统计数据输出
+     *
+     * @param statsName statistics category name
+     * @param statsKey  statistics key, eg. topic@group
+     * @return Broker statistical data.
+     * @throws InterruptedException
+     * @throws MQClientException
+     * @throws RemotingTimeoutException
+     * @throws RemotingSendRequestException
+     * @throws RemotingConnectException
+     */
+    public BrokerStatsData viewBrokerStatsData(final String brokerAddr,
+                                               final String statsName,
+                                               final String statsKey)
+            throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException,
+            InterruptedException;
 }

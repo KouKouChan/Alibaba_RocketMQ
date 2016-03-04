@@ -88,8 +88,7 @@ public class StatsItem {
             public void run() {
                 try {
                     samplingInSeconds();
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
                 }
             }
         }, 0, 10, TimeUnit.SECONDS);
@@ -100,8 +99,7 @@ public class StatsItem {
             public void run() {
                 try {
                     samplingInMinutes();
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
                 }
             }
         }, 0, 10, TimeUnit.MINUTES);
@@ -112,8 +110,7 @@ public class StatsItem {
             public void run() {
                 try {
                     samplingInHour();
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
                 }
             }
         }, 0, 1, TimeUnit.HOURS);
@@ -124,8 +121,7 @@ public class StatsItem {
             public void run() {
                 try {
                     printAtMinutes();
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
                 }
             }
         }, Math.abs(UtilAll.computNextMinutesTimeMillis() - System.currentTimeMillis()), //
@@ -137,8 +133,7 @@ public class StatsItem {
             public void run() {
                 try {
                     printAtHour();
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
                 }
             }
         }, Math.abs(UtilAll.computNextHourTimeMillis() - System.currentTimeMillis()), //
@@ -150,8 +145,7 @@ public class StatsItem {
             public void run() {
                 try {
                     printAtDay();
-                }
-                catch (Throwable e) {
+                } catch (Throwable e) {
                 }
             }
         }, Math.abs(UtilAll.computNextMorningTimeMillis() - System.currentTimeMillis()) - 2000, //
