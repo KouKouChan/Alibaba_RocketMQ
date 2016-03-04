@@ -831,7 +831,7 @@ public class DefaultMessageStore implements MessageStore {
 
     @Override
     public void executeDeleteFilesManually() {
-        this.cleanCommitLogService.excuteDeleteFilesManualy();
+        this.cleanCommitLogService.executeDeleteFilesManually();
     }
 
 
@@ -1224,7 +1224,7 @@ public class DefaultMessageStore implements MessageStore {
         private volatile boolean cleanImmediately = false;
 
 
-        public void excuteDeleteFilesManualy() {
+        public void executeDeleteFilesManually() {
             this.manualDeleteFileSeveralTimes = MaxManualDeleteFileTimes;
             DefaultMessageStore.log.info("executeDeleteFilesManually was invoked");
         }

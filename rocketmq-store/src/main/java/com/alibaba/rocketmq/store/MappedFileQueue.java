@@ -334,7 +334,7 @@ public class MappedFileQueue {
         for (int i = 0; i < mfsLength; i++) {
             MappedFile mappedFile = (MappedFile) mfs[i];
             long liveMaxTimestamp = mappedFile.getLastModifiedTimestamp() + expiredTime;
-            if (System.currentTimeMillis() >= liveMaxTimestamp//
+            if (System.currentTimeMillis() >= liveMaxTimestamp //
                     || cleanImmediately) {
                 if (mappedFile.destroy(intervalForcibly)) {
                     files.add(mappedFile);
