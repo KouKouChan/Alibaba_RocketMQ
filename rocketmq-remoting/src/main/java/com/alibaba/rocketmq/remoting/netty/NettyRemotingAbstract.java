@@ -113,7 +113,7 @@ public abstract class NettyRemotingAbstract {
 
             final ChannelEventListener listener = NettyRemotingAbstract.this.getChannelEventListener();
 
-            while (!this.isStoped()) {
+            while (!this.isStopped()) {
                 try {
                     NettyEvent event = this.eventQueue.poll(3000, TimeUnit.MILLISECONDS);
                     if (event != null && listener != null) {
