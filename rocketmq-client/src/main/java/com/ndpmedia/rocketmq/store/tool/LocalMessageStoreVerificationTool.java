@@ -8,13 +8,10 @@ import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,7 +23,10 @@ public class LocalMessageStoreVerificationTool {
 
     private static final int MAGIC_CODE = 0xAABBCCDD ^ 1880681586 + 8;
 
+    private static final String CONFIG_FILE_NAME = ".config";
+
     private static DefaultMQProducer producer;
+
 
     public static void main(String[] args) throws IOException {
         if (1 != args.length) {
@@ -86,10 +86,39 @@ public class LocalMessageStoreVerificationTool {
             }
         }
 
+        File configFile = new File(file.getParentFile(), CONFIG_FILE_NAME);
+        InputStream inputStream = null;
+        AtomicLong writeIndex = new AtomicLong();
+        AtomicLong writeOffSet = new AtomicLong();
+        AtomicLong readIndex = new AtomicLong();
+        AtomicLong readOffSet = new AtomicLong();
+
+        try {
+            inputStream = new FileInputStream(configFile);
+            Properties properties = new Properties();
+            properties.load(inputStream);
+
+            writeIndex.set(null == properties.getProperty("writeIndex") ? 0L :
+                    Long.parseLong(properties.getProperty("writeIndex")));
+            writeOffSet.set(null == properties.getProperty("writeOffSet") ? 0L :
+                    Long.parseLong(properties.getProperty("writeOffSet")));
+            readIndex.set(null == properties.getProperty("readIndex") ? 0L :
+                    Long.parseLong(properties.getProperty("readIndex")));
+            readOffSet.set(null == properties.getProperty("readOffSet") ? 0L :
+                    Long.parseLong(properties.getProperty("readOffSet")));
+        } catch (IOException ignored) {
+        } catch (NumberFormatException ignored) {
+        } finally {
+            if (null != inputStream) {
+                inputStream.close();
+            }
+        }
+
         BufferedWriter bos = new BufferedWriter(new FileWriter(log, true));
         RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
         boolean hasError = false;
         int count = 0;
+        int fileNameNum = Integer.parseInt(file.getName());
         while (randomAccessFile.getFilePointer() + 4 + 4 < randomAccessFile.length()) {
             int msgSize = randomAccessFile.readInt();
             int magicCode = randomAccessFile.readInt();
@@ -100,7 +129,6 @@ public class LocalMessageStoreVerificationTool {
                 hasError = true;
                 // break;
             }
-            long pos = 0;
             if (!hasError) {
                 byte[] data = new byte[msgSize - 4 - 4];
                 randomAccessFile.readFully(data);
@@ -111,18 +139,17 @@ public class LocalMessageStoreVerificationTool {
                 byteBuffer.flip();
                 Message message = MessageDecoder.decode(byteBuffer, true, true);
                 System.out.println("Msg Count: " + (++count));
-                if (count > 2012) {
-                    if (message.getTopic().equals("T_YMREDIRECTOR_QUEUE_DRUID")) {
-                        try {
-                            producer.send(message);
-                        } catch (Exception e) {
-                            bos.write(String.valueOf(count));
-                            bos.newLine();
-                            bos.flush();
-                        }
+
+                if (fileNameNum > readIndex.get() || count > readIndex.get()) {
+                    try {
+                        producer.send(message);
                         System.out.println(message.getTopic());
                         System.out.println("Msg Size: " + msgSize);
                         System.out.println("Msg Body: " + new String(message.getBody(), "UTF-8"));
+                    } catch (Exception e) {
+                        bos.write(String.valueOf(count));
+                        bos.newLine();
+                        bos.flush();
                     }
                 }
             } else {
@@ -141,11 +168,6 @@ public class LocalMessageStoreVerificationTool {
 
         randomAccessFile.close();
         bos.close();
-
-        if (hasError) {
-            System.err.println("Fatal: File " + file.getAbsolutePath() + " is tampered!");
-        }
-
     }
 
 }
