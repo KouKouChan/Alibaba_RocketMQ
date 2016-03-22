@@ -84,9 +84,10 @@ public class CacheableMQProducer {
             defaultMQProducer.setSendMsgTimeout(configuration.getSendMessageTimeOutInMilliSeconds());
             defaultMQProducer.setTraceLevel(TraceLevel.PRODUCTION.name());
 
-            defaultMQProducer.start();
-
             localMessageStore = new DefaultLocalMessageStore(configuration.getProducerGroup());
+            localMessageStore.start();
+
+            defaultMQProducer.start();
 
             startResendFailureMessageService(configuration.getResendFailureMessageDelay());
 

@@ -2,13 +2,15 @@ package com.alibaba.rocketmq.client.store;
 
 import com.alibaba.rocketmq.common.message.Message;
 
+import java.io.IOException;
+
 public interface LocalMessageStore {
 
     /**
      * Stash a new message.
      * @param message Message to stash.
      */
-    void stash(Message message);
+    boolean stash(Message message);
 
     /**
      * This method returns numbers of messages stashed.
@@ -22,6 +24,8 @@ public interface LocalMessageStore {
      * @return Array of messages.
      */
     Message[] pop(int n);
+
+    void start() throws IOException;
 
     /**
      * Close this message store.

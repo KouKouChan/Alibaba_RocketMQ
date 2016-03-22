@@ -11,20 +11,14 @@ import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
+import com.alibaba.rocketmq.common.protocol.ResponseCode;
 import com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatistics;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CacheableConsumer {
@@ -193,6 +187,13 @@ public class CacheableConsumer {
 
         messageQueue = new LinkedBlockingQueue<MessageExt>(maximumNumberOfMessageBuffered);
         inProgressMessageQueue = new LinkedBlockingQueue<MessageExt>(maximumNumberOfMessageBuffered);
+
+        try {
+            localMessageStore.start();
+        } catch (IOException e) {
+            // Response code does not make sense.
+            throw new MQClientException(ResponseCode.SYSTEM_ERROR, "Unable to start local message store");
+        }
 
         frontController.startSubmittingJob();
 
