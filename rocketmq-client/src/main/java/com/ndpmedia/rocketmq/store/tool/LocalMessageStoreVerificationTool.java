@@ -11,6 +11,8 @@ import com.alibaba.rocketmq.common.message.MessageDecoder;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,10 +29,14 @@ public class LocalMessageStoreVerificationTool {
 
     private static DefaultMQProducer producer;
 
+    private static ConcurrentHashMap<File, AtomicInteger> countMap = new ConcurrentHashMap<File, AtomicInteger>();
+
+    private static int THRESHOLD;
 
     public static void main(String[] args) throws IOException {
-        if (1 != args.length) {
-            System.out.println("Usage: java -cp rocketmq-client-3.2.2.jar com.ndpmedia.rocketmq.store.tool.LocalMessageStoreVerificationTool /path/to/store");
+        if (args.length < 1) {
+            System.out.println("Usage: java -cp rocketmq-client-3.2.2.jar com.ndpmedia.rocketmq.store.tool.LocalMessageStoreVerificationTool /path/to/store [start_offset]");
+            System.out.println("Parameters in bracket is optional.");
             return;
         }
 
@@ -42,6 +48,8 @@ public class LocalMessageStoreVerificationTool {
             e.printStackTrace();
             System.exit(1);
         }
+
+        THRESHOLD = args.length > 1 ? Integer.parseInt(args[1]) : 0;
 
         checkRecursively(new File(args[0]));
 
@@ -117,7 +125,16 @@ public class LocalMessageStoreVerificationTool {
         BufferedWriter bos = new BufferedWriter(new FileWriter(log, true));
         RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
         boolean hasError = false;
-        int count = 0;
+        AtomicInteger count = countMap.get(file.getParentFile());
+        if (null == count) {
+            AtomicInteger newCount = new AtomicInteger();
+            if (null == countMap.putIfAbsent(file.getParentFile(), newCount)) {
+                count = newCount;
+            } else {
+                count = countMap.get(file.getParentFile());
+            }
+        }
+
         int fileNameNum = Integer.parseInt(file.getName());
         while (randomAccessFile.getFilePointer() + 4 + 4 < randomAccessFile.length()) {
             int msgSize = randomAccessFile.readInt();
@@ -138,9 +155,9 @@ public class LocalMessageStoreVerificationTool {
                 byteBuffer.put(data);
                 byteBuffer.flip();
                 Message message = MessageDecoder.decode(byteBuffer, true, true);
-                System.out.println("Msg Count: " + (++count));
+                System.out.println("Msg Count: " + count.incrementAndGet());
 
-                if (fileNameNum > readIndex.get() || count > readIndex.get()) {
+                if ((count.get() > THRESHOLD) && (fileNameNum > readIndex.get() || count.get() > readIndex.get())) {
                     try {
                         producer.send(message);
                         System.out.println(message.getTopic());
