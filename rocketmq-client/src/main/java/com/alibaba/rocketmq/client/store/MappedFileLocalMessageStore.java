@@ -87,29 +87,38 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
             LOGGER.error("Unable to create mapped file");
             return false;
         }
-        AppendMessageResult appendMessageResult = mappedFile.appendMessage(message, appendMessageCallback);
-        switch (appendMessageResult.getStatus()) {
-            case END_OF_FILE:
 
-                // 创建新文件，重新写消息
-                mappedFile = this.mappedFileQueue.getLastMappedFile();
-                if (null == mappedFile) {
-                    LOGGER.error("Unable to create mapped file");
+        // We need to synchronize while writing data to commit log.
+        synchronized (this) {
+            AppendMessageResult appendMessageResult = mappedFile.appendMessage(message, appendMessageCallback);
+            switch (appendMessageResult.getStatus()) {
+                case END_OF_FILE:
+
+                    // 创建新文件，重新写消息
+                    mappedFile = mappedFileQueue.getLastMappedFile();
+                    if (null == mappedFile) {
+                        LOGGER.error("Unable to create mapped file");
+                        return false;
+                    }
+
+                    appendMessageResult = mappedFile.appendMessage(message, appendMessageCallback);
+                    switch (appendMessageResult.getStatus()) {
+                        case PUT_OK:
+                            mappedFile.commit(1);
+                            return true;
+
+                        default:
+                            return false;
+                    }
+
+                case PUT_OK:
+                    mappedFile.commit(1);
+                    return true;
+
+                default:
                     return false;
-                }
-
-                mappedFile.appendMessage(message, this.appendMessageCallback);
-                mappedFile.commit(1);
-                return true;
-
-            case PUT_OK:
-                mappedFile.commit(1);
-                return true;
-
-            default:
-                return false;
+            }
         }
-
     }
 
     @Override
