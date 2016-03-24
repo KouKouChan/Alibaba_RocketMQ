@@ -258,7 +258,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
             long processOffset = mappedFile.getFileFromOffset();
             long mappedFileOffset = 0;
             while (true) {
-                DispatchRequest dispatchRequest = this.checkMessageAndReturnSize(byteBuffer, true, true);
+                DispatchRequest dispatchRequest = checkMessageAndReturnSize(byteBuffer, false, true);
                 int size = dispatchRequest.getMsgSize();
                 // 正常数据
                 if (size > 0) {
@@ -432,7 +432,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
             long processOffset = mappedFile.getFileFromOffset();
             long mappedFileOffset = 0;
             while (true) {
-                DispatchRequest dispatchRequest = this.checkMessageAndReturnSize(byteBuffer, true, true);
+                DispatchRequest dispatchRequest = this.checkMessageAndReturnSize(byteBuffer, false, true);
                 int size = dispatchRequest.getMsgSize();
                 // 正常数据
                 if (size > 0) {
