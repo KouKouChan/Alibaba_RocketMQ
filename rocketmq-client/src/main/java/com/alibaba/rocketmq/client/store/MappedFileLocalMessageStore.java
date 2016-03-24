@@ -127,13 +127,13 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                 messages.add(messageExt);
                 readOffset.addAndGet(byteBuffer.position() - pos);
             }
+            return messages.toArray(new Message[0]);
         } finally {
             if (null != selectMappedBufferResult) {
                 selectMappedBufferResult.release();
             }
             saveCheckPoint();
         }
-        return new Message[0];
     }
 
     private void saveCheckPoint() {
