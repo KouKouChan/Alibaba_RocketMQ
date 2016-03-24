@@ -43,6 +43,16 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
     private final static int MAX_MESSAGE_SIZE = 1024 * 512;
 
     public MappedFileLocalMessageStore(final String storePath) throws IOException {
+
+        File storeFile = new File(storePath);
+        if (!storeFile.exists()) {
+            if (!storeFile.mkdirs()) {
+                throw new IOException("Unable to create store directory");
+            }
+        } else if (storeFile.isFile()) {
+            throw new IOException("There is an existing file with the same name. Unable to create store");
+        }
+
         allocateMappedFileService = new AllocateMappedFileService();
         appendMessageCallback = new AppendMessageCallbackImpl();
         mappedFileQueue = new MappedFileQueue(storePath, MAPPED_FILE_SIZE, allocateMappedFileService);
@@ -50,7 +60,11 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         File checkpoint = new File(storePath, "checkpoint.data");
         boolean initCheckPoint = false;
         if (!checkpoint.exists()) {
-            checkpoint.createNewFile();
+
+            if (!checkpoint.createNewFile()) {
+                throw new IOException("Unable to create checkpoint file");
+            }
+
         } else {
             initCheckPoint = true;
         }
