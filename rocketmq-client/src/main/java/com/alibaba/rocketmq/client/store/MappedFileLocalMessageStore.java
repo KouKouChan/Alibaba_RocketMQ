@@ -1,6 +1,7 @@
 package com.alibaba.rocketmq.client.store;
 
 import com.alibaba.rocketmq.common.message.Message;
+import com.alibaba.rocketmq.common.message.MessageDecoder;
 import com.alibaba.rocketmq.common.message.MessageEncoder;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.store.*;
@@ -13,6 +14,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.alibaba.rocketmq.store.AppendMessageStatus.END_OF_FILE;
@@ -101,11 +104,47 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
 
     @Override
     public Message[] pop(int n) {
+        if (readOffset.get() >= mappedFileQueue.getMaxOffset()) {
+            return new Message[0];
+        }
+
+        MappedFile mappedFile = mappedFileQueue.findMappedFileByOffset(readOffset.get(), false);
+        if (null == mappedFile) {
+            return new Message[0];
+        }
+
+        int logicalOffset = (int)(readOffset.get() - mappedFile.getFileFromOffset());
+        SelectMappedBufferResult selectMappedBufferResult = null;
+
+        try {
+            selectMappedBufferResult = mappedFile.selectMappedBuffer(logicalOffset);
+
+            List<Message> messages = new ArrayList<>(n);
+            ByteBuffer byteBuffer = selectMappedBufferResult.getByteBuffer();
+            for (int i = 0; i < n && byteBuffer.hasRemaining(); i++) {
+                int pos = byteBuffer.position();
+                MessageExt messageExt = MessageDecoder.decode(byteBuffer, true);
+                messages.add(messageExt);
+                readOffset.addAndGet(byteBuffer.position() - pos);
+            }
+        } finally {
+            if (null != selectMappedBufferResult) {
+                selectMappedBufferResult.release();
+            }
+            saveCheckPoint();
+        }
         return new Message[0];
+    }
+
+    private void saveCheckPoint() {
+        checkpointByteBuffer.clear();
+        checkpointByteBuffer.putLong(readOffset.get());
+        checkpointByteBuffer.force();
     }
 
     @Override
     public void close() throws InterruptedException {
+        checkpointByteBuffer.force();
         mappedFileQueue.shutdown(3 * 1000);
     }
 
