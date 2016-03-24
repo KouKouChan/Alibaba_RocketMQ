@@ -21,12 +21,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -55,6 +58,9 @@ public class MappedFileQueue {
     private long committedWhere = 0;
     // 最后一条消息存储时间
     private volatile long storeTimestamp = 0;
+
+    private static final String MAPPED_FILE_NAME_PATTERN_STRING = "\\d+";
+    private static final Pattern MAPPED_FILE_NAME_PATTERN = Pattern.compile(MAPPED_FILE_NAME_PATTERN_STRING);
 
 
     public MappedFileQueue(final String storePath, int mappedFileSize,
@@ -149,7 +155,15 @@ public class MappedFileQueue {
 
     public boolean load() {
         File dir = new File(this.storePath);
-        File[] files = dir.listFiles();
+
+        File[] files = dir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                Matcher matcher = MAPPED_FILE_NAME_PATTERN.matcher(name);
+                return matcher.matches();
+            }
+        });
+
         if (files != null) {
             // ascending order
             Arrays.sort(files);
