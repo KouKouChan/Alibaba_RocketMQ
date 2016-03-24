@@ -23,9 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -375,6 +373,43 @@ public class MappedFileQueue {
         return deleteCount;
     }
 
+    /**
+     * 根据物理队列最小offset来删除commit log队列文件.
+     * @param offset physical offset
+     * @return 删除的文件个数
+     */
+    public int deleteExpiredFilesByPhysicalOffset(long offset) {
+
+        if (offset < mappedFileSize) {
+            return 0;
+        }
+
+        // copy with read lock.
+        Object[] mfs = copyMappedFiles(0);
+
+        List<MappedFile> files = new ArrayList<>();
+        int deleteCount = 0;
+        if (null != mfs) {
+            int len = mfs.length - 1;
+            for (int i = 0; i < len; i++) {
+                MappedFile mappedFile = (MappedFile) mfs[i];
+                if (mappedFile.getFileFromOffset() + mappedFileSize < offset) {
+                    if (mappedFile.destroy(60 * 1000)) { // Destroy files
+                        files.add(mappedFile);
+                        deleteCount++;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // remove with write lock.
+        deleteExpiredFile(files);
+
+        return deleteCount;
+    }
+
 
     /**
      * 根据物理队列最小Offset来删除逻辑队列
@@ -603,7 +638,6 @@ public class MappedFileQueue {
     public List<MappedFile> getMappedFiles() {
         return mappedFiles;
     }
-
 
     public int getMappedFileSize() {
         return mappedFileSize;

@@ -142,6 +142,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                 messages.add(messageExt);
                 readOffset.addAndGet(byteBuffer.position() - pos);
             }
+            mappedFileQueue.deleteExpiredFilesByPhysicalOffset(readOffset.get());
             return messages.toArray(new Message[0]);
         } finally {
             if (null != selectMappedBufferResult) {
