@@ -203,7 +203,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         try {
             selectMappedBufferResult = mappedFile.selectMappedBuffer(logicalOffset);
 
-            List<Message> messages = new ArrayList<>(n);
+            List<MessageExt> messages = new ArrayList<>(n);
             ByteBuffer byteBuffer = selectMappedBufferResult.getByteBuffer();
             for (int i = 0; i < n && byteBuffer.hasRemaining(); i++) {
                 int pos = byteBuffer.position();
