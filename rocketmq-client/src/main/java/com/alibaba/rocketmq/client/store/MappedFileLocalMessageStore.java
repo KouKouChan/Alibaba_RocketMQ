@@ -16,6 +16,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -35,9 +36,20 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
     private final GroupCommitService groupCommitService;
 
     private final File abortFile;
-
     private final AtomicLong readOffset = new AtomicLong(0L);
+    private final AtomicInteger readIndex = new AtomicInteger();
 
+    private final AtomicLong writeOffset = new AtomicLong(0L);
+    private final AtomicInteger writeIndex = new AtomicInteger();
+
+    /**
+     * Checkpoint file structure
+     * read offset
+     * read count
+     *
+     * write offset
+     * write count
+     */
     private final MappedByteBuffer checkpointByteBuffer;
 
     private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -78,10 +90,16 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         }
 
         RandomAccessFile randomAccessFile = new RandomAccessFile(checkpoint, "rw");
-        checkpointByteBuffer = randomAccessFile.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, 8);
+        int checkpointFileLength = 8 /* read offset */ + 4 /* read index */
+                + 8 /*write offset*/ + 4 /*write index*/;
+
+        checkpointByteBuffer = randomAccessFile.getChannel().map(FileChannel.MapMode.READ_WRITE, 0, checkpointFileLength);
 
         if (initCheckPoint) {
             readOffset.set(checkpointByteBuffer.getLong());
+            readIndex.set(checkpointByteBuffer.getInt());
+            writeOffset.set(checkpointByteBuffer.getLong());
+            writeIndex.set(checkpointByteBuffer.getInt());
         }
 
         abortFile = new File(storePath, ".abort");
@@ -133,11 +151,11 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                     appendMessageResult = mappedFile.appendMessage(message, appendMessageCallback);
                     switch (appendMessageResult.getStatus()) {
                         case PUT_OK:
-
+                            writeIndex.incrementAndGet();
+                            writeOffset.addAndGet(appendMessageResult.getWroteBytes());
                             CommitLog.GroupCommitRequest request =
                                     new CommitLog.GroupCommitRequest(appendMessageResult.getWroteOffset() + appendMessageResult.getWroteBytes());
                             groupCommitService.putRequest(request);
-
                             return true;
 
                         default:
@@ -145,6 +163,8 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                     }
 
                 case PUT_OK:
+                    writeIndex.incrementAndGet();
+                    writeOffset.addAndGet(appendMessageResult.getWroteBytes());
                     CommitLog.GroupCommitRequest request =
                             new CommitLog.GroupCommitRequest(appendMessageResult.getWroteOffset() + appendMessageResult.getWroteBytes());
                     groupCommitService.putRequest(request);
@@ -163,7 +183,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
 
     @Override
     public int getNumberOfMessageStashed() {
-        return 0;
+        return writeIndex.get() - readIndex.get();
     }
 
     @Override
@@ -190,6 +210,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                 MessageExt messageExt = MessageDecoder.decode(byteBuffer, true);
                 messages.add(messageExt);
                 readOffset.addAndGet(byteBuffer.position() - pos);
+                readIndex.incrementAndGet();
             }
             mappedFileQueue.deleteExpiredFilesByPhysicalOffset(readOffset.get());
             return messages.toArray(new Message[0]);
@@ -204,12 +225,15 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
     private void saveCheckPoint() {
         checkpointByteBuffer.clear();
         checkpointByteBuffer.putLong(readOffset.get());
+        checkpointByteBuffer.putInt(readIndex.get());
+        checkpointByteBuffer.putLong(writeOffset.get());
+        checkpointByteBuffer.putInt(writeIndex.get());
         checkpointByteBuffer.force();
     }
 
     @Override
     public void close() {
-        checkpointByteBuffer.force();
+        saveCheckPoint();
         mappedFileQueue.shutdown(3 * 1000);
         allocateMappedFileService.shutdown();
         groupCommitService.shutdown();
@@ -321,8 +345,9 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                 // 由于个别消息设置为不同步刷盘，所以会走到此流程
                 mappedFileQueue.commit(0);
             }
+            writeOffset.set(mappedFileQueue.getCommittedWhere());
+            saveCheckPoint();
         }
-
 
         public void run() {
             LOGGER.info(this.getServiceName() + " service started");
