@@ -1,5 +1,6 @@
 package com.alibaba.rocketmq.client.producer.concurrent;
 
+import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.common.message.Message;
 import org.junit.After;
 import org.junit.Assert;

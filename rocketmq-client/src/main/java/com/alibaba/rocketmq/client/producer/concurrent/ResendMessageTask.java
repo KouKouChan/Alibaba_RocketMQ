@@ -1,6 +1,7 @@
 package com.alibaba.rocketmq.client.producer.concurrent;
 
 import com.alibaba.rocketmq.client.log.ClientLogger;
+import com.alibaba.rocketmq.client.store.LocalMessageStore;
 import com.alibaba.rocketmq.common.message.Message;
 import org.slf4j.Logger;
 

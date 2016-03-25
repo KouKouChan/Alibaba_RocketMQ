@@ -1,9 +1,10 @@
-package com.alibaba.rocketmq.client.producer.concurrent;
+package com.alibaba.rocketmq.client.store;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.rocketmq.client.ClientStatus;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.common.ServiceThread;
+import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageAccessor;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
@@ -44,7 +45,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
 
     private static final String CONFIG_FILE_NAME = ".config";
 
-    private static final Logger LOGGER = ClientLogger.getLog();
+    private static final Logger LOGGER = ClientLogger.getLog(LoggerName.RocketmqLocalStoreLoggerName);
 
     private static final int MESSAGES_PER_FILE = 100000;
 
@@ -217,6 +218,13 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
             }
         }
 
+        flushDiskService = new FlushDiskService();
+
+        status = ClientStatus.ACTIVE;
+        LOGGER.info("Local Message store starts to operate.");
+    }
+
+    public void start() throws IOException {
         if (isLastShutdownAbort()) {
             init(true);
         } else {
@@ -230,7 +238,6 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
             throw e;
         }
 
-        flushDiskService = new FlushDiskService();
         flushDiskService.start();
 
         status = ClientStatus.ACTIVE;
@@ -585,7 +592,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
      * @param message Message to stash.
      */
     @Override
-    public void stash(Message message) {
+    public boolean stash(Message message) {
         if (ClientStatus.CLOSED == status || ClientStatus.CREATED == status) {
             throw new RuntimeException("Message store is not ready. You may have closed it already.");
         }
@@ -600,7 +607,10 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         } catch (InterruptedException e) {
             LOGGER.error("Unable to stash message locally.", e);
             LOGGER.error("Fatal Error: Message [" + JSON.toJSONString(message) + "] is lost.");
+            return false;
         }
+
+        return true;
     }
 
     /**
