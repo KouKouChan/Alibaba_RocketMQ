@@ -4,11 +4,14 @@ import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.store.AllocateMappedFileService;
 import org.junit.*;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MappedFileLocalMessageStoreTest {
 
@@ -31,6 +34,12 @@ public class MappedFileLocalMessageStoreTest {
     @After
     public void tearDown() throws InterruptedException {
         store.close();
+
+        File storeDirectory = new File(storePath);
+        File[] files = storeDirectory.listFiles();
+        for (File file : files) {
+            file.delete();
+        }
     }
 
     @Test
@@ -80,38 +89,31 @@ public class MappedFileLocalMessageStoreTest {
         Assert.assertEquals(max, count);
     }
 
-    // @Test
-    public static void main(String[] args) throws Exception {
-        init();
-        MappedFileLocalMessageStore store = new MappedFileLocalMessageStore(storePath);
-        store.start();
-
+    @Test
+    public void testMultiThread() throws Exception {
         byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'x');
         Message message = new Message("TestTopic", data);
 
-        final AtomicInteger count = new AtomicInteger(0);
         final int threshold = 100000;
         int threadCount = 4;
         ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
 
         CountDownLatch countDownLatch = new CountDownLatch(threadCount);
-
+        final Semaphore semaphore = new Semaphore(threshold);
         for (int i = 0; i < threadCount; i++) {
-            executorService.submit(new TaskRunner(store, threshold, count, message, countDownLatch));
+            executorService.submit(new TaskRunner(store, semaphore, message, countDownLatch));
         }
 
         countDownLatch.await();
-        System.out.println(store.getNumberOfMessageStashed());
+        Assert.assertEquals(threshold, store.getNumberOfMessageStashed());
         executorService.shutdown();
         store.close();
     }
 
     static class TaskRunner implements Runnable {
 
-        private final int threshold;
-
-        private final AtomicInteger count;
+        private final Semaphore semaphore;
 
         private final Message message;
 
@@ -120,11 +122,10 @@ public class MappedFileLocalMessageStoreTest {
         private final MappedFileLocalMessageStore store;
 
         public TaskRunner(final MappedFileLocalMessageStore store,
-                          final int threshold, final AtomicInteger count,
+                          final Semaphore semaphore,
                           final Message message, final CountDownLatch countDownLatch) {
             this.store = store;
-            this.threshold = threshold;
-            this.count = count;
+            this.semaphore = semaphore;
             this.message = message;
             this.countDownLatch = countDownLatch;
         }
@@ -132,9 +133,9 @@ public class MappedFileLocalMessageStoreTest {
         @Override
         public void run() {
             try {
-                while (count.get() < threshold) {
-                    if (store.stash(message)) {
-                       count.incrementAndGet();
+                while (semaphore.tryAcquire()) {
+                    if (!store.stash(message)) {
+                        semaphore.release();
                     }
                 }
                 countDownLatch.countDown();
