@@ -144,12 +144,4 @@ public class MappedFileLocalMessageStoreTest {
             }
         }
     }
-
-    @Test
-    public void testMappedFileAllocationService() {
-        AllocateMappedFileService service = new AllocateMappedFileService();
-        service.start();
-
-        service.stop();
-    }
 }
