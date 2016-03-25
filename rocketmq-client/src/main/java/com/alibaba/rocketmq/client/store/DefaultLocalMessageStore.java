@@ -25,10 +25,6 @@ import static com.alibaba.rocketmq.client.store.StoreHelper.wrap;
 
 public class DefaultLocalMessageStore implements LocalMessageStore {
 
-    private static final String DEFAULT_STORE_LOCATION = "/dianyi/data/";
-
-    private static final String LOCAL_MESSAGE_STORE_FOLDER_NAME = ".localMessageStore";
-
     private static final String ABORT_FILE_NAME = ".abort";
 
     private static final String CONFIG_FILE_NAME = ".config";
