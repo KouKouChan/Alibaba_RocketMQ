@@ -37,6 +37,9 @@ public class MappedFileLocalMessageStoreTest {
     public void testStash() throws Exception {
         Message message = new Message("Test", "Test123".getBytes());
         store.stash(message);
+
+        Assert.assertEquals(1, store.getNumberOfMessageStashed());
+
         Message[] messages = store.pop(10);
         for (Message msg : messages) {
             System.out.println(msg);
@@ -56,6 +59,8 @@ public class MappedFileLocalMessageStoreTest {
         for (int i = 0; i < max; i++) {
             store.stash(message);
         }
+
+        Assert.assertEquals(max, store.getNumberOfMessageStashed());
 
         int count = 0;
         for (int i = 0; i < max; i++) {
