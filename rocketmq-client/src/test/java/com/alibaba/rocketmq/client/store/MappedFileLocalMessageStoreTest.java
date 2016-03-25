@@ -52,13 +52,13 @@ public class MappedFileLocalMessageStoreTest {
         byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'x');
         Message message = new Message("TestTopic", data);
-
-        for (int i = 0; i < 10000; i++) {
+        int max = 10000;
+        for (int i = 0; i < max; i++) {
             store.stash(message);
         }
 
         int count = 0;
-        for (int i = 0; i < 1001; i++) {
+        for (int i = 0; i < max; i++) {
             Message[] msgs = store.pop(10);
             count += msgs.length;
 
@@ -72,7 +72,7 @@ public class MappedFileLocalMessageStoreTest {
             }
         }
 
-        Assert.assertEquals(10000, count);
+        Assert.assertEquals(max, count);
     }
 
     // @Test
@@ -87,14 +87,14 @@ public class MappedFileLocalMessageStoreTest {
 
         final AtomicInteger count = new AtomicInteger(0);
         final int threshold = 100000;
-        ExecutorService executorService = Executors.newFixedThreadPool(4);
+        int threadCount = 4;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
 
-        CountDownLatch countDownLatch = new CountDownLatch(4);
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
 
-        executorService.submit(new TaskRunner(store, threshold, count, message, countDownLatch));
-        executorService.submit(new TaskRunner(store, threshold, count, message, countDownLatch));
-        executorService.submit(new TaskRunner(store, threshold, count, message, countDownLatch));
-        executorService.submit(new TaskRunner(store, threshold, count, message, countDownLatch));
+        for (int i = 0; i < threadCount; i++) {
+            executorService.submit(new TaskRunner(store, threshold, count, message, countDownLatch));
+        }
 
         countDownLatch.await();
         executorService.shutdown();
