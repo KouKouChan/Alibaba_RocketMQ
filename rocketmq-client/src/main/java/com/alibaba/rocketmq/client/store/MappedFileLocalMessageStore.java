@@ -103,7 +103,9 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
 
     @Override
     public boolean stash(Message message) {
+        long start = System.currentTimeMillis();
         lock.writeLock().lock();
+        long startWithinLock = System.currentTimeMillis();
         try {
             MappedFile mappedFile = mappedFileQueue.getLastMappedFile();
             if (null == mappedFile) {
@@ -140,7 +142,10 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                     return false;
             }
         } finally {
+            long end = System.currentTimeMillis();
+            LOGGER.debug("IO time without counting acquiring lock " + (end - startWithinLock) + "ms");
             lock.writeLock().unlock();
+            LOGGER.debug("IO time including acquiring lock " + (end - start) + "ms");
         }
     }
 
