@@ -1,5 +1,6 @@
 package com.alibaba.rocketmq.client.store;
 
+import com.alibaba.rocketmq.common.ServiceThread;
 import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.common.message.*;
 import com.alibaba.rocketmq.store.*;
@@ -31,6 +32,8 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
 
     private final AllocateMappedFileService allocateMappedFileService;
 
+    private final GroupCommitService groupCommitService;
+
     private final File abortFile;
 
     private final AtomicLong readOffset = new AtomicLong(0L);
@@ -58,6 +61,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         }
 
         allocateMappedFileService = new AllocateMappedFileService();
+        groupCommitService = new GroupCommitService();
         appendMessageCallback = new AppendMessageCallbackImpl();
         mappedFileQueue = new MappedFileQueue(storePath, MAPPED_FILE_SIZE, allocateMappedFileService);
 
@@ -99,6 +103,8 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         } else {
             recoverAbnormally();
         }
+
+        groupCommitService.start();
     }
 
     @Override
@@ -127,7 +133,11 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                     appendMessageResult = mappedFile.appendMessage(message, appendMessageCallback);
                     switch (appendMessageResult.getStatus()) {
                         case PUT_OK:
-                            mappedFile.commit(1);
+
+                            CommitLog.GroupCommitRequest request =
+                                    new CommitLog.GroupCommitRequest(appendMessageResult.getWroteOffset() + appendMessageResult.getWroteBytes());
+                            groupCommitService.putRequest(request);
+
                             return true;
 
                         default:
@@ -135,7 +145,9 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                     }
 
                 case PUT_OK:
-                    mappedFile.commit(1);
+                    CommitLog.GroupCommitRequest request =
+                            new CommitLog.GroupCommitRequest(appendMessageResult.getWroteOffset() + appendMessageResult.getWroteBytes());
+                    groupCommitService.putRequest(request);
                     return true;
 
                 default:
@@ -200,6 +212,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         checkpointByteBuffer.force();
         mappedFileQueue.shutdown(3 * 1000);
         allocateMappedFileService.shutdown();
+        groupCommitService.shutdown();
         removeAbortFile();
     }
 
@@ -260,6 +273,100 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                             System.currentTimeMillis(), 0L);
 
             return result;
+        }
+    }
+
+    class GroupCommitService extends ServiceThread {
+        private volatile List<CommitLog.GroupCommitRequest> requestsWrite = new ArrayList<CommitLog.GroupCommitRequest>();
+        private volatile List<CommitLog.GroupCommitRequest> requestsRead = new ArrayList<CommitLog.GroupCommitRequest>();
+
+
+        public void putRequest(final CommitLog.GroupCommitRequest request) {
+            synchronized (this) {
+                this.requestsWrite.add(request);
+                if (!this.hasNotified) {
+                    this.hasNotified = true;
+                    this.notify();
+                }
+            }
+        }
+
+
+        private void swapRequests() {
+            List<CommitLog.GroupCommitRequest> tmp = this.requestsWrite;
+            this.requestsWrite = this.requestsRead;
+            this.requestsRead = tmp;
+        }
+
+
+        private void doCommit() {
+            if (!this.requestsRead.isEmpty()) {
+                for (CommitLog.GroupCommitRequest req : this.requestsRead) {
+                    // 消息有可能在下一个文件，所以最多刷盘2次
+                    boolean flushOK = false;
+                    for (int i = 0; (i < 2) && !flushOK; i++) {
+                        flushOK = (mappedFileQueue.getCommittedWhere() >= req.getNextOffset());
+
+                        if (!flushOK) {
+                            mappedFileQueue.commit(0);
+                        }
+                    }
+
+                    req.wakeupCustomer(flushOK);
+                }
+
+
+                this.requestsRead.clear();
+            } else {
+                // 由于个别消息设置为不同步刷盘，所以会走到此流程
+                mappedFileQueue.commit(0);
+            }
+        }
+
+
+        public void run() {
+            LOGGER.info(this.getServiceName() + " service started");
+
+            while (!this.isStopped()) {
+                try {
+                    this.waitForRunning(0);
+                    this.doCommit();
+                } catch (Exception e) {
+                    LOGGER.warn(this.getServiceName() + " service has exception. ", e);
+                }
+            }
+
+            // 在正常shutdown情况下，等待请求到来，然后再刷盘
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                LOGGER.warn("GroupCommitService Exception, ", e);
+            }
+
+            synchronized (this) {
+                this.swapRequests();
+            }
+            this.doCommit();
+            LOGGER.info(this.getServiceName() + " service end");
+        }
+
+
+        @Override
+        protected void onWaitEnd() {
+            this.swapRequests();
+        }
+
+
+        @Override
+        public String getServiceName() {
+            return GroupCommitService.class.getSimpleName();
+        }
+
+
+        @Override
+        public long getJoinTime() {
+            // 由于CommitLog数据量较大，所以回收时间要更长
+            return 1000 * 60 * 5;
         }
     }
 
