@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.alibaba.rocketmq.store.AppendMessageStatus.END_OF_FILE;
 import static com.alibaba.rocketmq.store.CommitLog.MessageMagicCode;
@@ -33,7 +34,10 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
     private final File abortFile;
 
     private final AtomicLong readOffset = new AtomicLong(0L);
+
     private final MappedByteBuffer checkpointByteBuffer;
+
+    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     // 文件末尾空洞对应的MAGIC CODE cbd43194
     private final static int BlankMagicCode = 0xBBCCDDEE ^ 1880681586 + 8;
@@ -77,11 +81,14 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         }
 
         abortFile = new File(storePath, ".abort");
+
+        // load 依赖此服务, 提前启动.
+        allocateMappedFileService.start();
     }
 
     @Override
     public void start() throws IOException {
-        allocateMappedFileService.start();
+
         if (!mappedFileQueue.load()) {
             throw new IOException("Failed to load mapped file queue");
         }
@@ -96,14 +103,14 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
 
     @Override
     public boolean stash(Message message) {
-        MappedFile mappedFile = mappedFileQueue.getLastMappedFile();
-        if (null == mappedFile) {
-            LOGGER.error("Unable to create mapped file");
-            return false;
-        }
+        lock.writeLock().lock();
+        try {
+            MappedFile mappedFile = mappedFileQueue.getLastMappedFile();
+            if (null == mappedFile) {
+                LOGGER.error("Unable to create mapped file");
+                return false;
+            }
 
-        // We need to synchronize while writing data to commit log.
-        synchronized (this) {
             AppendMessageResult appendMessageResult = mappedFile.appendMessage(message, appendMessageCallback);
             switch (appendMessageResult.getStatus()) {
                 case END_OF_FILE:
@@ -132,6 +139,8 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                 default:
                     return false;
             }
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -182,9 +191,10 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
     }
 
     @Override
-    public void close() throws InterruptedException {
+    public void close() {
         checkpointByteBuffer.force();
         mappedFileQueue.shutdown(3 * 1000);
+        allocateMappedFileService.shutdown();
         removeAbortFile();
     }
 
