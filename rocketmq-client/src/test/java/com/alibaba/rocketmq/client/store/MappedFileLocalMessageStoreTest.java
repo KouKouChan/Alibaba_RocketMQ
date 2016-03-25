@@ -102,6 +102,7 @@ public class MappedFileLocalMessageStoreTest {
         }
 
         countDownLatch.await();
+        System.out.println(store.getNumberOfMessageStashed());
         executorService.shutdown();
         store.close();
     }
