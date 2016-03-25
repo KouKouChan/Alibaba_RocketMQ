@@ -1,6 +1,5 @@
-package com.alibaba.rocketmq.client.producer.concurrent;
+package com.alibaba.rocketmq.client.store;
 
-import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.common.message.Message;
 import org.junit.After;
 import org.junit.Assert;
@@ -27,7 +26,7 @@ public class DefaultLocalMessageStoreTest {
     private DefaultLocalMessageStore defaultLocalMessageStore;
 
     private void cleanUp() {
-        File storeFile = DefaultLocalMessageStore.getLocalMessageStoreDirectory(STORE_NAME);
+        File storeFile = StoreHelper.getLocalMessageStoreDirectory(STORE_NAME);
         if (storeFile.exists()) {
             recursiveDelete(storeFile);
         }
@@ -113,7 +112,7 @@ public class DefaultLocalMessageStoreTest {
         defaultLocalMessageStore.close();
 
         // Delete .config file
-        File storeFile = DefaultLocalMessageStore.getLocalMessageStoreDirectory(STORE_NAME);
+        File storeFile = StoreHelper.getLocalMessageStoreDirectory(STORE_NAME);
         File configFile = new File(storeFile, ".config");
         if (configFile.exists()) {
             configFile.delete();

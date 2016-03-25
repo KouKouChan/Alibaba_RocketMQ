@@ -1,6 +1,7 @@
 package com.alibaba.rocketmq.client.store;
 
 import com.alibaba.rocketmq.common.message.Message;
+import com.alibaba.rocketmq.common.message.MessageExt;
 
 import java.io.IOException;
 
@@ -23,7 +24,7 @@ public interface LocalMessageStore {
      * @param n Number of messages assumed to be popped out.
      * @return Array of messages.
      */
-    Message[] pop(int n);
+    MessageExt[] pop(int n);
 
     void start() throws IOException;
 

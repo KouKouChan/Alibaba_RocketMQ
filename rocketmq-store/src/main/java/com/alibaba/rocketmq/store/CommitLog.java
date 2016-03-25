@@ -819,7 +819,7 @@ public class CommitLog {
         }
     }
 
-    public class GroupCommitRequest {
+    public static class GroupCommitRequest {
         // 当前消息对应的下一个Offset
         private final long nextOffset;
         // 异步通知对象

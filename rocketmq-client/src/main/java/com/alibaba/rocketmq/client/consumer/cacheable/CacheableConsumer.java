@@ -7,7 +7,8 @@ import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.impl.MQClientManager;
 import com.alibaba.rocketmq.client.impl.factory.MQClientInstance;
 import com.alibaba.rocketmq.client.log.ClientLogger;
-import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
+import com.alibaba.rocketmq.client.store.LocalMessageStore;
+import com.alibaba.rocketmq.client.store.MappedFileLocalMessageStore;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
@@ -32,7 +33,7 @@ public class CacheableConsumer {
 
     private String consumerGroupName;
 
-    protected DefaultLocalMessageStore localMessageStore;
+    protected LocalMessageStore localMessageStore;
 
     private final ConcurrentHashMap<String, MessageHandler> topicHandlerMap;
 
@@ -145,7 +146,7 @@ public class CacheableConsumer {
                     new ThreadPoolExecutor.CallerRunsPolicy());
 
             statistics = new SynchronizedDescriptiveStatistics(5000);
-            localMessageStore = new DefaultLocalMessageStore(consumerGroupName);
+            localMessageStore = new MappedFileLocalMessageStore(consumerGroupName);
             frontController = new FrontController(this);
             scheduledStatisticsReportExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
@@ -352,7 +353,7 @@ public class CacheableConsumer {
         return consumerGroupName;
     }
 
-    public DefaultLocalMessageStore getLocalMessageStore() {
+    public LocalMessageStore getLocalMessageStore() {
         return localMessageStore;
     }
 

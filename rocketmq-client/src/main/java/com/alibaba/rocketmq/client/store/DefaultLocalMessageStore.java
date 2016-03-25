@@ -6,34 +6,22 @@ import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.common.ServiceThread;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.message.Message;
-import com.alibaba.rocketmq.common.message.MessageAccessor;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
 import com.alibaba.rocketmq.common.message.MessageEncoder;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
-import java.net.InetSocketAddress;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.alibaba.rocketmq.client.store.StoreHelper.wrap;
 
 public class DefaultLocalMessageStore implements LocalMessageStore {
 
@@ -193,24 +181,9 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         }
     }
 
-    public static File getLocalMessageStoreDirectory(String storeName) {
-        //For convenience of development.
-        String storeLocation = System.getProperty("defaultLocalMessageStoreLocation", DEFAULT_STORE_LOCATION);
-        if (DEFAULT_STORE_LOCATION.equals(storeLocation)) {
-            File defaultStoreLocation = new File(DEFAULT_STORE_LOCATION);
-            if (!defaultStoreLocation.exists()) {
-                storeLocation = System.getProperty("user.home") + File.separator + LOCAL_MESSAGE_STORE_FOLDER_NAME;
-            } else {
-                storeLocation = storeLocation.endsWith(File.separator)
-                        ? storeLocation + LOCAL_MESSAGE_STORE_FOLDER_NAME
-                        : storeLocation + File.separator + LOCAL_MESSAGE_STORE_FOLDER_NAME;
-            }
-        }
-        return new File(storeLocation, storeName);
-    }
-
     public DefaultLocalMessageStore(String storeName) throws IOException {
-        localMessageStoreDirectory = getLocalMessageStoreDirectory(storeName);
+
+        localMessageStoreDirectory = StoreHelper.getLocalMessageStoreDirectory(storeName);
 
         if (!localMessageStoreDirectory.exists()) {
             if (!localMessageStoreDirectory.mkdirs()) {
@@ -379,9 +352,6 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
                         writeRandomAccessFile.seek(writeOffSet.longValue());
                     }
                 }
-            } catch (FileNotFoundException e) {
-                LOGGER.error("Initializing default local store fails.", e);
-                throw e;
             } catch (IOException e) {
                 LOGGER.error("Initializing default local store fails.", e);
                 throw e;
@@ -907,22 +877,5 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
      */
     public void suspend() {
         flushDiskService.putRequest(new FlushDiskRequest(true));
-    }
-
-    private MessageExt wrap(Message message) {
-        if (message instanceof MessageExt) {
-            return (MessageExt)message;
-        }
-
-        MessageExt messageExt = new MessageExt();
-        messageExt.setTopic(message.getTopic());
-        messageExt.setFlag(message.getFlag());
-        messageExt.setBody(message.getBody());
-        MessageAccessor.setProperties(messageExt, message.getProperties());
-
-        messageExt.setBornHost(new InetSocketAddress(0));
-        messageExt.setStoreHost(new InetSocketAddress(0));
-
-        return messageExt;
     }
 }
