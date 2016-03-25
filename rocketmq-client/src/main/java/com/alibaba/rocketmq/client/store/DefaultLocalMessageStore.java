@@ -21,13 +21,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.alibaba.rocketmq.client.store.StoreHelper.wrap;
+import static com.alibaba.rocketmq.client.store.StoreHelper.*;
 
 public class DefaultLocalMessageStore implements LocalMessageStore {
-
-    private static final String DEFAULT_STORE_LOCATION = "/dianyi/data/";
-
-    private static final String LOCAL_MESSAGE_STORE_FOLDER_NAME = ".localMessageStore";
 
     private static final String ABORT_FILE_NAME = ".abort";
 
@@ -181,25 +177,9 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         }
     }
 
-    public static File getLocalMessageStoreDirectory(String storeName) {
-        //For convenience of development.
-        String storeLocation = System.getProperty("defaultLocalMessageStoreLocation", DEFAULT_STORE_LOCATION);
-        if (DEFAULT_STORE_LOCATION.equals(storeLocation)) {
-            File defaultStoreLocation = new File(DEFAULT_STORE_LOCATION);
-            if (!defaultStoreLocation.exists()) {
-                storeLocation = System.getProperty("user.home") + File.separator + LOCAL_MESSAGE_STORE_FOLDER_NAME;
-            } else {
-                storeLocation = storeLocation.endsWith(File.separator)
-                        ? storeLocation + LOCAL_MESSAGE_STORE_FOLDER_NAME
-                        : storeLocation + File.separator + LOCAL_MESSAGE_STORE_FOLDER_NAME;
-            }
-        }
-        return new File(storeLocation, storeName);
-    }
-
     public DefaultLocalMessageStore(String storeName) throws IOException {
 
-        localMessageStoreDirectory = getLocalMessageStoreDirectory(storeName);
+        localMessageStoreDirectory = StoreHelper.getLocalMessageStoreDirectory(storeName);
 
         if (!localMessageStoreDirectory.exists()) {
             if (!localMessageStoreDirectory.mkdirs()) {

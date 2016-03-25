@@ -8,6 +8,7 @@ import com.alibaba.rocketmq.client.impl.MQClientManager;
 import com.alibaba.rocketmq.client.impl.factory.MQClientInstance;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
+import com.alibaba.rocketmq.client.store.LocalMessageStore;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
@@ -26,7 +27,7 @@ public class CacheableConsumer {
 
     private String consumerGroupName;
 
-    protected DefaultLocalMessageStore localMessageStore;
+    protected LocalMessageStore localMessageStore;
 
     private final ConcurrentHashMap<String, MessageHandler> topicHandlerMap;
 
@@ -318,7 +319,7 @@ public class CacheableConsumer {
         }
     }
 
-    public DefaultLocalMessageStore getLocalMessageStore() {
+    public LocalMessageStore getLocalMessageStore() {
         return localMessageStore;
     }
 
@@ -421,8 +422,6 @@ public class CacheableConsumer {
         }
 
         defaultMQPushConsumer.suspend();
-
-        localMessageStore.suspend();
         status = ClientStatus.SUSPENDED;
     }
 

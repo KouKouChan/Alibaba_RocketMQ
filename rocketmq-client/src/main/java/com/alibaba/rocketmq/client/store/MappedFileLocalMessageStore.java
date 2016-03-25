@@ -61,9 +61,9 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
 
     private final static int MAX_MESSAGE_SIZE = 1024 * 512;
 
-    public MappedFileLocalMessageStore(final String storePath) throws IOException {
+    public MappedFileLocalMessageStore(final String storeName) throws IOException {
 
-        File storeFile = new File(storePath);
+        File storeFile = StoreHelper.getLocalMessageStoreDirectory(storeName);
         if (!storeFile.exists()) {
             if (!storeFile.mkdirs()) {
                 throw new IOException("Unable to create store directory");
@@ -75,9 +75,9 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         allocateMappedFileService = new AllocateMappedFileService();
         groupCommitService = new GroupCommitService();
         appendMessageCallback = new AppendMessageCallbackImpl();
-        mappedFileQueue = new MappedFileQueue(storePath, MAPPED_FILE_SIZE, allocateMappedFileService);
+        mappedFileQueue = new MappedFileQueue(storeFile.getPath(), MAPPED_FILE_SIZE, allocateMappedFileService);
 
-        File checkpoint = new File(storePath, "checkpoint.data");
+        File checkpoint = new File(storeFile, "checkpoint.data");
         boolean initCheckPoint = false;
         if (!checkpoint.exists()) {
 
@@ -102,7 +102,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
             writeIndex.set(checkpointByteBuffer.getInt());
         }
 
-        abortFile = new File(storePath, ".abort");
+        abortFile = new File(storeFile, ".abort");
 
         // load 依赖此服务, 提前启动.
         allocateMappedFileService.start();
@@ -187,14 +187,14 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
     }
 
     @Override
-    public Message[] pop(int n) {
+    public MessageExt[] pop(int n) {
         if (readOffset.get() >= mappedFileQueue.getMaxOffset()) {
-            return new Message[0];
+            return new MessageExt[0];
         }
 
         MappedFile mappedFile = mappedFileQueue.findMappedFileByOffset(readOffset.get(), false);
         if (null == mappedFile) {
-            return new Message[0];
+            return new MessageExt[0];
         }
 
         int logicalOffset = (int)(readOffset.get() - mappedFile.getFileFromOffset());
@@ -203,7 +203,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
         try {
             selectMappedBufferResult = mappedFile.selectMappedBuffer(logicalOffset);
 
-            List<Message> messages = new ArrayList<>(n);
+            List<MessageExt> messages = new ArrayList<>(n);
             ByteBuffer byteBuffer = selectMappedBufferResult.getByteBuffer();
             for (int i = 0; i < n && byteBuffer.hasRemaining(); i++) {
                 int pos = byteBuffer.position();
@@ -213,7 +213,7 @@ public class MappedFileLocalMessageStore implements LocalMessageStore {
                 readIndex.incrementAndGet();
             }
             mappedFileQueue.deleteExpiredFilesByPhysicalOffset(readOffset.get());
-            return messages.toArray(new Message[0]);
+            return messages.toArray(new MessageExt[0]);
         } finally {
             if (null != selectMappedBufferResult) {
                 selectMappedBufferResult.release();

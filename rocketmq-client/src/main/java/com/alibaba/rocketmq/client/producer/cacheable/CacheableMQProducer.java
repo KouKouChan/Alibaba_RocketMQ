@@ -7,17 +7,13 @@ import com.alibaba.rocketmq.client.producer.MessageQueueSelector;
 import com.alibaba.rocketmq.client.producer.SendCallback;
 import com.alibaba.rocketmq.client.producer.TraceLevel;
 import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByDataCenter;
-import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.client.store.LocalMessageStore;
+import com.alibaba.rocketmq.client.store.MappedFileLocalMessageStore;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.message.Message;
 import org.slf4j.Logger;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CacheableMQProducer {
@@ -84,7 +80,7 @@ public class CacheableMQProducer {
             defaultMQProducer.setSendMsgTimeout(configuration.getSendMessageTimeOutInMilliSeconds());
             defaultMQProducer.setTraceLevel(TraceLevel.PRODUCTION.name());
 
-            localMessageStore = new DefaultLocalMessageStore(configuration.getProducerGroup());
+            localMessageStore = new MappedFileLocalMessageStore(configuration.getProducerGroup());
             localMessageStore.start();
 
             defaultMQProducer.start();
