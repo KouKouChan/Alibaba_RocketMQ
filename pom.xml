@@ -13,7 +13,7 @@
 	<inceptionYear>2012</inceptionYear>
 	<groupId>com.alibaba.rocketmq</groupId>
 	<artifactId>rocketmq-all</artifactId>
-	<version>3.2.2.R4-SNAPSHOT</version>
+	<version>${rocketmq.version}</version>
 	<packaging>pom</packaging>
 	<name>rocketmq-all ${project.version}</name>
 	<url>https://github.com/alibaba/rocketmq</url>
@@ -85,6 +85,7 @@
 		<java_target_version>1.7</java_target_version>
 		<file_encoding>UTF-8</file_encoding>
 		<netty.version>4.0.34.Final</netty.version>
+		<rocketmq.version>3.2.2.R4-SNAPSHOT</rocketmq.version>
 	</properties>
 
 	<build>

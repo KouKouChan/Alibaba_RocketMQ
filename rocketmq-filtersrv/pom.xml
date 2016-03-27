@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>com.alibaba.rocketmq</groupId>
 		<artifactId>rocketmq-all</artifactId>
-		<version>3.2.2.R4-SNAPSHOT</version>
+		<version>${rocketmq.version}</version>
 	</parent>
 
 	<modelVersion>4.0.0</modelVersion>
