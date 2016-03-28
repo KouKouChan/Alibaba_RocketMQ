@@ -1,7 +1,6 @@
 package com.alibaba.rocketmq.client.store;
 
 import com.alibaba.rocketmq.common.message.Message;
-import com.alibaba.rocketmq.store.AllocateMappedFileService;
 import org.junit.*;
 
 import java.io.File;
@@ -10,8 +9,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class MappedFileLocalMessageStoreTest {
 
@@ -21,8 +18,7 @@ public class MappedFileLocalMessageStoreTest {
 
     @BeforeClass
     public static void init() {
-        String home = System.getProperty("user.home");
-        storePath = home + "/local_store";
+        storePath = "local_store";
     }
 
     @Before
@@ -34,12 +30,8 @@ public class MappedFileLocalMessageStoreTest {
     @After
     public void tearDown() throws InterruptedException {
         store.close();
-
-        File storeDirectory = new File(storePath);
-        File[] files = storeDirectory.listFiles();
-        for (File file : files) {
-            file.delete();
-        }
+        File storeDirectory = StoreHelper.getLocalMessageStoreDirectory(storePath);
+        StoreHelper.delete(storeDirectory, true);
     }
 
     @Test
@@ -54,8 +46,6 @@ public class MappedFileLocalMessageStoreTest {
             System.out.println(msg);
             System.out.println(new String(msg.getBody(), "UTF-8"));
         }
-
-        store.close();
     }
 
 
@@ -108,7 +98,6 @@ public class MappedFileLocalMessageStoreTest {
         countDownLatch.await();
         Assert.assertEquals(threshold, store.getNumberOfMessageStashed());
         executorService.shutdown();
-        store.close();
     }
 
     static class TaskRunner implements Runnable {

@@ -155,6 +155,8 @@ public class AllocateMappedFileService extends ServiceThread {
         } catch (InterruptedException e) {
             if (!stopped) {
                 log.warn(this.getServiceName() + " service has exception.");
+            } else {
+                log.warn(getServiceName() + " service is interrupted as it's being shut down");
             }
 
             this.hasException = true;
