@@ -20,12 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CacheableConsumer {
@@ -79,6 +74,9 @@ public class CacheableConsumer {
     private int maximumNumberOfMessageBuffered = DEFAULT_MAXIMUM_NUMBER_OF_MESSAGE_BUFFERED;
 
     private LinkedBlockingQueue<MessageExt> messageQueue;
+
+    private final DelayService delayService;
+    private final DelayQueue<DelayItem> delayQueue = new DelayQueue<>();
 
     private LinkedBlockingQueue<MessageExt> inProgressMessageQueue;
 
@@ -148,6 +146,8 @@ public class CacheableConsumer {
             statistics = new SynchronizedDescriptiveStatistics(5000);
             localMessageStore = new MappedFileLocalMessageStore(consumerGroupName);
             frontController = new FrontController(this);
+            delayService = new DelayService(this);
+
             scheduledStatisticsReportExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -234,6 +234,7 @@ public class CacheableConsumer {
         inProgressMessageQueue = new LinkedBlockingQueue<MessageExt>(maximumNumberOfMessageBuffered);
 
         frontController.startSubmittingJob();
+        delayService.start();
 
         for (DefaultMQPushConsumer defaultMQPushConsumer : defaultMQPushConsumers) {
             defaultMQPushConsumer.registerMessageListener(frontController);
@@ -270,8 +271,8 @@ public class CacheableConsumer {
     }
 
     private void startPopThread() {
-        DelayTask delayTask = new DelayTask(this);
-        scheduledExecutorDelayService.scheduleWithFixedDelay(delayTask, 2, 2, TimeUnit.SECONDS);
+        PopStoreService popStoreService = new PopStoreService(this);
+        scheduledExecutorDelayService.scheduleWithFixedDelay(popStoreService, 2, 2, TimeUnit.SECONDS);
     }
 
     public boolean isStarted() {
@@ -428,24 +429,30 @@ public class CacheableConsumer {
 
             //Stash back all those that is not properly handled.
             LOGGER.info(messageQueue.size() + " messages to save into local message store due to system shutdown.");
-            if (messageQueue.size() > 0) {
-                MessageExt messageExt = messageQueue.poll();
-                while (null != messageExt) {
-                    localMessageStore.stash(messageExt);
-                    messageExt = messageQueue.poll();
-                }
-            }
+            stashBlockingMessageQueue(messageQueue);
+            stashBlockingMessageQueue(inProgressMessageQueue);
 
-            if (inProgressMessageQueue.size() > 0) {
-                MessageExt messageExt = inProgressMessageQueue.poll();
-                while (null != messageExt) {
-                    localMessageStore.stash(messageExt);
-                    messageExt = inProgressMessageQueue.poll();
-                }
+            delayService.shutdown();
+            for (DelayItem item : delayQueue) {
+                localMessageStore.stash(item.getMessage());
             }
 
             status = ClientStatus.CLOSED;
             LOGGER.info("Local messages saving completes.");
+        }
+    }
+
+    private void stashBlockingMessageQueue(LinkedBlockingQueue<MessageExt> messageQueue) {
+        if (null == messageQueue || messageQueue.isEmpty()) {
+            return;
+        }
+
+        if (messageQueue.size() > 0) {
+            MessageExt messageExt = messageQueue.poll();
+            while (null != messageExt) {
+                localMessageStore.stash(messageExt);
+                messageExt = messageQueue.poll();
+            }
         }
     }
 
@@ -471,6 +478,10 @@ public class CacheableConsumer {
             status = ClientStatus.ACTIVE;
             LOGGER.info("Consumer client resumed.");
         }
+    }
+
+    public DelayQueue<DelayItem> getDelayQueue() {
+        return delayQueue;
     }
 
     public int getMaximumPoolSizeForWorkTasks() {

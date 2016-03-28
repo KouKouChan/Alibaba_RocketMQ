@@ -4,7 +4,7 @@ import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 
-public class DelayTask implements Runnable {
+public class PopStoreService implements Runnable {
 
     private static final Logger LOGGER = ClientLogger.getLog();
 
@@ -12,7 +12,7 @@ public class DelayTask implements Runnable {
 
     private CacheableConsumer cacheableConsumer;
 
-    public DelayTask(CacheableConsumer cacheableConsumer) {
+    public PopStoreService(CacheableConsumer cacheableConsumer) {
         this.cacheableConsumer = cacheableConsumer;
     }
 
@@ -57,7 +57,7 @@ public class DelayTask implements Runnable {
                 }
             }
         } catch (Exception e) {
-            LOGGER.error("DelayTask error", e);
+            LOGGER.error("PopStoreService error", e);
         }
 
         LOGGER.info("Re-consume completes.");

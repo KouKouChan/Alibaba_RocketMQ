@@ -34,7 +34,8 @@ public class ProcessMessageTask implements Runnable {
                 cacheableConsumer.getSuccessCounter().incrementAndGet();
             } else if (result > 0) {
                 cacheableConsumer.getFailureCounter().incrementAndGet();
-                cacheableConsumer.getMessageQueue().put(message);
+                DelayItem delayItem = new DelayItem(message, result);
+                cacheableConsumer.getDelayQueue().offer(delayItem);
             } else {
                 LOGGER.error("Unable to process returning result: " + result);
             }
