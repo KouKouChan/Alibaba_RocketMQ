@@ -42,8 +42,6 @@ public class MappedFileLocalMessageStoreTest {
             System.out.println(msg);
             System.out.println(new String(msg.getBody(), "UTF-8"));
         }
-
-        store.close();
     }
 
 
@@ -96,7 +94,6 @@ public class MappedFileLocalMessageStoreTest {
         countDownLatch.await();
         Assert.assertEquals(threshold, store.getNumberOfMessageStashed());
         executorService.shutdown();
-        store.close();
     }
 
     static class TaskRunner implements Runnable {
