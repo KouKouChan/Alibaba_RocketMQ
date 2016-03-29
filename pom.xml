@@ -86,7 +86,7 @@
 		<java_source_version>1.7</java_source_version>
 		<java_target_version>1.7</java_target_version>
 		<file_encoding>UTF-8</file_encoding>
-		<netty.version>4.0.28.Final</netty.version>
+		<netty.version>4.0.35.Final</netty.version>
 
 		<!-- Define Current RocketMQ Version -->
 		<RocketMQ_Current_Version>3.2.2.R3-SNAPSHOT</RocketMQ_Current_Version>
