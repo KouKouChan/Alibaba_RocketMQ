@@ -127,7 +127,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                     }
                 });
 
-        if (nettyServerConfig.isSsl()) {
+        if (nettyServerConfig.isServerSSLEnabled()) {
             log.debug("Detected SSL enabled");
             try {
                 sslContext = SslHelper.getSSLContext(SslRole.SERVER);
