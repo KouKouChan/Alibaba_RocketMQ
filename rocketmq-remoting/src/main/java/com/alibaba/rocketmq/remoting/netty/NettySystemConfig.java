@@ -30,5 +30,5 @@ public class NettySystemConfig {
     public static final String SYSTEM_PROPERTY_CLIENT_CONNECTION_PARALLELISM_KEY =
             "com.rocketmq.remoting.clientParallelismKey";
     public static int CLIENT_CONNECTION_PARALLELISM =
-            Integer.parseInt(System.getProperty(SYSTEM_PROPERTY_CLIENT_CONNECTION_PARALLELISM_KEY, "3"));
+            Integer.parseInt(System.getProperty(SYSTEM_PROPERTY_CLIENT_CONNECTION_PARALLELISM_KEY, "1"));
 }
