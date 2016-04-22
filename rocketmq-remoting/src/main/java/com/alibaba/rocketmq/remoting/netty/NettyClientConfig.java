@@ -15,8 +15,6 @@
  */
 package com.alibaba.rocketmq.remoting.netty;
 
-import com.alibaba.rocketmq.option.CommandOption;
-
 /**
  * Netty客户端配置类
  * 
@@ -44,12 +42,11 @@ public class NettyClientConfig {
 
     private boolean clientPooledByteBufAllocatorEnable = NettySystemConfig.NettyPooledByteBufAllocatorEnable;
 
-    private boolean ssl = false;
+    private boolean clientSSLEnabled = true;
 
     private int parallelism = NettySystemConfig.CLIENT_CONNECTION_PARALLELISM;
 
     public NettyClientConfig() {
-        ssl = CommandOption.hasOption(CommandOption.OPTION_SSL);
     }
 
     public int getClientWorkerThreads() {
@@ -151,12 +148,12 @@ public class NettyClientConfig {
         this.clientPooledByteBufAllocatorEnable = clientPooledByteBufAllocatorEnable;
     }
 
-    public boolean isSsl() {
-        return ssl;
+    public boolean isClientSSLEnabled() {
+        return clientSSLEnabled;
     }
 
-    public void setSsl(boolean ssl) {
-        this.ssl = ssl;
+    public void setClientSSLEnabled(boolean clientSSLEnabled) {
+        this.clientSSLEnabled = clientSSLEnabled;
     }
 
     public int getParallelism() {
