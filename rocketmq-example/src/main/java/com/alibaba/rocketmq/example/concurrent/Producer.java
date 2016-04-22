@@ -61,7 +61,7 @@ public class Producer {
                         @Override
                         public void run() {
                             try {
-                                Message[] messages = buildMessages(RANDOM.nextInt(400));
+                                Message[] messages = buildMessages(RANDOM.nextInt(800));
                                 producer.send(messages);
                                 adder.incrementAndGet();
                                 if (adder.longValue() % 1000 == 0) {
