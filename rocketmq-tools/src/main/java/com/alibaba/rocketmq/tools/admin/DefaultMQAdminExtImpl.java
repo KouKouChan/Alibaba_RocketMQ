@@ -154,7 +154,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public void createAndUpdateTopicConfig(String addr, TopicConfig config) throws RemotingException,
             MQBrokerException, InterruptedException, MQClientException {
         this.mqClientInstance.getMQClientAPIImpl().createTopic(addr,
-            this.defaultMQAdminExt.getCreateTopicKey(), config, 3000);
+            this.defaultMQAdminExt.getCreateTopicKey(), config, 30 * 1000);
     }
 
     @Override
