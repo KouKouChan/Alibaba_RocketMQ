@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
@@ -41,6 +40,8 @@ import java.nio.channels.SocketChannel;
 public class RemotingHelper {
 
     public static final String RemotingLogName = "RocketmqRemoting";
+
+    private static final int TEST_CONNECTION_TIMEOUT = 3000;
 
     private static final Logger LOG = LoggerFactory.getLogger(RemotingHelper.RemotingLogName);
 
@@ -87,7 +88,13 @@ public class RemotingHelper {
             for (String ip : ipArray) {
                 for (Subnet subnet : RemotingUtil.CURRENT_HOST_SUBNETS) {
                     if (subnet.compareAddressToSubnet(ip)) {
-                        return ip;
+                        try {
+                            if (InetAddress.getByName(ip).isReachable(TEST_CONNECTION_TIMEOUT)) {
+                                return ip;
+                            }
+                        } catch (IOException ignore) {
+                        }
+
                     }
                 }
             }
@@ -103,11 +110,9 @@ public class RemotingHelper {
             for (String ip : ipArray) {
                 try {
                     InetAddress inetAddress = InetAddress.getByName(ip);
-                    if (inetAddress.isReachable(3000)) {
+                    if (inetAddress.isReachable(TEST_CONNECTION_TIMEOUT)) {
                         return ip;
                     }
-                } catch (UnknownHostException e) {
-                    LOG.error("Error while finding reachable IP", e);
                 } catch (IOException e) {
                     LOG.error("Error while finding reachable IP", e);
                 }
