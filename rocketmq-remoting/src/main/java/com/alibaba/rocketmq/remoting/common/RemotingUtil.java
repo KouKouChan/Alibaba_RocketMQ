@@ -254,11 +254,11 @@ public class RemotingUtil {
 
 
     /**
-     * IP:PORT
+     * IP1,IP2,...,IPn:PORT
      */
     public static SocketAddress string2SocketAddress(final String addr) {
         String[] s = addr.split(":");
-        InetSocketAddress isa = new InetSocketAddress(s[0], Integer.valueOf(s[1]));
+        InetSocketAddress isa = new InetSocketAddress(RemotingHelper.filterIP(s[0]), Integer.valueOf(s[1]));
         return isa;
     }
 
