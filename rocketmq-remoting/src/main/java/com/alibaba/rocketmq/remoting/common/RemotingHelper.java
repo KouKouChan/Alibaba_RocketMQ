@@ -22,6 +22,7 @@ import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import io.netty.channel.Channel;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -35,6 +36,9 @@ import java.nio.channels.SocketChannel;
  * @since 2013-7-13
  */
 public class RemotingHelper {
+
+    public static final int TEST_SERVER_REACHABLE_TIMEOUT = 3000;
+
     public static final String RemotingLogName = "RocketmqRemoting";
 
 
@@ -80,7 +84,13 @@ public class RemotingHelper {
             for (String ip : ipArray) {
                 for (Subnet subnet : RemotingUtil.CURRENT_HOST_SUBNETS) {
                     if (subnet.compareAddressToSubnet(ip)) {
-                        return ip;
+                        try {
+                            if (InetAddress.getByName(ip).isReachable(TEST_SERVER_REACHABLE_TIMEOUT)) {
+                                return ip;
+                            }
+                        } catch (IOException ignore) {
+                        }
+
                     }
                 }
             }
@@ -93,9 +103,16 @@ public class RemotingHelper {
             }
 
             // TODO Choose the one that connects faster.
+            for (String ip : ipArray) {
+                try {
+                    if (InetAddress.getByName(ip).isReachable(TEST_SERVER_REACHABLE_TIMEOUT)) {
+                        return ip;
+                    }
+                } catch (IOException ignore) {
+                }
+            }
 
-            // Choose the last one for now.
-            return ipArray[ipArray.length - 1];
+            throw new RuntimeException("No reachable IP found");
         }
     }
 
