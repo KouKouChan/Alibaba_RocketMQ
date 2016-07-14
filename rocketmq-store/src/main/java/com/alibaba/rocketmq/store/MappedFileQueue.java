@@ -441,7 +441,17 @@ public class MappedFileQueue {
                     }
                 } else {
                     log.warn("this being not executed forever.");
-                    break;
+                    if (mappedFile.isCleanupOver()) { // Process dangling file.
+                        File file = new File(mappedFile.getFileName());
+                        if (file.exists()) {
+                            boolean success = file.delete();
+                            if (!success) {
+                                log.error("Unable to delete dangling file: {}", mappedFile.getFileName());
+                            }
+                        }
+                    } else {
+                        break;
+                    }
                 }
 
                 if (destroy && mappedFile.destroy(1000 * 60)) {
