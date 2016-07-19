@@ -74,7 +74,7 @@ public class MQAdminStartup {
         initCommand(new QueryMsgByOffsetSubCommand());
         initCommand(new PrintMessageSubCommand());
         initCommand(new SendMsgStatusCommand());
-        initCommand(new BrokerConsumeStatsSubCommad());
+        initCommand(new BrokerConsumeStatsSubCommand());
 
 
         initCommand(new ProducerConnectionSubCommand());

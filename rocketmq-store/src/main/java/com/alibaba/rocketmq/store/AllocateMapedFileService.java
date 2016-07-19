@@ -55,14 +55,14 @@ public class AllocateMapedFileService extends ServiceThread {
         if (nextPutOK) {
             boolean offerOK = this.requestQueue.offer(nextReq);
             if (!offerOK) {
-                log.warn("never expetced here, add a request to preallocate queue failed");
+                log.warn("never expected here, add a request to preallocate queue failed");
             }
         }
 
         if (nextNextPutOK) {
             boolean offerOK = this.requestQueue.offer(nextNextReq);
             if (!offerOK) {
-                log.warn("never expetced here, add a request to preallocate queue failed");
+                log.warn("never expected here, add a request to preallocate queue failed");
             }
         }
 

@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * @author shijia.wxr
  */
-public class BrokerConsumeStatsSubCommad implements SubCommand {
+public class BrokerConsumeStatsSubCommand implements SubCommand {
 
     @Override
     public String commandName() {
