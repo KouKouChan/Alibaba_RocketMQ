@@ -377,7 +377,7 @@ public class MixAll {
                             else {
                                 continue;
                             }
-                            method.invoke(object, new Object[] { arg });
+                            method.invoke(object, arg);
                         }
                     }
                 }

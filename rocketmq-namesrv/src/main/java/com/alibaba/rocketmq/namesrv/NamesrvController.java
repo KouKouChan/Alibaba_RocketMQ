@@ -16,6 +16,7 @@
  */
 package com.alibaba.rocketmq.namesrv;
 
+import com.alibaba.rocketmq.common.ServerController;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.namesrv.NamesrvConfig;
@@ -39,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author shijia.wxr
  */
-public class NamesrvController {
+public class NamesrvController implements ServerController {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.NamesrvLoggerName);
     private final NamesrvConfig namesrvConfig;
     private final NettyServerConfig nettyServerConfig;

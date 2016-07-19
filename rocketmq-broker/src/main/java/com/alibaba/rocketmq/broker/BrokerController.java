@@ -63,7 +63,7 @@ import java.util.concurrent.*;
 /**
  * @author shijia.wxr
  */
-public class BrokerController {
+public class BrokerController implements ServerController {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BrokerLoggerName);
     private final BrokerConfig brokerConfig;
     private final NettyServerConfig nettyServerConfig;

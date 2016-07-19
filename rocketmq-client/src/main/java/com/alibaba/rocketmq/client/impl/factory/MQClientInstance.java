@@ -1055,8 +1055,8 @@ public class MQClientInstance {
             while (iterator.hasNext()) {
                 MessageQueue mq = iterator.next();
                 consumer.updateConsumeOffset(mq, offsetTable.get(mq));
-                log.info("[reset-offset] reset offsetTable. topic={}, group={}, mq={}, offset={}", new Object[] { topic, group, mq,
-                                                                                                                 offsetTable.get(mq) });
+                log.info("[reset-offset] reset offsetTable. topic={}, group={}, mq={}, offset={}", topic, group, mq,
+                        offsetTable.get(mq));
             }
             consumer.getOffsetStore().persistAll(offsetTable.keySet());
 
@@ -1071,8 +1071,8 @@ public class MQClientInstance {
             while (iterator.hasNext()) {
                 MessageQueue mq = iterator.next();
                 consumer.updateConsumeOffset(mq, offsetTable.get(mq));
-                log.info("[reset-offset] reset offsetTable. topic={}, group={}, mq={}, offset={}", new Object[] { topic, group, mq,
-                                                                                                                 offsetTable.get(mq) });
+                log.info("[reset-offset] reset offsetTable. topic={}, group={}, mq={}, offset={}", topic, group, mq,
+                        offsetTable.get(mq));
             }
             consumer.getOffsetStore().persistAll(offsetTable.keySet());
 

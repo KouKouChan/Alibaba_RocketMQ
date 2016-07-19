@@ -20,6 +20,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import com.alibaba.rocketmq.common.MQVersion;
 import com.alibaba.rocketmq.common.MixAll;
+import com.alibaba.rocketmq.common.ShutdownHookTask;
 import com.alibaba.rocketmq.common.conflict.PackageConflictDetect;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.namesrv.NamesrvConfig;
@@ -137,25 +138,7 @@ public class NamesrvStartup {
                 System.exit(-3);
             }
 
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-                private volatile boolean hasShutdown = false;
-                private AtomicInteger shutdownTimes = new AtomicInteger(0);
-
-
-                @Override
-                public void run() {
-                    synchronized (this) {
-                        log.info("shutdown hook was invoked, " + this.shutdownTimes.incrementAndGet());
-                        if (!this.hasShutdown) {
-                            this.hasShutdown = true;
-                            long begineTime = System.currentTimeMillis();
-                            controller.shutdown();
-                            long consumingTimeTotal = System.currentTimeMillis() - begineTime;
-                            log.info("shutdown hook over, consuming time total(ms): " + consumingTimeTotal);
-                        }
-                    }
-                }
-            }, "ShutdownHook"));
+            Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHookTask(log, controller), "ShutdownHook"));
 
             controller.start();
 

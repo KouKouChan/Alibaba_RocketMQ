@@ -18,6 +18,7 @@ package com.alibaba.rocketmq.filtersrv;
 
 import com.alibaba.rocketmq.client.consumer.DefaultMQPullConsumer;
 import com.alibaba.rocketmq.common.MixAll;
+import com.alibaba.rocketmq.common.ServerController;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.common.constant.LoggerName;
@@ -40,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author shijia.wxr
  */
-public class FiltersrvController {
+public class FiltersrvController implements ServerController {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.FiltersrvLoggerName);
     private final FiltersrvConfig filtersrvConfig;
     private final NettyServerConfig nettyServerConfig;
