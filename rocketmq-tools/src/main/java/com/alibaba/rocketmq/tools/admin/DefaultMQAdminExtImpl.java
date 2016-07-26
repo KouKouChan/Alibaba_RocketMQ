@@ -673,7 +673,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public Map<MessageQueue, Long> resetOffsetByTimestamp(String topic, String brokerAddress, String group, long timestamp,
             boolean isForce) throws RemotingException, MQBrokerException, InterruptedException,
             MQClientException {
-        return resetOffsetByTimestamp(topic, brokerAddress, group, timestamp, isForce, 5000L);
+        return resetOffsetByTimestamp(topic, brokerAddress, group, timestamp, isForce, 30 * 1000L);
     }
 
     @Override
