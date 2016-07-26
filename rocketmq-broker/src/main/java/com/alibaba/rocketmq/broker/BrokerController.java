@@ -598,7 +598,7 @@ public class BrokerController {
 //        }
 //        ipSet.add(brokerConfig.getBrokerIP1());
 
-        return RemotingUtil.getLocalAddress(true) + ":" + this.nettyServerConfig.getListenPort();
+        return brokerConfig.getBrokerIP1() + ":" + this.nettyServerConfig.getListenPort();
     }
 
     public void start() throws Exception {
