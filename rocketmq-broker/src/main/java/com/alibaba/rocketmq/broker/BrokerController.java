@@ -589,16 +589,16 @@ public class BrokerController {
     public String getBrokerAddr() {
 
         //IPv4 addresses only.
-        List<InetAddress> addresses = RemotingUtil.gatherInetAddresses(true);
+//        List<InetAddress> addresses = RemotingUtil.gatherInetAddresses(true);
+//
+//        Set<String> ipSet = new HashSet<String>();
+//
+//        for (InetAddress address : addresses) {
+//            ipSet.add(address.getHostAddress());
+//        }
+//        ipSet.add(brokerConfig.getBrokerIP1());
 
-        Set<String> ipSet = new HashSet<String>();
-
-        for (InetAddress address : addresses) {
-            ipSet.add(address.getHostAddress());
-        }
-        ipSet.add(brokerConfig.getBrokerIP1());
-
-        return MixAll.concatenateCollectionToCSV(ipSet) + ":" + this.nettyServerConfig.getListenPort();
+        return RemotingUtil.getLocalAddress(true) + ":" + this.nettyServerConfig.getListenPort();
     }
 
     public void start() throws Exception {
