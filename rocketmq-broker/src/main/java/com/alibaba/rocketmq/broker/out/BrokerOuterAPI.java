@@ -130,7 +130,7 @@ public class BrokerOuterAPI {
         requestBody.setFilterServerList(filterServerList);
         request.setBody(requestBody.encode());
 
-        RemotingCommand response = this.remotingClient.invokeSync(namesrvAddr, request, 3000);
+        RemotingCommand response = this.remotingClient.invokeSync(namesrvAddr, request, 30 * 1000);
         assert response != null;
         switch (response.getCode()) {
         case ResponseCode.SUCCESS: {
