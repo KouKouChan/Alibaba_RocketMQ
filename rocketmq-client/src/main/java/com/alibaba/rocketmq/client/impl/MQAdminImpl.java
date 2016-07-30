@@ -46,6 +46,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -279,6 +281,7 @@ public class MQAdminImpl {
             if (!brokerAddrs.isEmpty()) {
                 final CountDownLatch countDownLatch = new CountDownLatch(brokerAddrs.size());
                 final List<QueryResult> queryResultList = new LinkedList<QueryResult>();
+                final Lock lock = new ReentrantLock();
 
                 for (String addr : brokerAddrs) {
                     try {
@@ -313,7 +316,12 @@ public class MQAdminImpl {
                                                         MessageDecoder.decodes(ByteBuffer.wrap(response.getBody()), true);
 
                                                 QueryResult qr = new QueryResult(responseHeader.getIndexLastUpdateTimestamp(), wrappers);
-                                                queryResultList.add(qr);
+                                                lock.lock();
+                                                try {
+                                                    queryResultList.add(qr);
+                                                } finally {
+                                                    lock.unlock();
+                                                }
                                                 break;
                                             }
                                             default:
