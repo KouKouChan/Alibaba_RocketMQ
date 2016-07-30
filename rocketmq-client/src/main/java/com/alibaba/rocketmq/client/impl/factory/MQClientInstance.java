@@ -158,6 +158,7 @@ public class MQClientInstance {
         this.clientConfig = clientConfig;
         this.instanceIndex = instanceIndex;
         this.nettyClientConfig = new NettyClientConfig();
+        this.nettyClientConfig.setConnectTimeoutMillis(30 * 1000);
         this.nettyClientConfig.setClientCallbackExecutorThreads(clientConfig.getClientCallbackExecutorThreads());
         this.clientRemotingProcessor = new ClientRemotingProcessor(this);
         this.mQClientAPIImpl = new MQClientAPIImpl(this.nettyClientConfig, this.clientRemotingProcessor, rpcHook);
@@ -615,7 +616,7 @@ public class MQClientInstance {
                     TopicRouteData topicRouteData = null;
                     if (isDefault && defaultMQProducer != null) {
                         topicRouteData = this.mQClientAPIImpl.getDefaultTopicRouteInfoFromNameServer(
-                                defaultMQProducer.getCreateTopicKey(), 1000 * 3);
+                                defaultMQProducer.getCreateTopicKey(), 1000 * 300);
                         if (topicRouteData != null) {
                             for (QueueData data : topicRouteData.getQueueDatas()) {
                                 // 读写分区个数是一致，故只做一次判断
@@ -626,7 +627,7 @@ public class MQClientInstance {
                             }
                         }
                     } else if (!MixAll.DEFAULT_TOPIC.equals(topic)) {
-                        topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, 1000 * 3);
+                        topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, 1000 * 30);
                     } else {
                         log.info("Skip default topic: {}", topic);
                         return false;
