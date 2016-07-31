@@ -18,6 +18,7 @@ package com.alibaba.rocketmq.client;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.remoting.common.RemotingUtil;
+import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,13 +31,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 2013-7-24
  */
 public class ClientConfig {
-    private String namesrvAddr = System.getProperty(MixAll.NAMESRV_ADDR_PROPERTY,
-        System.getenv(MixAll.NAMESRV_ADDR_ENV));
+    private String namesrvAddr = System.getProperty(MixAll.NAMESRV_ADDR_PROPERTY, System.getenv(MixAll.NAMESRV_ADDR_ENV));
     private String clientIP = RemotingUtil.getLocalAddress();
     private String instanceName = System.getProperty("rocketmq.client.name", "DEFAULT");
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
     private int pollNameServerInterval = 1000 * 30;
     private int heartbeatBrokerInterval = 1000 * 30;
+    private int heartbeatTimeout = NettySystemConfig.NETTY_HEARTBEAT_TIMEOUT;
+    private int networkTimeout = NettySystemConfig.NETTY_IO_TIMEOUT;
     private int persistConsumerOffsetInterval = 1000 * 5;
     private ClientType clientType;
     private WeakReference weakReference;
@@ -69,6 +71,8 @@ public class ClientConfig {
         this.clientCallbackExecutorThreads = cc.clientCallbackExecutorThreads;
         this.pollNameServerInterval = cc.pollNameServerInterval;
         this.heartbeatBrokerInterval = cc.heartbeatBrokerInterval;
+        this.heartbeatTimeout = cc.heartbeatTimeout;
+        this.networkTimeout = cc.networkTimeout;
         this.persistConsumerOffsetInterval = cc.persistConsumerOffsetInterval;
         this.clientType = cc.clientType;
         this.weakReference = cc.weakReference;
@@ -83,6 +87,8 @@ public class ClientConfig {
         cc.clientCallbackExecutorThreads = clientCallbackExecutorThreads;
         cc.pollNameServerInterval = pollNameServerInterval;
         cc.heartbeatBrokerInterval = heartbeatBrokerInterval;
+        cc.heartbeatTimeout = heartbeatTimeout;
+        cc.networkTimeout = networkTimeout;
         cc.persistConsumerOffsetInterval = persistConsumerOffsetInterval;
         cc.clientType = clientType;
         cc.weakReference = weakReference;
@@ -149,11 +155,9 @@ public class ClientConfig {
         this.heartbeatBrokerInterval = heartbeatBrokerInterval;
     }
 
-
     public int getPersistConsumerOffsetInterval() {
         return persistConsumerOffsetInterval;
     }
-
 
     public void setPersistConsumerOffsetInterval(int persistConsumerOffsetInterval) {
         this.persistConsumerOffsetInterval = persistConsumerOffsetInterval;
@@ -187,12 +191,29 @@ public class ClientConfig {
         this.weakReference = weakReference;
     }
 
+    public int getHeartbeatTimeout() {
+        return heartbeatTimeout;
+    }
+
+    public void setHeartbeatTimeout(int heartbeatTimeout) {
+        this.heartbeatTimeout = heartbeatTimeout;
+    }
+
+    public int getNetworkTimeout() {
+        return networkTimeout;
+    }
+
+    public void setNetworkTimeout(int networkTimeout) {
+        this.networkTimeout = networkTimeout;
+    }
+
     @Override
     public String toString() {
         return "ClientConfig [namesrvAddr=" + namesrvAddr + ", clientIP=" + clientIP + ", instanceName="
                 + instanceName + ", clientCallbackExecutorThreads=" + clientCallbackExecutorThreads
                 + ", pollNameServerInterval=" + pollNameServerInterval + ", heartbeatBrokerInterval="
-                + heartbeatBrokerInterval + ", persistConsumerOffsetInterval="
-                + persistConsumerOffsetInterval + ", clientType=" + clientType + "]";
+                + heartbeatBrokerInterval + ", heartbeatTimeout=" + heartbeatTimeout
+                + ", networkTimeout=" + networkTimeout
+                + ", persistConsumerOffsetInterval=" + persistConsumerOffsetInterval + ", clientType=" + clientType + "]";
     }
 }

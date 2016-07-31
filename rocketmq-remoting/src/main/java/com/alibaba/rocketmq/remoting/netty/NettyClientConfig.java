@@ -17,6 +17,8 @@ package com.alibaba.rocketmq.remoting.netty;
 
 import com.alibaba.rocketmq.option.CommandOption;
 
+import java.net.HttpURLConnection;
+
 /**
  * Netty客户端配置类
  * 
@@ -29,7 +31,10 @@ public class NettyClientConfig {
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
     private int clientOneWaySemaphoreValue = NettySystemConfig.ClientOnewaySemaphoreValue;
     private int clientAsyncSemaphoreValue = NettySystemConfig.ClientAsyncSemaphoreValue;
-    private long connectTimeoutMillis = 3000;
+    //
+    private long connectTimeoutMillis = NettySystemConfig.NETTY_CONNECT_TIMEOUT;
+    private long ioTimeoutMillis = NettySystemConfig.NETTY_IO_TIMEOUT;
+
     // channel超过1分钟不被访问 就关闭
     private long channelNotActiveInterval = 1000 * 60;
 
@@ -74,6 +79,13 @@ public class NettyClientConfig {
         this.connectTimeoutMillis = connectTimeoutMillis;
     }
 
+    public long getIoTimeoutMillis() {
+        return ioTimeoutMillis;
+    }
+
+    public void setIoTimeoutMillis(long ioTimeoutMillis) {
+        this.ioTimeoutMillis = ioTimeoutMillis;
+    }
 
     public int getClientCallbackExecutorThreads() {
         return clientCallbackExecutorThreads;

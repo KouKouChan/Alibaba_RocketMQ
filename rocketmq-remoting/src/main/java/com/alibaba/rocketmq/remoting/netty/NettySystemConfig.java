@@ -25,4 +25,13 @@ public class NettySystemConfig {
             "com.rocketmq.remoting.clientOnewaySemaphoreValue";
     public static int ClientOnewaySemaphoreValue = //
             Integer.parseInt(System.getProperty(SystemPropertyClientOnewaySemaphoreValue, "2048"));
+
+    public static final String SYSTEM_NETTY_CONNECT_TIMEOUT = "com.rocketmq.remoting.connect.timeout";
+    public static int NETTY_CONNECT_TIMEOUT = Integer.parseInt(System.getProperty(SYSTEM_NETTY_CONNECT_TIMEOUT, "30000"));
+
+    public static final String SYSTEM_NETTY_IO_TIMEOUT = "com.rocketmq.remoting.io.timeout";
+    public static int NETTY_IO_TIMEOUT = Integer.parseInt(System.getProperty(SYSTEM_NETTY_IO_TIMEOUT, "30000"));
+
+    public static final String SYSTEM_NETTY_HEARTBEAT_TIMEOUT = "com.rocketmq.remoting.heartbeat.timeout";
+    public static int NETTY_HEARTBEAT_TIMEOUT = Integer.parseInt(System.getProperty(SYSTEM_NETTY_HEARTBEAT_TIMEOUT, "15000"));
 }

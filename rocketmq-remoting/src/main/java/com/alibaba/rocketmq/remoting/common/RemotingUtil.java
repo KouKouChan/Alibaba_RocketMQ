@@ -165,6 +165,11 @@ public class RemotingUtil {
                 return ec2PublicIPv4;
             }
 
+            ec2PublicIPv4 = CloudUtil.awsEC2V2QueryPublicIPv4();
+            if (null != ec2PublicIPv4) {
+                return ec2PublicIPv4;
+            }
+
             return getLocalAddress();
         }
 

@@ -16,13 +16,22 @@ public final class CloudUtil {
 
     private static final String AWS_EC2_METADATA_COMMAND = "/usr/bin/ec2metadata";
 
+    private static final String AWS_EC2_METADATA_COMMAND2 = "/usr/bin/ec2meta";
+
     private static final String AWS_EC2_QUERY_PUBLIC_IPV4_COMMAND = AWS_EC2_METADATA_COMMAND + " --public-ipv4";
+
+    private static final String AWS_EC2_QUERY_PUBLIC_IPV4_COMMAND2 = AWS_EC2_METADATA_COMMAND2 + " public_ipv4";
 
     private CloudUtil() {
     }
 
     public static boolean isEC2Instance() {
         File file = new File(AWS_EC2_METADATA_COMMAND);
+        return file.exists() && file.canExecute();
+    }
+
+    public static boolean isEC2Instance2() {
+        File file = new File(AWS_EC2_METADATA_COMMAND2);
         return file.exists() && file.canExecute();
     }
 
@@ -36,6 +45,14 @@ public final class CloudUtil {
         }
 
         return executeCommand(AWS_EC2_QUERY_PUBLIC_IPV4_COMMAND);
+    }
+
+    public static String awsEC2V2QueryPublicIPv4() {
+        if (!isEC2Instance2()) {
+            return null;
+        }
+
+        return executeCommand(AWS_EC2_QUERY_PUBLIC_IPV4_COMMAND2);
     }
 
     /**

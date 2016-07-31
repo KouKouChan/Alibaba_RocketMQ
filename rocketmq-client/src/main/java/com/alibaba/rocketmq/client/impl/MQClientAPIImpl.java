@@ -125,6 +125,7 @@ import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTooMuchRequestException;
 import com.alibaba.rocketmq.remoting.netty.NettyClientConfig;
 import com.alibaba.rocketmq.remoting.netty.NettyRemotingClient;
+import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import com.alibaba.rocketmq.remoting.netty.ResponseFuture;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.remoting.protocol.RemotingSerializable;
@@ -171,7 +172,8 @@ public class MQClientAPIImpl {
         this.clientRemotingProcessor = clientRemotingProcessor;
 
         this.remotingClient.registerRPCHook(rpcHook);
-        /**
+
+        /*
          * 注册客户端支持的RPC CODE
          */
         this.remotingClient.registerProcessor(RequestCode.CHECK_TRANSACTION_STATE,
@@ -245,7 +247,7 @@ public class MQClientAPIImpl {
         // 获取虚拟运行环境相关的project group
         try {
             String localAddress = RemotingUtil.getLocalAddress();
-            projectGroupPrefix = this.getProjectGroupByIp(localAddress, 3000);
+            projectGroupPrefix = this.getProjectGroupByIp(localAddress, NettySystemConfig.NETTY_IO_TIMEOUT);
             log.info("The client[{}] in project group: {}", localAddress, projectGroupPrefix);
         }
         catch (Exception e) {
@@ -593,9 +595,7 @@ public class MQClientAPIImpl {
             throw new MQBrokerException(response.getCode(), response.getRemark());
         }
 
-        PullMessageResponseHeader responseHeader =
-                (PullMessageResponseHeader) response
-                    .decodeCommandCustomHeader(PullMessageResponseHeader.class);
+        PullMessageResponseHeader responseHeader = (PullMessageResponseHeader) response.decodeCommandCustomHeader(PullMessageResponseHeader.class);
 
         return new PullResultExt(pullStatus, responseHeader.getNextBeginOffset(),
             responseHeader.getMinOffset(), responseHeader.getMaxOffset(), null,

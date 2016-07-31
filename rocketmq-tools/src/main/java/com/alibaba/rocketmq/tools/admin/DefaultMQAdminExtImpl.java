@@ -87,9 +87,6 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     private MQClientInstance mqClientInstance;
     private RPCHook rpcHook;
 
-    private static final long TIMEOUT = 30L * 1000;
-
-
     public DefaultMQAdminExtImpl(DefaultMQAdminExt defaultMQAdminExt) {
         this(defaultMQAdminExt, null);
     }
@@ -163,8 +160,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public void createAndUpdateTopicConfig(String addr, TopicConfig config) throws RemotingException,
             MQBrokerException, InterruptedException, MQClientException {
-        this.mqClientInstance.getMQClientAPIImpl().createTopic(addr,
-            this.defaultMQAdminExt.getCreateTopicKey(), config, TIMEOUT);
+        this.mqClientInstance.getMQClientAPIImpl().createTopic(addr, this.defaultMQAdminExt.getCreateTopicKey(), config, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -178,7 +174,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public void createAndUpdateSubscriptionGroupConfig(String addr, SubscriptionGroupConfig config)
             throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
-        this.mqClientInstance.getMQClientAPIImpl().createSubscriptionGroup(addr, config, TIMEOUT);
+        this.mqClientInstance.getMQClientAPIImpl().createSubscriptionGroup(addr, config, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -205,7 +201,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public TopicStatsTable examineTopicStats(String topic) throws RemotingException, MQClientException,
             InterruptedException, MQBrokerException {
-        return examineTopicStats(topic, TIMEOUT);
+        return examineTopicStats(topic, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -235,7 +231,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public ConsumeStats examineConsumeStats(String consumerGroup) throws RemotingException,
             MQClientException, InterruptedException, MQBrokerException {
-        return examineConsumeStats(consumerGroup, TIMEOUT);
+        return examineConsumeStats(consumerGroup, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -270,7 +266,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public ClusterInfo examineBrokerClusterInfo() throws InterruptedException, MQBrokerException,
             RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException {
-        return this.mqClientInstance.getMQClientAPIImpl().getBrokerClusterInfo(TIMEOUT);
+        return this.mqClientInstance.getMQClientAPIImpl().getBrokerClusterInfo(defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -283,7 +279,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public TopicRouteData examineTopicRouteInfo(String topic) throws RemotingException, MQClientException,
             InterruptedException {
-        return this.mqClientInstance.getMQClientAPIImpl().getTopicRouteInfoFromNameServer(topic, TIMEOUT);
+        return this.mqClientInstance.getMQClientAPIImpl().getTopicRouteInfoFromNameServer(topic, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -303,7 +299,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public String getKVConfig(String namespace, String key) throws RemotingException, MQClientException,
             InterruptedException {
-        return this.mqClientInstance.getMQClientAPIImpl().getKVConfigValue(namespace, key, TIMEOUT);
+        return this.mqClientInstance.getMQClientAPIImpl().getKVConfigValue(namespace, key, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -367,7 +363,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public ConsumerConnection examineConsumerConnectionInfo(String consumerGroup)
             throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
-        return examineConsumerConnectionInfo(consumerGroup, TIMEOUT);
+        return examineConsumerConnectionInfo(consumerGroup, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -396,7 +392,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public ProducerConnection examineProducerConnectionInfo(String producerGroup, final String topic)
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
-        return examineProducerConnectionInfo(producerGroup, topic, TIMEOUT);
+        return examineProducerConnectionInfo(producerGroup, topic, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -427,7 +423,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
             throws RemotingCommandException, RemotingConnectException, RemotingSendRequestException,
             RemotingTimeoutException, InterruptedException, MQClientException {
         return this.mqClientInstance.getMQClientAPIImpl()
-            .wipeWritePermOfBroker(namesrvAddr, brokerName, TIMEOUT);
+            .wipeWritePermOfBroker(namesrvAddr, brokerName, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -447,7 +443,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 
     @Override
     public TopicList fetchAllTopicList() throws RemotingException, MQClientException, InterruptedException {
-        return this.mqClientInstance.getMQClientAPIImpl().getTopicListFromNameServer(TIMEOUT);
+        return this.mqClientInstance.getMQClientAPIImpl().getTopicListFromNameServer(defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -460,7 +456,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public KVTable fetchBrokerRuntimeStats(final String brokerAddr) throws RemotingConnectException,
             RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
-        return this.mqClientInstance.getMQClientAPIImpl().getBrokerRuntimeInfo(brokerAddr, TIMEOUT);
+        return this.mqClientInstance.getMQClientAPIImpl().getBrokerRuntimeInfo(brokerAddr, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -473,7 +469,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public void deleteTopicInBroker(Set<String> addrs, String topic) throws RemotingException,
             MQBrokerException, InterruptedException, MQClientException {
         for (String addr : addrs) {
-            this.mqClientInstance.getMQClientAPIImpl().deleteTopicInBroker(addr, topic, TIMEOUT);
+            this.mqClientInstance.getMQClientAPIImpl().deleteTopicInBroker(addr, topic, defaultMQAdminExt.getNetworkTimeout());
         }
     }
 
@@ -491,7 +487,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
                                         String topic,
                                         String brokerAddresses)
             throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
-        deleteTopicInNameServer(nameServerAddresses, topic, brokerAddresses, TIMEOUT);
+        deleteTopicInNameServer(nameServerAddresses, topic, brokerAddresses, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -510,7 +506,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public void deleteSubscriptionGroup(String addr, String groupName) throws RemotingException,
             MQBrokerException, InterruptedException, MQClientException {
-        this.mqClientInstance.getMQClientAPIImpl().deleteSubscriptionGroup(addr, groupName, TIMEOUT);
+        this.mqClientInstance.getMQClientAPIImpl().deleteSubscriptionGroup(addr, groupName, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -523,7 +519,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public void createAndUpdateKvConfig(String namespace, String key, String value) throws RemotingException,
             MQBrokerException, InterruptedException, MQClientException {
-        this.mqClientInstance.getMQClientAPIImpl().putKVConfigValue(namespace, key, value, TIMEOUT);
+        this.mqClientInstance.getMQClientAPIImpl().putKVConfigValue(namespace, key, value, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -536,7 +532,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public void deleteKvConfig(String namespace, String key) throws RemotingException, MQBrokerException,
             InterruptedException, MQClientException {
-        this.mqClientInstance.getMQClientAPIImpl().deleteKVConfigValue(namespace, key, TIMEOUT);
+        this.mqClientInstance.getMQClientAPIImpl().deleteKVConfigValue(namespace, key, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -549,7 +545,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public String getProjectGroupByIp(String ip) throws RemotingException, MQBrokerException,
             InterruptedException, MQClientException {
-        return this.mqClientInstance.getMQClientAPIImpl().getProjectGroupByIp(ip, TIMEOUT);
+        return this.mqClientInstance.getMQClientAPIImpl().getProjectGroupByIp(ip, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -563,7 +559,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public String getIpsByProjectGroup(String projectGroup) throws RemotingException, MQBrokerException,
             InterruptedException, MQClientException {
         String namespace = NamesrvUtil.NAMESPACE_PROJECT_CONFIG;
-        return this.mqClientInstance.getMQClientAPIImpl().getKVConfigByValue(namespace, projectGroup, TIMEOUT);
+        return this.mqClientInstance.getMQClientAPIImpl().getKVConfigByValue(namespace, projectGroup, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -578,7 +574,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public void deleteIpsByProjectGroup(String projectGroup) throws RemotingException, MQBrokerException,
             InterruptedException, MQClientException {
         String namespace = NamesrvUtil.NAMESPACE_PROJECT_CONFIG;
-        this.mqClientInstance.getMQClientAPIImpl().deleteKVConfigByValue(namespace, projectGroup, TIMEOUT);
+        this.mqClientInstance.getMQClientAPIImpl().deleteKVConfigByValue(namespace, projectGroup, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -592,7 +588,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public List<RollbackStats> resetOffsetByTimestampOld(String consumerGroup, String topic, long timestamp,
             boolean force) throws RemotingException, MQBrokerException, InterruptedException,
             MQClientException {
-        return resetOffsetByTimestampOld(consumerGroup, topic, timestamp, force, TIMEOUT);
+        return resetOffsetByTimestampOld(consumerGroup, topic, timestamp, force, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -646,7 +642,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public KVTable getKVListByNamespace(String namespace) throws RemotingException, MQClientException,
             InterruptedException {
-        return this.mqClientInstance.getMQClientAPIImpl().getKVListByNamespace(namespace, TIMEOUT);
+        return this.mqClientInstance.getMQClientAPIImpl().getKVListByNamespace(namespace, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -660,7 +656,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public void updateBrokerConfig(String brokerAddr, Properties properties) throws RemotingConnectException,
             RemotingSendRequestException, RemotingTimeoutException, UnsupportedEncodingException,
             InterruptedException, MQBrokerException {
-        this.mqClientInstance.getMQClientAPIImpl().updateBrokerConfig(brokerAddr, properties, TIMEOUT);
+        this.mqClientInstance.getMQClientAPIImpl().updateBrokerConfig(brokerAddr, properties, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -675,7 +671,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public Map<MessageQueue, Long> resetOffsetByTimestamp(String topic, String brokerAddress, String group, long timestamp,
             boolean isForce) throws RemotingException, MQBrokerException, InterruptedException,
             MQClientException {
-        return resetOffsetByTimestamp(topic, brokerAddress, group, timestamp, isForce, TIMEOUT);
+        return resetOffsetByTimestamp(topic, brokerAddress, group, timestamp, isForce, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -715,7 +711,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public Map<String, Map<MessageQueue, Long>> getConsumeStatus(String topic, String group, String clientAddr)
             throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
-        return getConsumeStatus(topic, group, clientAddr, TIMEOUT);
+        return getConsumeStatus(topic, group, clientAddr, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -737,7 +733,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 
     public void createOrUpdateOrderConf(String key, String value, boolean isCluster)
             throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
-        createOrUpdateOrderConf(key, value, isCluster, TIMEOUT);
+        createOrUpdateOrderConf(key, value, isCluster, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -784,7 +780,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public GroupList queryTopicConsumeByWho(String topic) throws InterruptedException, MQBrokerException,
             RemotingException, MQClientException {
-        return queryTopicConsumeByWho(topic, TIMEOUT);
+        return queryTopicConsumeByWho(topic, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -808,7 +804,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public Set<QueueTimeSpan> queryConsumeTimeSpan(final String topic, final String group)
             throws InterruptedException, MQBrokerException, RemotingException, MQClientException {
-        return queryConsumeTimeSpan(topic, group, TIMEOUT);
+        return queryConsumeTimeSpan(topic, group, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -896,7 +892,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public boolean cleanExpiredConsumerQueueByAddr(String addr) throws RemotingConnectException,
             RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
-        boolean result = mqClientInstance.getMQClientAPIImpl().cleanExpiredConsumeQueue(addr, TIMEOUT);
+        boolean result = mqClientInstance.getMQClientAPIImpl().cleanExpiredConsumeQueue(addr, defaultMQAdminExt.getNetworkTimeout());
         log.warn("clean expired ConsumeQueue on target " + addr + " broker " + result);
         return result;
     }
@@ -913,7 +909,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public ConsumerRunningInfo getConsumerRunningInfo(String consumerGroup, String clientId, boolean jstack)
             throws RemotingException, MQClientException, InterruptedException {
-        return getConsumerRunningInfo(consumerGroup, clientId, jstack, TIMEOUT);
+        return getConsumerRunningInfo(consumerGroup, clientId, jstack, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -940,7 +936,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public ConsumeMessageDirectlyResult consumeMessageDirectly(String consumerGroup, String clientId,
             String msgId) throws RemotingException, MQClientException, InterruptedException,
             MQBrokerException {
-        return consumeMessageDirectly(consumerGroup, clientId, msgId, TIMEOUT);
+        return consumeMessageDirectly(consumerGroup, clientId, msgId, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -956,7 +952,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
 
     public boolean consumed(final MessageExt msg, final String group) throws RemotingException,
             MQClientException, InterruptedException, MQBrokerException {
-        return consumed(msg, group, TIMEOUT);
+        return consumed(msg, group, defaultMQAdminExt.getNetworkTimeout());
     }
 
     public boolean consumed(final MessageExt msg, final String group, long timeoutMillis) throws RemotingException,
@@ -989,7 +985,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public List<MessageTrack> messageTrackDetail(MessageExt msg) throws RemotingException, MQClientException,
             InterruptedException, MQBrokerException {
-        return messageTrackDetail(msg, TIMEOUT);
+        return messageTrackDetail(msg, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override
@@ -1051,7 +1047,7 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     @Override
     public void cloneGroupOffset(String srcGroup, String destGroup, String topic, boolean isOffline)
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
-        cloneGroupOffset(srcGroup, destGroup, topic, isOffline, TIMEOUT);
+        cloneGroupOffset(srcGroup, destGroup, topic, isOffline, defaultMQAdminExt.getNetworkTimeout());
     }
 
     @Override

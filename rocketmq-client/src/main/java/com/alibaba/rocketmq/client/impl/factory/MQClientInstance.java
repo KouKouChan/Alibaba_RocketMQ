@@ -62,6 +62,7 @@ import com.alibaba.rocketmq.remoting.common.RemotingHelper;
 import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 import com.alibaba.rocketmq.remoting.exception.RemotingException;
 import com.alibaba.rocketmq.remoting.netty.NettyClientConfig;
+import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import org.slf4j.Logger;
 
 import java.io.UnsupportedEncodingException;
@@ -158,7 +159,7 @@ public class MQClientInstance {
         this.clientConfig = clientConfig;
         this.instanceIndex = instanceIndex;
         this.nettyClientConfig = new NettyClientConfig();
-        this.nettyClientConfig.setConnectTimeoutMillis(30 * 1000);
+        this.nettyClientConfig.setConnectTimeoutMillis(NettySystemConfig.NETTY_CONNECT_TIMEOUT);
         this.nettyClientConfig.setClientCallbackExecutorThreads(clientConfig.getClientCallbackExecutorThreads());
         this.clientRemotingProcessor = new ClientRemotingProcessor(this);
         this.mQClientAPIImpl = new MQClientAPIImpl(this.nettyClientConfig, this.clientRemotingProcessor, rpcHook);
@@ -309,8 +310,9 @@ public class MQClientInstance {
                 @Override
                 public void run() {
                     try {
-                        KVTable kvTable = getMQClientAPIImpl()
-                                .getKVListByNamespace(NSConfigKey.STALKER_LEVEL.getNamespace(), 3000);
+                        KVTable kvTable = getMQClientAPIImpl().getKVListByNamespace(
+                                NSConfigKey.STALKER_LEVEL.getNamespace(),
+                                nettyClientConfig.getIoTimeoutMillis());
 
                         String traceLevel = kvTable.getTable().get(NSConfigKey.STALKER_LEVEL.getKey());
                         String ipRange = kvTable.getTable().get(NSConfigKey.STALKER_IP_RANGE.getKey());
@@ -448,7 +450,7 @@ public class MQClientInstance {
                 for (final String fsAddr : value) {
                     try {
                         this.mQClientAPIImpl.registerMessageFilterClass(fsAddr, consumerGroup, topic,
-                                className, classCRC, classBody, 5000);
+                                className, classCRC, classBody, nettyClientConfig.getIoTimeoutMillis());
 
                         log.info(
                                 "register message class filter to {} OK, ConsumerGroup: {} Topic: {} ClassName: {} ClassFile: {}",
@@ -513,7 +515,7 @@ public class MQClientInstance {
                         }
 
                         try {
-                            this.mQClientAPIImpl.sendHearbeat(addr, heartbeatData, 3000);
+                            this.mQClientAPIImpl.sendHearbeat(addr, heartbeatData, clientConfig.getHeartbeatTimeout());
                             log.info("send heart beat to broker[{} {} {}] success", brokerName, id, addr);
                             log.info(heartbeatData.toString());
                         } catch (Exception e) {
@@ -616,7 +618,8 @@ public class MQClientInstance {
                     TopicRouteData topicRouteData = null;
                     if (isDefault && defaultMQProducer != null) {
                         topicRouteData = this.mQClientAPIImpl.getDefaultTopicRouteInfoFromNameServer(
-                                defaultMQProducer.getCreateTopicKey(), 1000 * 300);
+                                defaultMQProducer.getCreateTopicKey(),
+                                nettyClientConfig.getIoTimeoutMillis());
                         if (topicRouteData != null) {
                             for (QueueData data : topicRouteData.getQueueDatas()) {
                                 // 读写分区个数是一致，故只做一次判断
@@ -627,7 +630,7 @@ public class MQClientInstance {
                             }
                         }
                     } else if (!MixAll.DEFAULT_TOPIC.equals(topic)) {
-                        topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, 1000 * 30);
+                        topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, nettyClientConfig.getIoTimeoutMillis());
                     } else {
                         log.info("Skip default topic: {}", topic);
                         return false;
@@ -909,7 +912,7 @@ public class MQClientInstance {
                     if (addr != null) {
                         try {
                             this.mQClientAPIImpl.unregisterClient(addr, this.clientId, producerGroup,
-                                    consumerGroup, 3000);
+                                    consumerGroup, nettyClientConfig.getIoTimeoutMillis());
                             log.info(
                                     "unregister client[Producer: {} Consumer: {}] from broker[{} {} {}] success",
                                     producerGroup, consumerGroup, brokerName, id, addr);
@@ -1100,7 +1103,7 @@ public class MQClientInstance {
 
         if (null != brokerAddr) {
             try {
-                return this.mQClientAPIImpl.getConsumerIdListByGroup(brokerAddr, group, 3000);
+                return this.mQClientAPIImpl.getConsumerIdListByGroup(brokerAddr, group, nettyClientConfig.getIoTimeoutMillis());
             } catch (Exception e) {
                 log.warn("getConsumerIdListByGroup exception, " + brokerAddr + " " + group, e);
             }
