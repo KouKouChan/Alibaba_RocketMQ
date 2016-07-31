@@ -52,8 +52,6 @@ public class UpdateTopicSubCommand implements SubCommand {
     }
 
 
-    private static final int MAX_UPDATE_TOPIC_RETRY = 5;
-
     @Override
     public Options buildCommandlineOptions(Options options) {
         Option opt = new Option("b", "brokerAddr", true, "create topic to which broker");
@@ -172,34 +170,18 @@ public class UpdateTopicSubCommand implements SubCommand {
                         @Override
                         public void run() {
                             try {
-                                int failureCount = 0;
-                                boolean success = false;
-                                while (failureCount < MAX_UPDATE_TOPIC_RETRY) {
-                                    try {
-                                        defaultMQAdminExt.createAndUpdateTopicConfig(address, topicConfig);
-                                        success = true;
-                                        break;
-                                    } catch (Exception e) {
-                                        failureCount++;
-                                    }
-                                }
-
-                                if (success) {
-                                    System.out.println("updateTopic against broker[" + address + "] succeeded.");
-                                } else {
-                                    System.out.println("Abort updateTopic against broker[" + address + "] after " + MAX_UPDATE_TOPIC_RETRY + " failure trials.");
-                                }
-
-                                countDownLatch.countDown();
+                                defaultMQAdminExt.createAndUpdateTopicConfig(address, topicConfig);
+                                System.out.println("updateTopic against broker[" + address + "] succeeded.");
                             } catch (Exception e) {
-                                //Ignore.
+                                System.out.println("Abort updateTopic against broker[" + address + "]");
+                                e.printStackTrace();
+                            } finally {
+                                countDownLatch.countDown();
                             }
                         }
                     });
                 }
-
                 countDownLatch.await();
-
                 executorService.shutdown();
 
                 if (isOrder) {
