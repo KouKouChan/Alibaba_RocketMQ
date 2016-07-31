@@ -385,7 +385,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
                 try {
                     DefaultMQProducerImpl.this.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(
-                            brokerAddr, thisHeader, remark, 3000);
+                            brokerAddr, thisHeader, remark, defaultMQProducer.getNetworkTimeout());
                 } catch (Exception e) {
                     log.error("endTransactionOneWay exception", e);
                 }

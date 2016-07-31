@@ -55,9 +55,11 @@ public class BrokerOuterAPI {
     private final RemotingClient remotingClient;
     private final TopAddressing topAddressing = new TopAddressing(MixAll.WS_ADDR);
     private String nameSrvAddr = null;
+    private final NettyClientConfig nettyClientConfig;
 
 
     public BrokerOuterAPI(final NettyClientConfig nettyClientConfig, RPCHook rpcHook) {
+        this.nettyClientConfig = nettyClientConfig;
         this.remotingClient = new NettyRemotingClient(nettyClientConfig);
         this.remotingClient.registerRPCHook(rpcHook);
     }
@@ -130,7 +132,7 @@ public class BrokerOuterAPI {
         requestBody.setFilterServerList(filterServerList);
         request.setBody(requestBody.encode());
 
-        RemotingCommand response = this.remotingClient.invokeSync(namesrvAddr, request, 30 * 1000);
+        RemotingCommand response = this.remotingClient.invokeSync(namesrvAddr, request, nettyClientConfig.getIoTimeoutMillis());
         assert response != null;
         switch (response.getCode()) {
         case ResponseCode.SUCCESS: {
@@ -200,7 +202,7 @@ public class BrokerOuterAPI {
         requestHeader.setBrokerName(brokerName);
         requestHeader.setClusterName(clusterName);
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.UNREGISTER_BROKER, requestHeader);
-        RemotingCommand response = this.remotingClient.invokeSync(namesrvAddr, request, 3000);
+        RemotingCommand response = this.remotingClient.invokeSync(namesrvAddr, request, nettyClientConfig.getIoTimeoutMillis());
         assert response != null;
         switch (response.getCode()) {
         case ResponseCode.SUCCESS: {
@@ -239,7 +241,7 @@ public class BrokerOuterAPI {
             RemotingSendRequestException, RemotingTimeoutException, InterruptedException, MQBrokerException {
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_ALL_TOPIC_CONFIG, null);
 
-        RemotingCommand response = this.remotingClient.invokeSync(addr, request, 3000);
+        RemotingCommand response = this.remotingClient.invokeSync(addr, request, nettyClientConfig.getIoTimeoutMillis());
         assert response != null;
         switch (response.getCode()) {
         case ResponseCode.SUCCESS: {
@@ -263,7 +265,7 @@ public class BrokerOuterAPI {
             throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException,
             RemotingConnectException, MQBrokerException {
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_ALL_CONSUMER_OFFSET, null);
-        RemotingCommand response = this.remotingClient.invokeSync(addr, request, 3000);
+        RemotingCommand response = this.remotingClient.invokeSync(addr, request, nettyClientConfig.getIoTimeoutMillis());
         assert response != null;
         switch (response.getCode()) {
         case ResponseCode.SUCCESS: {
@@ -287,7 +289,7 @@ public class BrokerOuterAPI {
     public String getAllDelayOffset(final String addr) throws InterruptedException, RemotingTimeoutException,
             RemotingSendRequestException, RemotingConnectException, MQBrokerException {
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_ALL_DELAY_OFFSET, null);
-        RemotingCommand response = this.remotingClient.invokeSync(addr, request, 3000);
+        RemotingCommand response = this.remotingClient.invokeSync(addr, request, nettyClientConfig.getIoTimeoutMillis());
         assert response != null;
         switch (response.getCode()) {
         case ResponseCode.SUCCESS: {
@@ -311,7 +313,7 @@ public class BrokerOuterAPI {
             throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException,
             RemotingConnectException, MQBrokerException {
         RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_ALL_SUBSCRIPTION_GROUP_CONFIG, null);
-        RemotingCommand response = this.remotingClient.invokeSync(addr, request, 3000);
+        RemotingCommand response = this.remotingClient.invokeSync(addr, request, nettyClientConfig.getIoTimeoutMillis());
         assert response != null;
         switch (response.getCode()) {
         case ResponseCode.SUCCESS: {
