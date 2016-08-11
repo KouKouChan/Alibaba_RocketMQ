@@ -82,6 +82,7 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
             LOCAL_DATA_CENTER_ID = "1";
         }
 
+        LOGGER.info("DCIndex: {}", LOCAL_DATA_CENTER_ID);
     }
 
     public SelectMessageQueueByDataCenter(DefaultMQProducer defaultMQProducer) {
