@@ -27,6 +27,7 @@ import com.alibaba.rocketmq.common.message.MessageQueue;
 import com.alibaba.rocketmq.common.protocol.header.QueryConsumerOffsetRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.UpdateConsumerOffsetRequestHeader;
 import com.alibaba.rocketmq.remoting.exception.RemotingException;
+import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -205,7 +206,7 @@ public class RemoteBrokerOffsetStore implements OffsetStore {
 
             // 使用oneway形式，原因是服务器在删除文件时，这个调用可能会超时
             this.mQClientFactory.getMQClientAPIImpl().updateConsumerOffsetOneway(
-                findBrokerResult.getBrokerAddr(), requestHeader, 1000 * 5);
+                findBrokerResult.getBrokerAddr(), requestHeader, NettySystemConfig.NETTY_IO_TIMEOUT);
         }
         else {
             throw new MQClientException("The broker[" + mq.getBrokerName() + "] not exist", null);
@@ -229,7 +230,7 @@ public class RemoteBrokerOffsetStore implements OffsetStore {
             requestHeader.setQueueId(mq.getQueueId());
 
             long consumeOffset = this.mQClientFactory.getMQClientAPIImpl().queryConsumerOffset(
-                findBrokerResult.getBrokerAddr(), requestHeader, 1000 * 5);
+                findBrokerResult.getBrokerAddr(), requestHeader, NettySystemConfig.NETTY_IO_TIMEOUT);
 
             return new FindConsumeOffsetResult(consumeOffset, !findBrokerResult.isSlave());
         }
