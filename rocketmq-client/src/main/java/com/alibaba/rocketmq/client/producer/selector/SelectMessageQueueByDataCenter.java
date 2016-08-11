@@ -55,7 +55,7 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
 
     private final AtomicInteger roundRobin = new AtomicInteger(0);
 
-    private static String LOCAL_DATA_CENTER_ID = RemotingUtil.getLocalAddress(false).split("\\.")[1];
+    public static String LOCAL_DATA_CENTER_ID = RemotingUtil.getLocalAddress(false).split("\\.")[1];
 
     private List<Pair<String, Float>> dispatcherList = new ArrayList<Pair<String, Float>>();
 
@@ -76,6 +76,12 @@ public class SelectMessageQueueByDataCenter implements MessageQueueSelector {
         if (null != dcIndex && dcIndex.trim().length() > 0) {
             LOCAL_DATA_CENTER_ID = dcIndex;
         }
+
+        // 10.12 now also in region of US-East
+        if ("12".equals(LOCAL_DATA_CENTER_ID)) {
+            LOCAL_DATA_CENTER_ID = "1";
+        }
+
     }
 
     public SelectMessageQueueByDataCenter(DefaultMQProducer defaultMQProducer) {

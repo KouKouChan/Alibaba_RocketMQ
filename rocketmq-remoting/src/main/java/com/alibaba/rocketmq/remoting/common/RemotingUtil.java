@@ -199,7 +199,8 @@ public class RemotingUtil {
         try {
             // 遍历网卡，查找一个非回路ip地址并返回
             Enumeration<NetworkInterface> enumeration = NetworkInterface.getNetworkInterfaces();
-            ArrayList<String> ipv4Result = new ArrayList<String>();
+            ArrayList<String> ipv4SiteLocal = new ArrayList<String>();
+            ArrayList<String> ipv4Global = new ArrayList<String>();
             ArrayList<String> ipv6Result = new ArrayList<String>();
             while (enumeration.hasMoreElements()) {
                 final NetworkInterface networkInterface = enumeration.nextElement();
@@ -209,27 +210,26 @@ public class RemotingUtil {
                     if (!address.isLoopbackAddress()) {
                         if (address instanceof Inet6Address) {
                             ipv6Result.add(normalizeHostAddress(address));
-                        }
-                        else {
-                            ipv4Result.add(normalizeHostAddress(address));
+                        } else {
+                            if (address.isSiteLocalAddress()) {
+                                ipv4SiteLocal.add(normalizeHostAddress(address));
+                            } else {
+                                ipv4Global.add(normalizeHostAddress(address));
+                            }
                         }
                     }
                 }
             }
 
             // 优先使用ipv4
-            if (!ipv4Result.isEmpty()) {
-                for (String ip : ipv4Result) {
-                    if (isPrivateIPv4Address(ip)) {
-                        continue;
-                    }
-
-                    return ip;
+            if (!ipv4SiteLocal.isEmpty() || !ipv4Global.isEmpty()) {
+                if (!ipv4Global.isEmpty()) {
+                    return ipv4Global.get(0);
+                } else {
+                    return ipv4SiteLocal.get(0);
                 }
-
-                // 取最后一个
-                return ipv4Result.get(ipv4Result.size() - 1);
             }
+
             // 然后使用ipv6
             else if (!ipv6Result.isEmpty()) {
                 return ipv6Result.get(0);
@@ -238,11 +238,8 @@ public class RemotingUtil {
             final InetAddress localHost = InetAddress.getLocalHost();
             return normalizeHostAddress(localHost);
         }
-        catch (SocketException e) {
-            e.printStackTrace();
-        }
-        catch (UnknownHostException e) {
-            e.printStackTrace();
+        catch (SocketException | UnknownHostException e) {
+            log.error("Network Error", e);
         }
 
         return null;

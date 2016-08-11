@@ -36,6 +36,7 @@ import com.alibaba.rocketmq.client.impl.producer.MQProducerInner;
 import com.alibaba.rocketmq.client.impl.producer.TopicPublishInfo;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
+import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByDataCenter;
 import com.alibaba.rocketmq.client.stat.ConsumerStatsManager;
 import com.alibaba.rocketmq.common.MQVersion;
 import com.alibaba.rocketmq.common.MixAll;
@@ -1118,12 +1119,43 @@ public class MQClientInstance {
         if (topicRouteData != null) {
             List<BrokerData> brokers = topicRouteData.getBrokerDatas();
             if (!brokers.isEmpty()) {
-                BrokerData bd = brokers.get(0);
+                BrokerData bd = findLocalBroker(brokers);
                 return bd.selectBrokerAddr();
             }
         }
 
         return null;
+    }
+
+    /**
+     * Try to find brokers of the same data center or region firstly.
+     *
+     * If not found, choose the first one whatever it is.
+     */
+    private BrokerData findLocalBroker(List<BrokerData> brokers) {
+        String dcId = SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID;
+        for (BrokerData brokerData : brokers) {
+            if (dcId.equalsIgnoreCase(getDataCenterIdByBrokerName(brokerData.getBrokerName()))) {
+                return brokerData;
+            }
+        }
+
+        log.warn("Unable to find a broker of same DC, client DCIndex: ", SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID);
+        return brokers.get(0);
+    }
+
+    /**
+     *
+     * @param brokerName in format of DefaultCluster_2_broker3
+     * @return data center ID.
+     */
+    private String getDataCenterIdByBrokerName(String brokerName) {
+        if (!brokerName.contains("_")) {
+            return null;
+        }
+
+        String[] segments = brokerName.split("_");
+        return segments[1];
     }
 
 

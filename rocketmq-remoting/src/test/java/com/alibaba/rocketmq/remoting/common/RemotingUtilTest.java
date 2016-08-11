@@ -6,6 +6,12 @@ import org.junit.Test;
 public class RemotingUtilTest {
 
     @Test
+    public void testNetwork() {
+        System.out.println(RemotingUtil.getLocalAddress(false));
+        System.out.println(RemotingUtil.getLocalAddress(false).split("\\.")[1]);
+    }
+
+    @Test
     public void testIsPrivateIPv4Address() throws Exception {
         Assert.assertTrue(RemotingUtil.isPrivateIPv4Address("127.1.1.1"));
         Assert.assertTrue(RemotingUtil.isPrivateIPv4Address("127.0.0.1"));
