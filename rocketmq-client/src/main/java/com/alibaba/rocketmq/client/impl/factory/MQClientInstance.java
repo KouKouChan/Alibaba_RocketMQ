@@ -1140,7 +1140,7 @@ public class MQClientInstance {
             }
         }
 
-        log.warn("Unable to find a broker of same DC, client DCIndex: ", SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID);
+        log.warn("Unable to find a broker of same DC, client DCIndex: {}", SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID);
         return brokers.get(0);
     }
 
