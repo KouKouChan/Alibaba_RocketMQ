@@ -17,8 +17,6 @@ package com.alibaba.rocketmq.remoting.netty;
 
 import com.alibaba.rocketmq.option.CommandOption;
 
-import java.net.HttpURLConnection;
-
 /**
  * Netty客户端配置类
  * 

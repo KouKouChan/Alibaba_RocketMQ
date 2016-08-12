@@ -268,39 +268,36 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 }
             });
 
-        Bootstrap handler = this.bootstrap.group(this.eventLoopGroupWorker).channel(NioSocketChannel.class)//
-            //
-            .option(ChannelOption.TCP_NODELAY, true)
-            //
-            .option(ChannelOption.SO_KEEPALIVE, false)
-            //
-            .option(ChannelOption.SO_SNDBUF, nettyClientConfig.getClientSocketSndBufSize())
-            //
-            .option(ChannelOption.SO_RCVBUF, nettyClientConfig.getClientSocketRcvBufSize())
-            //
-            .handler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                public void initChannel(SocketChannel ch) throws Exception {
-                    if (null == sslContext) {
-                        ch.pipeline().addLast(//
-                            defaultEventExecutorGroup, //
-                            new NettyEncoder(), //
-                            new NettyDecoder(), //
-                            new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),//
-                            new NettyConnectManageHandler(), //
-                            new NettyClientHandler());
-                    } else {
-                        ch.pipeline().addLast(//
-                                defaultEventExecutorGroup, //
-                                new SslHandler(SslHelper.getSSLEngine(sslContext, SslRole.CLIENT)),
-                                new NettyEncoder(), //
-                                new NettyDecoder(), //
-                                new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),//
-                                new NettyConnectManageHandler(), //
-                                new NettyClientHandler());
+        Bootstrap handler = this.bootstrap.group(this.eventLoopGroupWorker)
+                .channel(NioSocketChannel.class)
+                .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.SO_KEEPALIVE, false)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2 * NettySystemConfig.NETTY_CONNECT_TIMEOUT)
+                .option(ChannelOption.SO_SNDBUF, nettyClientConfig.getClientSocketSndBufSize())
+                .option(ChannelOption.SO_RCVBUF, nettyClientConfig.getClientSocketRcvBufSize())
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel ch) throws Exception {
+                        if (null == sslContext) {
+                            ch.pipeline().addLast(//
+                                    defaultEventExecutorGroup, //
+                                    new NettyEncoder(), //
+                                    new NettyDecoder(), //
+                                    new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),//
+                                    new NettyConnectManageHandler(), //
+                                    new NettyClientHandler());
+                        } else {
+                            ch.pipeline().addLast(//
+                                    defaultEventExecutorGroup, //
+                                    new SslHandler(SslHelper.getSSLEngine(sslContext, SslRole.CLIENT)),
+                                    new NettyEncoder(), //
+                                    new NettyDecoder(), //
+                                    new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),//
+                                    new NettyConnectManageHandler(), //
+                                    new NettyClientHandler());
+                        }
                     }
-                }
-            });
+                });
 
         // 每隔1秒扫描下异步调用超时情况
         this.timer.scheduleAtFixedRate(new TimerTask() {
