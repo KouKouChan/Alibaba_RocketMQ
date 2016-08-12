@@ -1494,8 +1494,7 @@ public class MQClientAPIImpl {
         GetRouteInfoRequestHeader requestHeader = new GetRouteInfoRequestHeader();
         requestHeader.setTopic(topicWithProjectGroup);
 
-        RemotingCommand request =
-                RemotingCommand.createRequestCommand(RequestCode.GET_ROUTE_INFO_BY_TOPIC, requestHeader);
+        RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_ROUTE_INFO_BY_TOPIC, requestHeader);
 
         RemotingCommand response = this.remotingClient.invokeSync(null, request, timeoutMillis);
         assert response != null;

@@ -632,9 +632,6 @@ public class MQClientInstance {
                         }
                     } else if (!MixAll.DEFAULT_TOPIC.equals(topic)) {
                         topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, nettyClientConfig.getIoTimeoutMillis());
-                    } else {
-                        log.info("Skip default topic: {}", topic);
-                        return false;
                     }
 
                     if (topicRouteData != null) {
@@ -643,8 +640,7 @@ public class MQClientInstance {
                         if (!changed) {
                             changed = this.isNeedUpdateTopicRouteInfo(topic);
                         } else {
-                            log.info("the topic[{}] route info changed: \n old[{}]; \n new[{}]", topic, old,
-                                    topicRouteData);
+                            log.info("the topic[{}] route info changed: \n old[{}]; \n new[{}]", topic, old, topicRouteData);
                         }
 
                         if (changed) {
@@ -658,8 +654,7 @@ public class MQClientInstance {
 
                             // 更新发布队列信息
                             {
-                                TopicPublishInfo publishInfo =
-                                        topicRouteData2TopicPublishInfo(topic, topicRouteData);
+                                TopicPublishInfo publishInfo = topicRouteData2TopicPublishInfo(topic, topicRouteData);
                                 publishInfo.setHaveTopicRouterInfo(true);
                                 for (Entry<String, MQProducerInner> entry : this.producerTable.entrySet()) {
                                     MQProducerInner impl = entry.getValue();
@@ -671,8 +666,7 @@ public class MQClientInstance {
 
                             // 更新订阅队列信息
                             {
-                                Set<MessageQueue> subscribeInfo =
-                                        topicRouteData2TopicSubscribeInfo(topic, topicRouteData);
+                                Set<MessageQueue> subscribeInfo = topicRouteData2TopicSubscribeInfo(topic, topicRouteData);
                                 for (Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
                                     MQConsumerInner impl = entry.getValue();
                                     if (impl != null) {
@@ -1135,14 +1129,19 @@ public class MQClientInstance {
     private BrokerData findLocalBroker(List<BrokerData> brokers) {
         String dcId = SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID;
         for (BrokerData brokerData : brokers) {
-            log.info("Broker name to test: {}", brokerData.getBrokerName());
+            log.info("Thread ID: {}, Thread Name: {}, Broker name to test: {}",
+                    Thread.currentThread().getId(),
+                    Thread.currentThread().getName(),
+                    brokerData.getBrokerName());
             if (dcId.equalsIgnoreCase(getDataCenterIdByBrokerName(brokerData.getBrokerName()))) {
                 return brokerData;
             }
         }
 
         BrokerData brokerData = brokers.get(0);
-        log.warn("Unable to find a broker of same DC, client DCIndex: {}, defaulting to {}",
+        log.warn("Thread ID: {}, Thread Name: {}, Unable to find a broker of same DC, client DCIndex: {}, defaulting to {}",
+                Thread.currentThread().getId(),
+                Thread.currentThread().getName(),
                 SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID,
                 brokerData.getBrokerName());
 
