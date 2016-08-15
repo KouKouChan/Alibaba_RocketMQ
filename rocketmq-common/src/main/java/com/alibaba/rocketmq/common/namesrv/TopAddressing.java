@@ -66,7 +66,7 @@ public class TopAddressing {
             }
         }
         catch (IOException e) {
-            log.error("fetchZKAddr exception", e);
+            log.error("fetchNSAddr exception", e);
         }
 
         String errorMsg = "connect to " + wsAddr + " failed, maybe the domain name " + MixAll.WS_DOMAIN_NAME

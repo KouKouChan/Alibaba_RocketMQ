@@ -352,7 +352,7 @@ public abstract class RebalanceImpl {
             boolean dropped = prev.isDropped();
             prev.setDropped(true);
             this.removeUnnecessaryMessageQueue(mq, prev);
-            log.info("Fix Offset, {}, remove unnecessary mq, {} Droped: {}", consumerGroup, mq, dropped);
+            log.info("Fix Offset, {}, remove unnecessary mq, {} Dropped: {}", consumerGroup, mq, dropped);
         }
     }
 
