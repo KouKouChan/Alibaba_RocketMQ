@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.client.consumer.cacheable;
+package com.alibaba.rocketmq.client.consumer.buffered;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,14 +7,14 @@ public class DelayService implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DelayService.class);
 
-    private final CacheableConsumer cacheableConsumer;
+    private final BufferedMQConsumer bufferedMQConsumer;
 
     private volatile boolean stopped;
 
     private final Thread thread;
 
-    public DelayService(CacheableConsumer cacheableConsumer) {
-        this.cacheableConsumer = cacheableConsumer;
+    public DelayService(BufferedMQConsumer bufferedMQConsumer) {
+        this.bufferedMQConsumer = bufferedMQConsumer;
         thread = new Thread(this);
     }
 
@@ -22,9 +22,9 @@ public class DelayService implements Runnable {
     public void run() {
         while (!stopped) {
             try {
-                DelayItem delayItem = cacheableConsumer.getDelayQueue().take();
-                if (!cacheableConsumer.getMessageQueue().offer(delayItem.getMessage())) {
-                    cacheableConsumer.getLocalMessageStore().stash(delayItem.getMessage());
+                DelayItem delayItem = bufferedMQConsumer.getDelayQueue().take();
+                if (!bufferedMQConsumer.getMessageQueue().offer(delayItem.getMessage())) {
+                    bufferedMQConsumer.getLocalMessageStore().stash(delayItem.getMessage());
                 }
             } catch (InterruptedException e) {
                 if (stopped) {

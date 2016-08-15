@@ -1,6 +1,6 @@
 package com.ndpmedia.rocketmq.babel;
 
-import com.alibaba.rocketmq.client.consumer.cacheable.MessageHandler;
+import com.alibaba.rocketmq.client.consumer.buffered.MessageHandler;
 
 class ThriftMessageHandler extends MessageHandler {
 

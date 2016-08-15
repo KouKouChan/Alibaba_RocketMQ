@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.client.consumer.cacheable;
+package com.alibaba.rocketmq.client.consumer.buffered;
 
 import com.alibaba.rocketmq.common.message.MessageExt;
 

@@ -1,8 +1,6 @@
-package com.alibaba.rocketmq.client.producer.concurrent;
+package com.alibaba.rocketmq.client.producer.buffered;
 
-import java.io.IOException;
-
-public class MultiThreadMQProducerConfiguration {
+public class BufferedMQProducerConfiguration {
 
     private String producerGroup;
 
@@ -20,42 +18,42 @@ public class MultiThreadMQProducerConfiguration {
 
     private int initialNumberOfMessagePermits = MINIMUM_NUMBER_OF_MESSAGE_PERMITS;
 
-    public MultiThreadMQProducerConfiguration configureProducerGroup(String producerGroup) {
+    public BufferedMQProducerConfiguration configureProducerGroup(String producerGroup) {
         this.producerGroup = producerGroup;
         return this;
     }
 
-    public MultiThreadMQProducerConfiguration configureDefaultTopicQueueNumber(int defaultTopicQueueNumber) {
+    public BufferedMQProducerConfiguration configureDefaultTopicQueueNumber(int defaultTopicQueueNumber) {
         this.defaultTopicQueueNumber = defaultTopicQueueNumber;
         return this;
     }
 
-    public MultiThreadMQProducerConfiguration configureRetryTimesBeforeSendingFailureClaimed(int retryTimesBeforeSendingFailureClaimed) {
+    public BufferedMQProducerConfiguration configureRetryTimesBeforeSendingFailureClaimed(int retryTimesBeforeSendingFailureClaimed) {
         this.retryTimesBeforeSendingFailureClaimed = retryTimesBeforeSendingFailureClaimed;
         return this;
     }
 
-    public MultiThreadMQProducerConfiguration configureSendMessageTimeOutInMilliSeconds(int sendMessageTimeOutInMilliSeconds) {
+    public BufferedMQProducerConfiguration configureSendMessageTimeOutInMilliSeconds(int sendMessageTimeOutInMilliSeconds) {
         this.sendMessageTimeOutInMilliSeconds = sendMessageTimeOutInMilliSeconds;
         return this;
     }
 
-    public MultiThreadMQProducerConfiguration configureResendFailureMessageDelay(int resendFailureMessageDelay) {
+    public BufferedMQProducerConfiguration configureResendFailureMessageDelay(int resendFailureMessageDelay) {
         this.resendFailureMessageDelay = resendFailureMessageDelay;
         return this;
     }
 
-    public MultiThreadMQProducerConfiguration configureInitialNumberOfMessagePermits(int initialNumberOfMessagePermits) {
+    public BufferedMQProducerConfiguration configureInitialNumberOfMessagePermits(int initialNumberOfMessagePermits) {
         this.initialNumberOfMessagePermits = initialNumberOfMessagePermits;
         return this;
     }
 
-    public MultiThreadMQProducer build() {
+    public BufferedMQProducer build() {
         if (!isReadyToBuild()) {
             throw new RuntimeException(reportMissingConfiguration());
         }
 
-        return new MultiThreadMQProducer(this);
+        return new BufferedMQProducer(this);
     }
 
     private boolean isReadyToBuild() {

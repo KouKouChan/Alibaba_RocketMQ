@@ -2,10 +2,10 @@ package com.alibaba.rocketmq.example.yeahmobiCR;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.rocketmq.client.log.ClientLogger;
-import com.alibaba.rocketmq.client.producer.concurrent.MultiThreadMQProducer;
+import com.alibaba.rocketmq.client.producer.buffered.BufferedMQProducer;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.message.Message;
-import com.alibaba.rocketmq.example.concurrent.ExampleSendCallback;
+import com.alibaba.rocketmq.example.cacheable.ExampleSendCallback;
 import org.slf4j.Logger;
 
 import java.text.SimpleDateFormat;
@@ -106,7 +106,7 @@ public class StormProducer {
         }
         final AtomicLong successCount = new AtomicLong(0L);
         final AtomicLong lastSent = new AtomicLong(0L);
-        final MultiThreadMQProducer producer = MultiThreadMQProducer.configure()
+        final BufferedMQProducer producer = BufferedMQProducer.configure()
                 .configureProducerGroup("PG_YMREDIRECTOR_QUEUE_TRACE_EVENT")
                 .configureRetryTimesBeforeSendingFailureClaimed(3)
                 .configureSendMessageTimeOutInMilliSeconds(3000)

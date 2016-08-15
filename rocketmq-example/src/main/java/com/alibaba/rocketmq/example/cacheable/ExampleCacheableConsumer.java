@@ -1,7 +1,7 @@
 package com.alibaba.rocketmq.example.cacheable;
 
-import com.alibaba.rocketmq.client.consumer.cacheable.CacheableConsumer;
-import com.alibaba.rocketmq.client.consumer.cacheable.MessageHandler;
+import com.alibaba.rocketmq.client.consumer.buffered.BufferedMQConsumer;
+import com.alibaba.rocketmq.client.consumer.buffered.MessageHandler;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
@@ -31,7 +31,7 @@ public class ExampleCacheableConsumer {
     }
 
     public static void main(String[] args) throws MQClientException, InterruptedException {
-        CacheableConsumer cacheableConsumer = new CacheableConsumer("CG_QuickStart");
+        BufferedMQConsumer bufferedMQConsumer = new BufferedMQConsumer("CG_QuickStart");
 
         MessageHandler exampleMessageHandler = new ExampleMessageHandler();
 
@@ -42,17 +42,17 @@ public class ExampleCacheableConsumer {
 
         exampleMessageHandler.setTag("*");
 
-        cacheableConsumer.registerMessageHandler(exampleMessageHandler);
+        bufferedMQConsumer.registerMessageHandler(exampleMessageHandler);
 
-        cacheableConsumer.setCorePoolSizeForWorkTasks(5); // default 10.
-        cacheableConsumer.setMaximumPoolSizeForWorkTasks(20); //default 50
+        bufferedMQConsumer.setCorePoolSizeForWorkTasks(5); // default 10.
+        bufferedMQConsumer.setMaximumPoolSizeForWorkTasks(20); //default 50
 
-        cacheableConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
-        cacheableConsumer.setMessageModel(MessageModel.CLUSTERING);
+        bufferedMQConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
+        bufferedMQConsumer.setMessageModel(MessageModel.CLUSTERING);
 
-        cacheableConsumer.setMaximumNumberOfMessageBuffered(2000);
+        bufferedMQConsumer.setMaximumNumberOfMessageBuffered(2000);
 
-        cacheableConsumer.start();
+        bufferedMQConsumer.start();
 
         System.out.println("User client starts.");
     }

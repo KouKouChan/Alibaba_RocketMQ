@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.client.consumer.cacheable;
+package com.alibaba.rocketmq.client.consumer.buffered;
 
 import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
@@ -9,20 +9,20 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class CacheableConsumerTest {
+public class BufferedMQConsumerTest {
 
-    private static  CacheableConsumer cacheableConsumer;
+    private static BufferedMQConsumer bufferedMQConsumer;
 
     @BeforeClass
     public static void init() throws IOException {
-        cacheableConsumer = new CacheableConsumer("CG_QuickStart");
+        bufferedMQConsumer = new BufferedMQConsumer("CG_QuickStart");
     }
 
     @Test
     public void testCacheable() throws Exception {
 
-        cacheableConsumer.setMessageModel(MessageModel.CLUSTERING);
-        cacheableConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
+        bufferedMQConsumer.setMessageModel(MessageModel.CLUSTERING);
+        bufferedMQConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
         final AtomicInteger count = new AtomicInteger(0);
 
         MessageHandler messageHandler = new MessageHandler() {
@@ -36,8 +36,8 @@ public class CacheableConsumerTest {
         };
 
         messageHandler.setTopic("T_QuickStart");
-        cacheableConsumer.registerMessageHandler(messageHandler);
-        cacheableConsumer.start();
+        bufferedMQConsumer.registerMessageHandler(messageHandler);
+        bufferedMQConsumer.start();
         Thread.sleep(1000*60*50);
 
 

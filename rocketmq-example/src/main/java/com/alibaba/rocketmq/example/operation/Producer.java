@@ -29,7 +29,7 @@ import com.alibaba.rocketmq.common.message.Message;
 
 
 /**
- * Producer，发送消息，内置到安装包，方便线上进行调试定位问题
+ * ExampleCacheableProducer，发送消息，内置到安装包，方便线上进行调试定位问题
  */
 public class Producer {
 
@@ -40,7 +40,7 @@ public class Producer {
         opt.setRequired(false);
         options.addOption(opt);
 
-        opt = new Option("g", "producerGroup", true, "Producer Group Name");
+        opt = new Option("g", "producerGroup", true, "ExampleCacheableProducer Group Name");
         opt.setRequired(true);
         options.addOption(opt);
 

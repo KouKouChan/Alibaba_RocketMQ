@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.client.consumer.cacheable;
+package com.alibaba.rocketmq.client.consumer.buffered;
 
 import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
 import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
@@ -13,12 +13,12 @@ public class FrontController implements MessageListenerConcurrently {
 
     private static final Logger LOGGER = ClientLogger.getLog();
 
-    private final CacheableConsumer cacheableConsumer;
+    private final BufferedMQConsumer bufferedMQConsumer;
 
     private JobSubmitter jobSubmitter;
 
-    public FrontController(CacheableConsumer cacheableConsumer) {
-        this.cacheableConsumer = cacheableConsumer;
+    public FrontController(BufferedMQConsumer bufferedMQConsumer) {
+        this.bufferedMQConsumer = bufferedMQConsumer;
         jobSubmitter = new JobSubmitter();
     }
 
@@ -33,14 +33,14 @@ public class FrontController implements MessageListenerConcurrently {
         for (MessageExt message : messages) {
             if (null != message) {
                 try {
-                    if (cacheableConsumer.isAboutFull()) {
-                        cacheableConsumer.suspend();
+                    if (bufferedMQConsumer.isAboutFull()) {
+                        bufferedMQConsumer.suspend();
                         // Stash those pre-fetched message.
-                        cacheableConsumer.getLocalMessageStore().stash(message);
+                        bufferedMQConsumer.getLocalMessageStore().stash(message);
                         LOGGER.warn("Client message queue is about to full; stop receiving message from broker.");
                     } else {
                         // Normal Processing.
-                        cacheableConsumer.getMessageQueue().put(message);
+                        bufferedMQConsumer.getMessageQueue().put(message);
                     }
                 } catch (InterruptedException e) {
                     LOGGER.error("Failed to put message into message queue", e);
@@ -74,11 +74,11 @@ public class FrontController implements MessageListenerConcurrently {
             while (running) {
                 try {
                     //Block if there is no message in the queue.
-                    MessageExt message = cacheableConsumer.getMessageQueue().take();
-                    final MessageHandler messageHandler = cacheableConsumer.getTopicHandlerMap().get(message.getTopic());
-                    ProcessMessageTask task = new ProcessMessageTask(message, messageHandler, cacheableConsumer);
-                    cacheableConsumer.getInProgressMessageQueue().put(message);
-                    cacheableConsumer.getExecutorWorkerService().submit(task);
+                    MessageExt message = bufferedMQConsumer.getMessageQueue().take();
+                    final MessageHandler messageHandler = bufferedMQConsumer.getTopicHandlerMap().get(message.getTopic());
+                    ProcessMessageTask task = new ProcessMessageTask(message, messageHandler, bufferedMQConsumer);
+                    bufferedMQConsumer.getInProgressMessageQueue().put(message);
+                    bufferedMQConsumer.getExecutorWorkerService().submit(task);
                 } catch (Exception e) {
                     LOGGER.error("Error while submitting ProcessMessageTask", e);
                 }

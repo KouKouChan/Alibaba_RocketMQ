@@ -2,7 +2,6 @@ package com.alibaba.rocketmq.client.store;
 
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageExt;
-
 import java.io.IOException;
 
 public interface LocalMessageStore {
@@ -28,8 +27,5 @@ public interface LocalMessageStore {
 
     void start() throws IOException;
 
-    /**
-     * Close this message store.
-     */
-    void close() throws InterruptedException;
+    void close();
 }

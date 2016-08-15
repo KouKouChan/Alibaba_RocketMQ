@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.client.consumer.cacheable;
+package com.alibaba.rocketmq.client.consumer.buffered;
 
 import com.alibaba.rocketmq.client.ClientStatus;
 import com.alibaba.rocketmq.client.consumer.DefaultMQPushConsumer;
@@ -7,8 +7,8 @@ import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.impl.MQClientManager;
 import com.alibaba.rocketmq.client.impl.factory.MQClientInstance;
 import com.alibaba.rocketmq.client.log.ClientLogger;
+import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.client.store.LocalMessageStore;
-import com.alibaba.rocketmq.client.store.MappedFileLocalMessageStore;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
@@ -23,18 +23,19 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class CacheableConsumer {
+public class BufferedMQConsumer {
+
     private static final Logger LOGGER = ClientLogger.getLog();
 
     private String consumerGroupName;
 
-    protected LocalMessageStore localMessageStore;
+    private LocalMessageStore localMessageStore;
 
     private final ConcurrentHashMap<String, MessageHandler> topicHandlerMap;
 
     private static final AtomicLong CONSUMER_NAME_COUNTER = new AtomicLong();
 
-    private static final String BASE_INSTANCE_NAME = "CacheableConsumer";
+    private static final String BASE_INSTANCE_NAME = "BufferedMQConsumer";
 
     private static final int NUMBER_OF_CONSUMER = 4;
 
@@ -80,9 +81,6 @@ public class CacheableConsumer {
 
     private LinkedBlockingQueue<MessageExt> inProgressMessageQueue;
 
-    private ScheduledExecutorService scheduledStatisticsReportExecutorService =
-            Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl("StatisticsReportService"));
-
     private SynchronizedDescriptiveStatistics statistics;
 
     private volatile long previousSuccessCount = 0;
@@ -101,7 +99,7 @@ public class CacheableConsumer {
      * Constructor with group name and default number of embedded consumer clients.
      * @param consumerGroupName Consumer group name.
      */
-    public CacheableConsumer(String consumerGroupName) {
+    public BufferedMQConsumer(String consumerGroupName) {
         this(consumerGroupName, NUMBER_OF_CONSUMER);
     }
 
@@ -110,7 +108,7 @@ public class CacheableConsumer {
      * @param consumerGroupName consumer group name.
      * @param numberOfEmbeddedConsumers number of embedded consumer clients.
      */
-    public CacheableConsumer(String consumerGroupName, int numberOfEmbeddedConsumers) {
+    public BufferedMQConsumer(String consumerGroupName, int numberOfEmbeddedConsumers) {
         try {
             if (null == consumerGroupName || consumerGroupName.trim().isEmpty()) {
                 throw new RuntimeException("ConsumerGroupName cannot be null or empty.");
@@ -144,10 +142,11 @@ public class CacheableConsumer {
                     new ThreadPoolExecutor.CallerRunsPolicy());
 
             statistics = new SynchronizedDescriptiveStatistics(5000);
-            localMessageStore = new MappedFileLocalMessageStore(consumerGroupName);
+            localMessageStore = new DefaultLocalMessageStore(consumerGroupName);
             frontController = new FrontController(this);
             delayService = new DelayService(this);
 
+            ScheduledExecutorService scheduledStatisticsReportExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl("StatisticsReportService"));
             scheduledStatisticsReportExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -183,11 +182,11 @@ public class CacheableConsumer {
             }, 30, 30, TimeUnit.SECONDS);
         } catch (IOException e) {
             LOGGER.error("Fatal error. Possibly caused by File Permission Issue.", e);
-            throw new RuntimeException("Fatal error while instantiating CacheableConsumer. Possibly caused by File Permission Issue.");
+            throw new RuntimeException("Fatal error while instantiating BufferedMQConsumer. Possibly caused by File Permission Issue.");
         }
     }
 
-    public CacheableConsumer registerMessageHandler(MessageHandler messageHandler) throws MQClientException {
+    public BufferedMQConsumer registerMessageHandler(MessageHandler messageHandler) throws MQClientException {
         if (status != ClientStatus.CREATED) {
             throw new IllegalStateException("Please register before start");
         }
@@ -206,7 +205,7 @@ public class CacheableConsumer {
         return this;
     }
 
-    public CacheableConsumer registerMessageHandler(Collection<MessageHandler> messageHandlers)
+    public BufferedMQConsumer registerMessageHandler(Collection<MessageHandler> messageHandlers)
             throws MQClientException {
         for (MessageHandler messageHandler : messageHandlers) {
             registerMessageHandler(messageHandler);
@@ -252,9 +251,9 @@ public class CacheableConsumer {
             @Override
             public void run() {
                 try {
-                    LOGGER.info("Begin to shutdown CacheableConsumer");
+                    LOGGER.info("Begin to shutdown BufferedMQConsumer");
                     shutdown();
-                    LOGGER.info("CacheableConsumer shuts down successfully.");
+                    LOGGER.info("BufferedMQConsumer shuts down successfully.");
                 } catch (InterruptedException e) {
                     LOGGER.error("Exception thrown while invoking ShutdownHook", e);
                 }
@@ -271,8 +270,8 @@ public class CacheableConsumer {
     }
 
     private void startPopThread() {
-        PopStoreService popStoreService = new PopStoreService(this);
-        scheduledExecutorDelayService.scheduleWithFixedDelay(popStoreService, 2, 2, TimeUnit.SECONDS);
+        PopMessageService popMessageService = new PopMessageService(this);
+        scheduledExecutorDelayService.scheduleWithFixedDelay(popMessageService, 2, 2, TimeUnit.SECONDS);
     }
 
     public boolean isStarted() {
@@ -398,13 +397,9 @@ public class CacheableConsumer {
             LOGGER.error("Failed to stop", e);
         }
 
-        try {
-            //Shut down local message store.
-            if (null != localMessageStore) {
-                localMessageStore.close();
-            }
-        } catch (InterruptedException e) {
-            LOGGER.error("Failed to stop", e);
+        //Shut down local message store.
+        if (null != localMessageStore) {
+            localMessageStore.close();
         }
         LOGGER.info("Shutdown completes");
     }

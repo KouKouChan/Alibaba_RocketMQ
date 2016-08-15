@@ -1,6 +1,6 @@
 package com.ndpmedia.rocketmq.babel;
 
-import com.alibaba.rocketmq.client.consumer.cacheable.MessageHandler;
+import com.alibaba.rocketmq.client.consumer.buffered.MessageHandler;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.common.message.MessageExt;
@@ -21,14 +21,14 @@ public class ConsumerService implements Consumer.Iface {
 
     private static final int DEFAULT_MESSAGE_BATCH_SIZE = 128;
     private int messageBatchSize = DEFAULT_MESSAGE_BATCH_SIZE;
-    private CustomCacheableConsumer consumer;
+    private CustomBufferedMQConsumer consumer;
     private LinkedBlockingQueue<MessageExt> messageQueue = new LinkedBlockingQueue<MessageExt>(1024);
 
     public ConsumerService() throws MQClientException, InterruptedException {
         Properties properties = Helper.getConfig();
         String consumerGroup = properties.getProperty("consumer_group");
         String topicInfo = properties.getProperty("topic_info");
-        consumer = new CustomCacheableConsumer(consumerGroup);
+        consumer = new CustomBufferedMQConsumer(consumerGroup);
 
         if("cluster".equals(properties.getProperty("message_model"))) {
             consumer.setMessageModel(MessageModel.CLUSTERING);

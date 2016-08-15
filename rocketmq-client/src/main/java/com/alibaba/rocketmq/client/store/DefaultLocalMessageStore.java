@@ -860,7 +860,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         }
     }
 
-    public void close() throws InterruptedException {
+    public void close() {
         LOGGER.info("Default local message store starts to shut down.");
         status = ClientStatus.CLOSED;
         flushDiskService.shutdown();

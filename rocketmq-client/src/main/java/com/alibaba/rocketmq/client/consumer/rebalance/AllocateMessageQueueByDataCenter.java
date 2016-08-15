@@ -88,7 +88,7 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
      * </p>
      *
      * @param consumerGroup Consumer group.
-     * @param currentConsumerID concurrent consumer client ID, in form of IP@instance_name
+     * @param currentConsumerID buffered consumer client ID, in form of IP@instance_name
      * @param mqAll
      *            当前Topic的所有队列集合，无重复数据，且有序
      * @param allConsumerIDs All consumer IDs.

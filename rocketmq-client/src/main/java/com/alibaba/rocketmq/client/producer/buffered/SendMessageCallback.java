@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.client.producer.concurrent;
+package com.alibaba.rocketmq.client.producer.buffered;
 
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.producer.SendCallback;
@@ -14,21 +14,21 @@ public class SendMessageCallback implements SendCallback {
 
     private Message message;
 
-    private MultiThreadMQProducer multiThreadMQProducer;
+    private BufferedMQProducer bufferedMQProducer;
 
-    public SendMessageCallback(MultiThreadMQProducer multiThreadMQProducer, SendCallback sendCallback, Message message) {
+    public SendMessageCallback(BufferedMQProducer bufferedMQProducer, SendCallback sendCallback, Message message) {
         this.hook = sendCallback;
         this.message = message;
-        this.multiThreadMQProducer = multiThreadMQProducer;
+        this.bufferedMQProducer = bufferedMQProducer;
     }
 
     @Override
     public void onSuccess(SendResult sendResult) {
         //Release the semaphore token.
-        multiThreadMQProducer.getSemaphore().release();
+        bufferedMQProducer.getSemaphore().release();
 
         //Update statistical data.
-        multiThreadMQProducer.getSuccessSendingCounter().incrementAndGet();
+        bufferedMQProducer.getSuccessSendingCounter().incrementAndGet();
 
         //Execute user callback.
         if (null != hook) {
@@ -43,7 +43,7 @@ public class SendMessageCallback implements SendCallback {
     @Override
     public void onException(Throwable e) {
         //Stash the message and log the exception.
-        multiThreadMQProducer.handleSendMessageFailure(message, e);
+        bufferedMQProducer.handleSendMessageFailure(message, e);
         if (null != hook) {
             try {
                 hook.onException(e);

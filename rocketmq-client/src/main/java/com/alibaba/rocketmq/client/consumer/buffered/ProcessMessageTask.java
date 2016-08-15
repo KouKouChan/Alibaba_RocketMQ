@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.client.consumer.cacheable;
+package com.alibaba.rocketmq.client.consumer.buffered;
 
 import com.alibaba.rocketmq.client.ClientStatus;
 import com.alibaba.rocketmq.client.log.ClientLogger;
@@ -13,15 +13,15 @@ public class ProcessMessageTask implements Runnable {
 
     private MessageHandler messageHandler;
 
-    private CacheableConsumer cacheableConsumer;
+    private BufferedMQConsumer bufferedMQConsumer;
 
     public ProcessMessageTask(MessageExt message, //Message to process.
                               MessageHandler messageHandler, //Message handler.
-                              CacheableConsumer cacheableConsumer
+                              BufferedMQConsumer bufferedMQConsumer
     ) {
         this.message = message;
         this.messageHandler = messageHandler;
-        this.cacheableConsumer = cacheableConsumer;
+        this.bufferedMQConsumer = bufferedMQConsumer;
     }
 
     @Override
@@ -30,26 +30,26 @@ public class ProcessMessageTask implements Runnable {
             long start = System.currentTimeMillis();
             int result = messageHandler.handle(message);
             if (0 == result) {
-                cacheableConsumer.getStatistics().addValue(System.currentTimeMillis() - start);
-                cacheableConsumer.getSuccessCounter().incrementAndGet();
+                bufferedMQConsumer.getStatistics().addValue(System.currentTimeMillis() - start);
+                bufferedMQConsumer.getSuccessCounter().incrementAndGet();
             } else if (result > 0) {
-                cacheableConsumer.getFailureCounter().incrementAndGet();
+                bufferedMQConsumer.getFailureCounter().incrementAndGet();
                 DelayItem delayItem = new DelayItem(message, result);
-                cacheableConsumer.getDelayQueue().offer(delayItem);
+                bufferedMQConsumer.getDelayQueue().offer(delayItem);
             } else {
                 LOGGER.error("Unable to process returning result: " + result);
             }
         } catch (Exception e) {
-            cacheableConsumer.getLocalMessageStore().stash(message);
+            bufferedMQConsumer.getLocalMessageStore().stash(message);
             LOGGER.error("Yuck! Business processing logic is buggy; Stash the message for now.");
             LOGGER.error("ProcessMessageTask failed! Automatic retry scheduled.", e);
         } finally {
-            cacheableConsumer.getInProgressMessageQueue().remove(message);
+            bufferedMQConsumer.getInProgressMessageQueue().remove(message);
         }
 
         try {
-            if (cacheableConsumer.getStatus() == ClientStatus.SUSPENDED && cacheableConsumer.mayResume()) {
-                cacheableConsumer.resume();
+            if (bufferedMQConsumer.getStatus() == ClientStatus.SUSPENDED && bufferedMQConsumer.mayResume()) {
+                bufferedMQConsumer.resume();
             }
         } catch (Throwable e) {
             LOGGER.error("Error to resume consumer client", e);

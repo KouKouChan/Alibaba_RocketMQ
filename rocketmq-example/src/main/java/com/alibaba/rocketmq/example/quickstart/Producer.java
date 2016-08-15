@@ -22,7 +22,7 @@ import com.alibaba.rocketmq.common.message.Message;
 
 
 /**
- * Producer，发送消息
+ * ExampleCacheableProducer，发送消息
  */
 public class Producer {
     public static void main(String[] args) throws MQClientException, InterruptedException {

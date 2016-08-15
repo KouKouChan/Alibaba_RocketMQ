@@ -1,7 +1,7 @@
-package com.alibaba.rocketmq.example.concurrent;
+package com.alibaba.rocketmq.example.cacheable;
 
 import com.alibaba.rocketmq.client.log.ClientLogger;
-import com.alibaba.rocketmq.client.producer.concurrent.MultiThreadMQProducer;
+import com.alibaba.rocketmq.client.producer.buffered.BufferedMQProducer;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.message.Message;
 import org.slf4j.Logger;
@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class Producer {
+public class ExampleCacheableProducer {
 
     private static final AtomicLong SEQUENCE_GENERATOR = new AtomicLong(0L);
 
@@ -35,7 +35,7 @@ public class Producer {
         }
         final AtomicLong successCount = new AtomicLong(0L);
         final AtomicLong lastSent = new AtomicLong(0L);
-        final MultiThreadMQProducer producer = MultiThreadMQProducer.configure()
+        final BufferedMQProducer producer = BufferedMQProducer.configure()
                 .configureProducerGroup("PG_QuickStart")
                 .configureRetryTimesBeforeSendingFailureClaimed(3)
                 .configureSendMessageTimeOutInMilliSeconds(3000)
