@@ -1170,6 +1170,16 @@ public class MQClientInstance {
             if (impl != null && impl instanceof DefaultMQPushConsumerImpl) {
                 consumer = (DefaultMQPushConsumerImpl) impl;
             } else {
+                if (null != impl && impl instanceof DefaultMQPullConsumerImpl) {
+                    DefaultMQPullConsumerImpl pullConsumer = (DefaultMQPullConsumerImpl) impl;
+                    if (null != pullConsumer.getResetOffsetCallback()) {
+                        try {
+                            pullConsumer.getResetOffsetCallback().resetOffset(topic, group, offsetTable);
+                        } catch (Throwable e) {
+                            log.error("Error while invoking ResetOffsetCallback", e);
+                        }
+                    }
+                }
                 log.info("[reset-offset] consumer dose not exist. group={}", group);
                 return;
             }

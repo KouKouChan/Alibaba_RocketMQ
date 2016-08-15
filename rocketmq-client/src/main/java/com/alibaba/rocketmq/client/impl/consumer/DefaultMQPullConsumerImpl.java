@@ -16,6 +16,7 @@
 package com.alibaba.rocketmq.client.impl.consumer;
 
 import com.alibaba.rocketmq.client.QueryResult;
+import com.alibaba.rocketmq.client.ResetOffsetCallback;
 import com.alibaba.rocketmq.client.Validators;
 import com.alibaba.rocketmq.client.consumer.DefaultMQPullConsumer;
 import com.alibaba.rocketmq.client.consumer.PullCallback;
@@ -72,6 +73,8 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
     private final long consumerStartTimestamp = System.currentTimeMillis();
 
     private final RPCHook rpcHook;
+
+    private ResetOffsetCallback resetOffsetCallback;
 
 
     public DefaultMQPullConsumerImpl(final DefaultMQPullConsumer defaultMQPullConsumer, final RPCHook rpcHook) {
@@ -497,9 +500,8 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
                 this.defaultMQPullConsumer.changeInstanceNameToPID();
             }
 
-            this.mQClientFactory =
-                    MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQPullConsumer,
-                        this.rpcHook);
+            this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQPullConsumer,
+                    this.rpcHook);
 
             // 初始化Rebalance变量
             this.rebalanceImpl.setConsumerGroup(this.defaultMQPullConsumer.getConsumerGroup());
@@ -540,8 +542,7 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
             // 加载消费进度
             this.offsetStore.load();
 
-            boolean registerOK =
-                    mQClientFactory.registerConsumer(this.defaultMQPullConsumer.getConsumerGroup(), this);
+            boolean registerOK = mQClientFactory.registerConsumer(this.defaultMQPullConsumer.getConsumerGroup(), this);
             if (!registerOK) {
                 this.serviceState = ServiceState.CREATE_JUST;
 
@@ -706,5 +707,13 @@ public class DefaultMQPullConsumerImpl implements MQConsumerInner {
 
     public RebalanceImpl getRebalanceImpl() {
         return rebalanceImpl;
+    }
+
+    public ResetOffsetCallback getResetOffsetCallback() {
+        return resetOffsetCallback;
+    }
+
+    public void setResetOffsetCallback(ResetOffsetCallback resetOffsetCallback) {
+        this.resetOffsetCallback = resetOffsetCallback;
     }
 }

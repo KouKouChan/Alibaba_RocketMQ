@@ -17,6 +17,7 @@ package com.alibaba.rocketmq.client.consumer;
 
 import com.alibaba.rocketmq.client.ClientConfig;
 import com.alibaba.rocketmq.client.QueryResult;
+import com.alibaba.rocketmq.client.ResetOffsetCallback;
 import com.alibaba.rocketmq.client.consumer.rebalance.AllocateMessageQueueAveragely;
 import com.alibaba.rocketmq.client.consumer.store.OffsetStore;
 import com.alibaba.rocketmq.client.exception.MQBrokerException;
@@ -83,7 +84,6 @@ public class DefaultMQPullConsumer extends ClientConfig implements MQPullConsume
      * 是否为单元化的订阅组
      */
     private boolean unitMode = false;
-
 
     public DefaultMQPullConsumer() {
         this(MixAll.DEFAULT_CONSUMER_GROUP, null);
@@ -349,4 +349,11 @@ public class DefaultMQPullConsumer extends ClientConfig implements MQPullConsume
         this.unitMode = isUnitMode;
     }
 
+    public ResetOffsetCallback getResetOffsetCallback() {
+        return defaultMQPullConsumerImpl.getResetOffsetCallback();
+    }
+
+    public void setResetOffsetCallback(final ResetOffsetCallback resetOffsetCallback) {
+        defaultMQPullConsumerImpl.setResetOffsetCallback(resetOffsetCallback);
+    }
 }

@@ -15,72 +15,73 @@
  */
 package com.alibaba.rocketmq.example.simple;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import com.alibaba.rocketmq.client.consumer.DefaultMQPullConsumer;
-import com.alibaba.rocketmq.client.consumer.PullResult;
+import com.alibaba.rocketmq.client.consumer.MessageQueueListener;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.common.message.MessageQueue;
+import com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel;
 
 
 /**
  * PullConsumer，订阅消息
  */
 public class PullConsumer {
-    private static final Map<MessageQueue, Long> offseTable = new HashMap<MessageQueue, Long>();
 
 
-    public static void main(String[] args) throws MQClientException {
-        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer("please_rename_unique_group_name_5");
-
+    public static void main(String[] args) throws MQClientException, InterruptedException {
+        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer("CG_BI_YM_EVENT");
+        consumer.registerMessageQueueListener("T_YM_EVENT", new TestMessageQueueListener(consumer));
+        consumer.setMessageModel(MessageModel.CLUSTERING);
         consumer.start();
 
-        Set<MessageQueue> mqs = consumer.fetchSubscribeMessageQueues("TopicTest");
-        for (MessageQueue mq : mqs) {
-            System.out.println("Consume from the queue: " + mq);
-            SINGLE_MQ: while (true) {
-                try {
-                    PullResult pullResult =
-                            consumer.pullBlockIfNotFound(mq, null, getMessageQueueOffset(mq), 32);
-                    System.out.println(pullResult);
-                    putMessageQueueOffset(mq, pullResult.getNextBeginOffset());
-                    switch (pullResult.getPullStatus()) {
-                    case FOUND:
-                        // TODO
-                        break;
-                    case NO_MATCHED_MSG:
-                        break;
-                    case NO_NEW_MSG:
-                        break SINGLE_MQ;
-                    case OFFSET_ILLEGAL:
-                        break;
-                    default:
-                        break;
-                    }
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        Thread.sleep(Integer.MAX_VALUE);
 
         consumer.shutdown();
     }
 
 
-    private static void putMessageQueueOffset(MessageQueue mq, long offset) {
-        offseTable.put(mq, offset);
+    static class TestMessageQueueListener implements MessageQueueListener {
+
+        private final DefaultMQPullConsumer pullConsumer;
+
+        TestMessageQueueListener(DefaultMQPullConsumer pullConsumer) {
+            this.pullConsumer = pullConsumer;
+        }
+
+        @Override
+        public void messageQueueChanged(String topic, Set<MessageQueue> mqAll, Set<MessageQueue> mqDivided) {
+            for (MessageQueue messageQueue : mqAll) {
+                boolean update = false;
+                try {
+                    long consumeOffset = pullConsumer.fetchConsumeOffset(messageQueue, true);
+                    System.out.println("consume offset: " + consumeOffset);
+                    if (consumeOffset < 0) {
+                        update = true;
+                    }
+                } catch (MQClientException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    long min = pullConsumer.minOffset(messageQueue);
+                    System.out.println("min: " + min);
+                    if (update) {
+                        pullConsumer.getOffsetStore().updateOffset(messageQueue, min, true);
+                        pullConsumer.getOffsetStore().persist(messageQueue);
+                    }
+                } catch (MQClientException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    System.out.println("max: " + pullConsumer.maxOffset(messageQueue));
+                } catch (MQClientException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
     }
-
-
-    private static long getMessageQueueOffset(MessageQueue mq) {
-        Long offset = offseTable.get(mq);
-        if (offset != null)
-            return offset;
-
-        return 0;
-    }
-
 }
