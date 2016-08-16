@@ -1129,23 +1129,11 @@ public class MQClientInstance {
     private BrokerData findLocalBroker(List<BrokerData> brokers) {
         String dcId = SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID;
         for (BrokerData brokerData : brokers) {
-            log.info("Thread ID: {}, Thread Name: {}, Broker name to test: {}",
-                    Thread.currentThread().getId(),
-                    Thread.currentThread().getName(),
-                    brokerData.getBrokerName());
             if (dcId.equalsIgnoreCase(getDataCenterIdByBrokerName(brokerData.getBrokerName()))) {
                 return brokerData;
             }
         }
-
-        BrokerData brokerData = brokers.get(0);
-        log.warn("Thread ID: {}, Thread Name: {}, Unable to find a broker of same DC, client DCIndex: {}, defaulting to {}",
-                Thread.currentThread().getId(),
-                Thread.currentThread().getName(),
-                SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID,
-                brokerData.getBrokerName());
-
-        return brokerData;
+        return brokers.get(0);
     }
 
     /**
