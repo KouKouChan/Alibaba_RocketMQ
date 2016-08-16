@@ -5,6 +5,7 @@ package com.ndpmedia.rocketmq.store.tool;
 
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
+import com.alibaba.rocketmq.client.producer.concurrent.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
 
@@ -29,10 +30,6 @@ public class LocalMessageStoreVerificationTool {
 
     private static DefaultMQProducer producer;
 
-    private static ConcurrentHashMap<File, AtomicInteger> countMap = new ConcurrentHashMap<File, AtomicInteger>();
-
-    private static int THRESHOLD;
-
     public static void main(String[] args) throws IOException {
         if (args.length < 1) {
             System.out.println("Usage: java -cp rocketmq-client-3.2.2.jar com.ndpmedia.rocketmq.store.tool.LocalMessageStoreVerificationTool /path/to/store [start_offset]");
@@ -48,8 +45,6 @@ public class LocalMessageStoreVerificationTool {
             e.printStackTrace();
             System.exit(1);
         }
-
-        THRESHOLD = args.length > 1 ? Integer.parseInt(args[1]) : 0;
 
         checkRecursively(new File(args[0]));
 
@@ -81,19 +76,6 @@ public class LocalMessageStoreVerificationTool {
 
     private static void checkFile(File file) throws IOException {
 
-        File log = new File(new File(System.getProperty("user.home")), "fail.log");
-        if (!log.getParentFile().exists()) {
-            if (!log.getParentFile().mkdirs()) {
-                System.exit(1);
-            }
-        }
-
-        if (!log.exists()) {
-            if (!log.createNewFile()) {
-                System.exit(1);
-            }
-        }
-
         File configFile = new File(file.getParentFile(), CONFIG_FILE_NAME);
         InputStream inputStream = null;
         AtomicLong writeIndex = new AtomicLong();
@@ -122,20 +104,18 @@ public class LocalMessageStoreVerificationTool {
             }
         }
 
-        BufferedWriter bos = new BufferedWriter(new FileWriter(log, true));
-        RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
-        boolean hasError = false;
-        AtomicInteger count = countMap.get(file.getParentFile());
-        if (null == count) {
-            AtomicInteger newCount = new AtomicInteger();
-            if (null == countMap.putIfAbsent(file.getParentFile(), newCount)) {
-                count = newCount;
-            } else {
-                count = countMap.get(file.getParentFile());
-            }
+        long fileNumber = Long.parseLong(file.getName());
+        if (fileNumber + DefaultLocalMessageStore.MESSAGES_PER_FILE < readIndex.get()) {
+            return;
         }
 
-        int fileNameNum = Integer.parseInt(file.getName());
+        RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
+        if (readIndex.get() > fileNumber && readIndex.get() < fileNumber + DefaultLocalMessageStore.MESSAGES_PER_FILE) {
+            randomAccessFile.seek(readOffSet.get());
+        }
+
+        boolean hasError = false;
+
         while (randomAccessFile.getFilePointer() + 4 + 4 < randomAccessFile.length()) {
             int msgSize = randomAccessFile.readInt();
             int magicCode = randomAccessFile.readInt();
@@ -155,23 +135,18 @@ public class LocalMessageStoreVerificationTool {
                 byteBuffer.put(data);
                 byteBuffer.flip();
                 Message message = MessageDecoder.decode(byteBuffer, true, true);
-                System.out.println("Msg Count: " + count.incrementAndGet());
-
-                if ((count.get() > THRESHOLD) && (fileNameNum > readIndex.get() || count.get() > readIndex.get())) {
-                    try {
-                        producer.send(message);
-                        System.out.println(message.getTopic());
-                        System.out.println("Msg Size: " + msgSize);
-                        System.out.println("Msg Body: " + new String(message.getBody(), "UTF-8"));
-                    } catch (Exception e) {
-                        bos.write(String.valueOf(count));
-                        bos.newLine();
-                        bos.flush();
-                    }
+                System.out.println("Message recovered");
+                System.out.println("Msg Size: " + msgSize);
+                try {
+                    System.out.println("Begin to send");
+                    producer.send(message);
+                    System.out.println("Sending completes");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             } else {
+                System.err.println("Begin to recover from error magic code.");
                 while (randomAccessFile.readInt() != MAGIC_CODE) {
-
                     if (randomAccessFile.getFilePointer() >= randomAccessFile.length()) {
                         break;
                     }
@@ -180,11 +155,11 @@ public class LocalMessageStoreVerificationTool {
                 }
                 randomAccessFile.seek(randomAccessFile.getFilePointer() - 8);
                 hasError = false;
+                System.out.println("Recover completes");
             }
         }
 
         randomAccessFile.close();
-        bos.close();
     }
 
 }
