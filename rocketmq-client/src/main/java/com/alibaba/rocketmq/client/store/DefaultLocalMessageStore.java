@@ -31,7 +31,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
 
     private static final Logger LOGGER = ClientLogger.getLog(LoggerName.RocketmqLocalStoreLoggerName);
 
-    private static final int MESSAGES_PER_FILE = 100000;
+    public static final int MESSAGES_PER_FILE = 100000;
 
     private final AtomicLong writeIndex = new AtomicLong(0L);
     private final AtomicLong writeOffSet = new AtomicLong(0L);
