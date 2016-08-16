@@ -76,27 +76,27 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
     /**
      * Flush request.
      */
-    class FlushDiskRequest {
+    private class FlushDiskRequest {
 
         /**
          * Indicate whether we need to flush all message to disk.
          */
         private boolean forceful;
 
-        public FlushDiskRequest() {
+        FlushDiskRequest() {
         }
 
-        public FlushDiskRequest(boolean forceful) {
+        FlushDiskRequest(boolean forceful) {
             this.forceful = forceful;
         }
 
-        public boolean isForceful() {
+        boolean isForceful() {
             return forceful;
         }
     }
 
 
-    class FlushDiskService extends ServiceThread {
+    private class FlushDiskService extends ServiceThread {
 
         private volatile List<FlushDiskRequest> requestsWrite = new ArrayList<FlushDiskRequest>();
         private volatile List<FlushDiskRequest> requestsRead = new ArrayList<FlushDiskRequest>();
@@ -106,7 +106,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
             return FlushDiskService.class.getSimpleName();
         }
 
-        public void putRequest(final FlushDiskRequest request) {
+        void putRequest(final FlushDiskRequest request) {
             synchronized (this) {
                 this.requestsWrite.add(request);
                 if (!hasNotified) {
@@ -149,7 +149,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         }
 
 
-        public void doFlush() {
+        void doFlush() {
             if (!requestsRead.isEmpty()) {
                 boolean flushed = false;
 
@@ -418,6 +418,10 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
            }
        });
 
+        if (null == dataFiles) {
+            return null;
+        }
+
         Arrays.sort(dataFiles, new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
@@ -481,9 +485,8 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
 
     private void recoverWriteAheadData(File dataFile) throws IOException {
         checkFileToRead(dataFile);
-        RandomAccessFile randomAccessFile = new RandomAccessFile(dataFile, "r");
         int recoveredMessageNumber = 0;
-        try {
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(dataFile, "r")) {
             while (recoveredMessageNumber++ < MESSAGES_PER_FILE) {
 
                 if (writeOffSet.longValue() + 4 + 4 > randomAccessFile.length()) {
@@ -517,7 +520,6 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
                 }
             }
         } finally {
-            randomAccessFile.close();
             LOGGER.warn("Recovered " + recoveredMessageNumber + " messages.");
         }
     }
