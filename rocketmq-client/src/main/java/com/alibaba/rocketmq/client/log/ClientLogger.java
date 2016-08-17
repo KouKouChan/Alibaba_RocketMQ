@@ -41,18 +41,14 @@ public class ClientLogger {
     }
 
     private static void initLogger() {
-        String logConfigFilePath = System.getProperty("rocketmq.client.log.configFile",
-                    System.getenv("ROCKETMQ_CLIENT_LOG_CONFIGFILE"));
-        Boolean isloadconfig =
-                Boolean.parseBoolean(System.getProperty("rocketmq.client.log.loadconfig", "true"));
+        String logConfigFilePath = System.getProperty("rocketmq.client.log.configFile", System.getenv("ROCKETMQ_CLIENT_LOG_CONFIGFILE"));
+        Boolean loadCustomConfig = Boolean.parseBoolean(System.getProperty("rocketmq.client.log.loadconfig", "true"));
 
-        final String log4j_resource_file =
-                System.getProperty("rocketmq.client.log4j.resource.fileName", "log4j_rocketmq_client.xml");
+        final String log4j_resource_file = System.getProperty("rocketmq.client.log4j.resource.fileName", "log4j_rocketmq_client.xml");
 
-        final String logback_resource_file =
-                System.getProperty("rocketmq.client.logback.resource.fileName", "logback_rocketmq_client.xml");
+        final String logback_resource_file = System.getProperty("rocketmq.client.logback.resource.fileName", "logback_rocketmq_client.xml");
 
-        if (isloadconfig) {
+        if (loadCustomConfig) {
             try {
                 ILoggerFactory iLoggerFactory = LoggerFactory.getILoggerFactory();
                 Class classType = iLoggerFactory.getClass();
@@ -82,17 +78,15 @@ public class ClientLogger {
                     if (null == logConfigFilePath) {
                         // 如果应用没有配置，则使用jar包内置配置
                         URL url = ClientLogger.class.getClassLoader().getResource(logback_resource_file);
-                        Method doConfigure =
-                                joranConfiguratoroObj.getClass().getMethod("doConfigure", URL.class);
+                        Method doConfigure = joranConfiguratoroObj.getClass().getMethod("doConfigure", URL.class);
                         doConfigure.invoke(joranConfiguratoroObj, url);
                     } else {
                         Method doConfigure = joranConfiguratoroObj.getClass().getMethod("doConfigure", String.class);
                         doConfigure.invoke(joranConfiguratoroObj, logConfigFilePath);
                     }
-
                 }
             } catch (Exception e) {
-                System.err.println(e);
+                e.printStackTrace();
             }
         }
     }
