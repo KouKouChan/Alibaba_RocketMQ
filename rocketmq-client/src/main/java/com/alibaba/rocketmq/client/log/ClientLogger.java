@@ -44,9 +44,9 @@ public class ClientLogger {
         String logConfigFilePath = System.getProperty("rocketmq.client.log.configFile", System.getenv("ROCKETMQ_CLIENT_LOG_CONFIGFILE"));
         Boolean loadCustomConfig = Boolean.parseBoolean(System.getProperty("rocketmq.client.log.loadconfig", "true"));
 
-        final String log4j_resource_file = System.getProperty("rocketmq.client.log4j.resource.fileName", "log4j_rocketmq_client.xml");
+        final String log4jResourceFile = System.getProperty("rocketmq.client.log4j.resource.fileName", "log4j_rocketmq_client.xml");
 
-        final String logback_resource_file = System.getProperty("rocketmq.client.logback.resource.fileName", "logback_rocketmq_client.xml");
+        final String logbackResourceFile = System.getProperty("rocketmq.client.logback.resource.fileName", "logback_rocketmq_client.xml");
 
         if (loadCustomConfig) {
             try {
@@ -60,7 +60,7 @@ public class ClientLogger {
                     if (null == logConfigFilePath) {
                         // 如果应用没有配置，则使用jar包内置配置
                         Method configure = DOMConfiguratorObj.getClass().getMethod("configure", URL.class);
-                        URL url = ClientLogger.class.getClassLoader().getResource(log4j_resource_file);
+                        URL url = ClientLogger.class.getClassLoader().getResource(log4jResourceFile);
                         configure.invoke(DOMConfiguratorObj, url);
                     } else {
                         Method configure = DOMConfiguratorObj.getClass().getMethod("configure", String.class);
@@ -77,7 +77,7 @@ public class ClientLogger {
                     setContext.invoke(joranConfiguratoroObj, iLoggerFactory);
                     if (null == logConfigFilePath) {
                         // 如果应用没有配置，则使用jar包内置配置
-                        URL url = ClientLogger.class.getClassLoader().getResource(logback_resource_file);
+                        URL url = ClientLogger.class.getClassLoader().getResource(logbackResourceFile);
                         Method doConfigure = joranConfiguratoroObj.getClass().getMethod("doConfigure", URL.class);
                         doConfigure.invoke(joranConfiguratoroObj, url);
                     } else {
