@@ -12,6 +12,13 @@ import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
 import com.alibaba.rocketmq.common.message.MessageQueue;
+import com.google.common.util.concurrent.RateLimiter;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -38,30 +45,55 @@ public class LocalMessageStoreVerificationTool {
     private static DefaultMQProducer producer;
     private static MessageQueueSelector messageQueueSelector = new ExampleMessageQueueSelector();
 
-    public static void main(String[] args) throws IOException {
-        if (args.length < 1) {
-            System.out.println("Usage: java -cp rocketmq-client-3.2.2.jar com.ndpmedia.rocketmq.store.tool.LocalMessageStoreVerificationTool /path/to/store [start_offset]");
-            System.out.println("Parameters in bracket is optional.");
-            return;
-        }
-
-        try {
-            System.setProperty("enable_ssl", "true");
-            producer = new DefaultMQProducer("Tool");
-            producer.start();
-        } catch (MQClientException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        checkRecursively(new File(args[0]));
-
-        producer.shutdown();
+    private static void showUsageAndExit(Options options) {
+        HelpFormatter helpFormatter = new HelpFormatter();
+        helpFormatter.printHelp("localMessageStoreVerificationTool", options);
+        System.exit(1);
     }
 
-    private static void checkRecursively(File file) throws IOException {
+    public static void main(String[] args) throws IOException {
+
+        Options options = new Options();
+        options.addOption("p", "path", true, "local message store path, required");
+        options.addOption("r", "rate", true, "Send message rate, optional");
+
+        CommandLineParser commandLineParser = new DefaultParser();
+        try {
+            CommandLine commandLine = commandLineParser.parse(options, args);
+
+            if (!commandLine.hasOption("p")) {
+                showUsageAndExit(options);
+            }
+
+            String path = commandLine.getOptionValue("p");
+            float rate = -1F;
+            if (commandLine.hasOption("r")) {
+                rate = Float.parseFloat(commandLine.getOptionValue("r"));
+            }
+
+            try {
+                System.setProperty("enable_ssl", "true");
+                producer = new DefaultMQProducer("Tool");
+                producer.start();
+            } catch (MQClientException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            checkRecursively(new File(path), rate);
+
+            producer.shutdown();
+
+        } catch (ParseException e) {
+            showUsageAndExit(options);
+        }
+
+
+    }
+
+    private static void checkRecursively(File file, float rate) throws IOException {
         if (file.isFile()) {
-            checkFile(file);
+            checkFile(file, rate);
         } else {
             String[] files = file.list(new FilenameFilter() {
                 @Override
@@ -81,12 +113,12 @@ public class LocalMessageStoreVerificationTool {
             }
 
             for (String f : files) {
-                checkRecursively(new File(file, f));
+                checkRecursively(new File(file, f), rate);
             }
         }
     }
 
-    private static void checkFile(File file) throws IOException {
+    private static void checkFile(File file, float rate) throws IOException {
 
         File configFile = new File(file.getParentFile(), CONFIG_FILE_NAME);
         InputStream inputStream = null;
@@ -129,6 +161,11 @@ public class LocalMessageStoreVerificationTool {
 
         boolean hasError = false;
 
+        RateLimiter rateLimiter = null;
+        if (rate > 0) {
+            rateLimiter = RateLimiter.create(rate);
+        }
+
         while (randomAccessFile.getFilePointer() + 4 + 4 < randomAccessFile.length()) {
             int msgSize = randomAccessFile.readInt();
             int magicCode = randomAccessFile.readInt();
@@ -152,6 +189,10 @@ public class LocalMessageStoreVerificationTool {
                 System.out.println("Msg Size: " + msgSize);
                 try {
                     System.out.println("Begin to send");
+                    if (null != rateLimiter) {
+                        rateLimiter.acquire();
+                    }
+
                     SendResult sendResult = producer.send(message, messageQueueSelector, null);
                     System.out.println("Sending completes. No." + (++count) + " of " + writeIndex.get());
                     System.out.println("MsgId: " + sendResult.getMsgId());
