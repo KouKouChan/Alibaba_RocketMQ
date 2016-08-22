@@ -243,7 +243,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             }
         });
 
-        if (nettyClientConfig.isSsl()) {
+        if (nettyClientConfig.isClientSocketOverTLS()) {
             try {
                 sslContext = SslHelper.getSSLContext(SslRole.CLIENT);
             } catch (SSLContextCreationException e) {

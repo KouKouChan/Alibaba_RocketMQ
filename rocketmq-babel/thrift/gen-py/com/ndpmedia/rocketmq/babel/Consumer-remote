@@ -34,7 +34,7 @@ host = 'localhost'
 port = 9090
 uri = ''
 framed = False
-ssl = False
+clientSocketOverTLS = False
 http = False
 argi = 1
 
@@ -63,8 +63,8 @@ if sys.argv[argi] == '-f' or sys.argv[argi] == '-framed':
   framed = True
   argi += 1
 
-if sys.argv[argi] == '-s' or sys.argv[argi] == '-ssl':
-  ssl = True
+if sys.argv[argi] == '-s' or sys.argv[argi] == '-clientSocketOverTLS':
+  clientSocketOverTLS = True
   argi += 1
 
 cmd = sys.argv[argi]
@@ -73,7 +73,7 @@ args = sys.argv[argi+1:]
 if http:
   transport = THttpClient.THttpClient(host, port, uri)
 else:
-  socket = TSSLSocket.TSSLSocket(host, port, validate=False) if ssl else TSocket.TSocket(host, port)
+  socket = TSSLSocket.TSSLSocket(host, port, validate=False) if clientSocketOverTLS else TSocket.TSocket(host, port)
   if framed:
     transport = TTransport.TFramedTransport(socket)
   else:

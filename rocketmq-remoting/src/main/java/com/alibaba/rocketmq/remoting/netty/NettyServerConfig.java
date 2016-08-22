@@ -15,8 +15,6 @@
  */
 package com.alibaba.rocketmq.remoting.netty;
 
-import com.alibaba.rocketmq.option.CommandOption;
-
 /**
  * Netty服务端配置
  * 
@@ -36,10 +34,10 @@ public class NettyServerConfig {
     private int serverSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
     private boolean serverPooledByteBufAllocatorEnable = false;
 
-    private boolean ssl = false;
+    private boolean serverSocketOverTLS;
 
     public NettyServerConfig() {
-        ssl = CommandOption.hasOption(CommandOption.OPTION_SSL);
+        serverSocketOverTLS = !"true".equals(System.getProperty("disable.secure"));
     }
 
     public int getListenPort() {
@@ -141,11 +139,11 @@ public class NettyServerConfig {
         this.serverPooledByteBufAllocatorEnable = serverPooledByteBufAllocatorEnable;
     }
 
-    public boolean isSsl() {
-        return ssl;
+    public boolean isServerSocketOverTLS() {
+        return serverSocketOverTLS;
     }
 
-    public void setSsl(boolean ssl) {
-        this.ssl = ssl;
+    public void setServerSocketOverTLS(boolean serverSocketOverTLS) {
+        this.serverSocketOverTLS = serverSocketOverTLS;
     }
 }
