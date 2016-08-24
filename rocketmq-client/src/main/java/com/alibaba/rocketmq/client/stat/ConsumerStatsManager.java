@@ -19,12 +19,14 @@ public class ConsumerStatsManager {
     private static final String TOPIC_AND_GROUP_CONSUME_RT = "CONSUME_RT";
     private static final String TOPIC_AND_GROUP_PULL_TPS = "PULL_TPS";
     private static final String TOPIC_AND_GROUP_PULL_RT = "PULL_RT";
+    private static final String TOPIC_AND_GROUP_PULL_BATCH_SIZE = "PULL_BATCH_SIZE";
 
     private final StatsItemSet topicAndGroupConsumeOKTPS;
     private final StatsItemSet topicAndGroupConsumeRT;
     private final StatsItemSet topicAndGroupConsumeFailedTPS;
     private final StatsItemSet topicAndGroupPullTPS;
     private final StatsItemSet topicAndGroupPullRT;
+    private final StatsItemSet topicAndGroupPullBatchSize;
 
 
     public ConsumerStatsManager(final ScheduledExecutorService scheduledExecutorService) {
@@ -40,6 +42,8 @@ public class ConsumerStatsManager {
         this.topicAndGroupPullTPS = new StatsItemSet(TOPIC_AND_GROUP_PULL_TPS, scheduledExecutorService, log);
 
         this.topicAndGroupPullRT = new StatsItemSet(TOPIC_AND_GROUP_PULL_RT, scheduledExecutorService, log);
+
+        this.topicAndGroupPullBatchSize = new StatsItemSet(TOPIC_AND_GROUP_PULL_BATCH_SIZE, scheduledExecutorService, log);
     }
 
 
@@ -75,6 +79,9 @@ public class ConsumerStatsManager {
         this.topicAndGroupConsumeFailedTPS.addValue(topic + "@" + group, (int) msgs, 1);
     }
 
+    public void incPullBatchSize(final String group, final String topic, final int msgCount) {
+        this.topicAndGroupPullBatchSize.addValue(topic + "@" + group, msgCount, 1);
+    }
 
     private StatsSnapshot getPullRT(final String group, final String topic) {
         return this.topicAndGroupPullRT.getStatsDataInMinute(topic + "@" + group);

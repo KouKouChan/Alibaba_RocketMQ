@@ -27,6 +27,8 @@ public class BufferedMQConsumer {
 
     private static final Logger LOGGER = ClientLogger.getLog();
 
+    private final String consumerGroupName;
+
     private final ConcurrentHashMap<String, MessageHandler> topicHandlerMap;
 
     private static final AtomicLong CONSUMER_NAME_COUNTER = new AtomicLong();
@@ -76,11 +78,11 @@ public class BufferedMQConsumer {
      * @param consumerGroupName consumer group name.
      * @param numberOfEmbeddedConsumers number of embedded consumer clients.
      */
-    public BufferedMQConsumer(String consumerGroupName, int numberOfEmbeddedConsumers) {
+    public BufferedMQConsumer(final String consumerGroupName, int numberOfEmbeddedConsumers) {
         if (null == consumerGroupName || consumerGroupName.trim().isEmpty()) {
             throw new RuntimeException("ConsumerGroupName cannot be null or empty.");
         }
-
+        this.consumerGroupName = consumerGroupName;
         this.topicHandlerMap = new ConcurrentHashMap<>();
 
         for (int i = 0; i < numberOfEmbeddedConsumers; i++) {
@@ -107,13 +109,15 @@ public class BufferedMQConsumer {
             public void run() {
                 try {
 
-                    LOGGER.info("Business Processing Performance Simple Report:\n min {}ms,\n max {}ms,\n mean {}ms",
+                    LOGGER.info("Business Processing Performance Simple Report: \nConsumer Group: {} \n min {}ms,\n max {}ms,\n mean {}ms",
+                            consumerGroupName,
                             statistics.getMin(),
                             statistics.getMax(),
                             statistics.getMean());
 
-                    LOGGER.info("Business Processing Performance Percentile Report: \n 5% {}ms,\n 10% {}ms,\n 20% {}ms," +
+                    LOGGER.info("Business Processing Performance Percentile Report: \nConsumer Group:{} \n 5% {}ms,\n 10% {}ms,\n 20% {}ms," +
                                     "\n 40% {}ms,\n 50% {}ms,\n 80% {}ms,\n 90% {}ms,\n 95% {}ms,\n 100% {}ms",
+                            consumerGroupName,
                             statistics.getPercentile(5),
                             statistics.getPercentile(10),
                             statistics.getPercentile(20),

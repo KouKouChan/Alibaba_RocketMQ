@@ -395,9 +395,19 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     case FOUND:
                         long prevRequestOffset = pullRequest.getNextOffset();
                         pullRequest.setNextOffset(pullResult.getNextBeginOffset());
+
+                        // Collect statistical data of pull response time.
                         long pullRT = System.currentTimeMillis() - beginTimestamp;
                         DefaultMQPushConsumerImpl.this.getConsumerStatsManager().incPullRT(
                             pullRequest.getConsumerGroup(), pullRequest.getMessageQueue().getTopic(), pullRT);
+
+                        MessageQueue messageQueue = pullRequest.getMessageQueue();
+
+                        DefaultMQPushConsumerImpl.this.getConsumerStatsManager().incPullBatchSize(
+                                pullRequest.getConsumerGroup(), // group
+                                messageQueue.getTopic() + "[" + messageQueue.getBrokerName() + "#" + messageQueue.getQueueId() + "]", // topic
+                                pullResult.getMsgFoundList().size() // pull result batch size
+                        );
 
                         long firstMsgOffset = Long.MAX_VALUE;
                         if (pullResult.getMsgFoundList() == null || pullResult.getMsgFoundList().isEmpty()) {
