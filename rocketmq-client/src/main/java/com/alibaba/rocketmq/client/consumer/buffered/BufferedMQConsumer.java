@@ -43,7 +43,7 @@ public class BufferedMQConsumer {
 
     private ConsumeFromWhere consumeFromWhere = ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET;
 
-    private static final int DEFAULT_PULL_BATCH_SIZE = 32;
+    private static final int DEFAULT_PULL_BATCH_SIZE = 256;
 
     private int pullBatchSize = DEFAULT_PULL_BATCH_SIZE;
 
