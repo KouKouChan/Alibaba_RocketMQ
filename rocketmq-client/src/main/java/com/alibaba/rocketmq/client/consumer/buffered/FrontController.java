@@ -8,6 +8,7 @@ import com.alibaba.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class FrontController implements MessageListenerConcurrently {
 
@@ -74,7 +75,11 @@ public class FrontController implements MessageListenerConcurrently {
             while (running) {
                 try {
                     //Block if there is no message in the queue.
-                    MessageExt message = bufferedMQConsumer.getMessageQueue().take();
+                    MessageExt message = bufferedMQConsumer.getMessageQueue().poll(3000, TimeUnit.MILLISECONDS);
+                    if (null == message) {
+                        bufferedMQConsumer.resume();
+                        continue;
+                    }
                     final MessageHandler messageHandler = bufferedMQConsumer.getTopicHandlerMap().get(message.getTopic());
                     ProcessMessageTask task = new ProcessMessageTask(message, messageHandler, bufferedMQConsumer);
                     bufferedMQConsumer.getInProgressMessageQueue().put(message);
