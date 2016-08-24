@@ -101,7 +101,6 @@ public class ConsumerService implements Consumer.Iface {
 
             MessageExt msg = messageQueue.poll();
             while (null != msg) {
-                consumer.getLocalMessageStore().stash(msg);
                 msg = messageQueue.poll();
             }
             consumer.shutdown();
