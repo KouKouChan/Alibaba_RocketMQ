@@ -77,6 +77,7 @@ public class FrontController implements MessageListenerConcurrently {
                     //Block if there is no message in the queue.
                     MessageExt message = bufferedMQConsumer.getMessageQueue().poll(3000, TimeUnit.MILLISECONDS);
                     if (null == message) {
+                        LOGGER.error("[BUG] Should not be here normally.");
                         bufferedMQConsumer.resume();
                         continue;
                     }
