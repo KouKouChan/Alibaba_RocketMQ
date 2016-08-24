@@ -12,7 +12,6 @@ import java.util.Random;
 public class ExampleCacheableConsumer {
 
     static class ExampleMessageHandler extends MessageHandler {
-        private Random random = new Random();
         public ExampleMessageHandler() {
         }
 
@@ -44,13 +43,8 @@ public class ExampleCacheableConsumer {
 
         bufferedMQConsumer.registerMessageHandler(exampleMessageHandler);
 
-        bufferedMQConsumer.setCorePoolSizeForWorkTasks(5); // default 10.
-        bufferedMQConsumer.setMaximumPoolSizeForWorkTasks(20); //default 50
-
         bufferedMQConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
         bufferedMQConsumer.setMessageModel(MessageModel.CLUSTERING);
-
-        bufferedMQConsumer.setMaximumNumberOfMessageBuffered(2000);
 
         bufferedMQConsumer.start();
 

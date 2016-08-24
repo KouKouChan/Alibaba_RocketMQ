@@ -10,7 +10,6 @@ public class CustomBufferedMQConsumer extends BufferedMQConsumer {
     }
 
     public void stopReceiving() throws InterruptedException {
-        super.stopReceiving();
     }
 }
 
