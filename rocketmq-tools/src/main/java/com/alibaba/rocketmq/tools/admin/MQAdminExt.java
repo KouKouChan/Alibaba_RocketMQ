@@ -691,4 +691,22 @@ public interface MQAdminExt extends MQAdmin {
 
     public void cloneGroupOffset(String srcGroup, String destGroup, String topic, boolean isOffline, final long timeoutMillis)
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException;
+
+    /**
+     * 服务器统计数据输出
+     *
+     * @param statsName statistics category name
+     * @param statsKey  statistics key, eg. topic@group
+     * @return Broker statistical data.
+     * @throws InterruptedException
+     * @throws MQClientException
+     * @throws RemotingTimeoutException
+     * @throws RemotingSendRequestException
+     * @throws RemotingConnectException
+     */
+    public BrokerStatsData viewBrokerStatsData(final String brokerAddr,
+                                               final String statsName,
+                                               final String statsKey)
+            throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException,
+            InterruptedException;
 }

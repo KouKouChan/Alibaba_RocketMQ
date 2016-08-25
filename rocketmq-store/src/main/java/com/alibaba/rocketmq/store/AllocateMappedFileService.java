@@ -152,9 +152,13 @@ public class AllocateMappedFileService extends ServiceThread {
                 req.setMappedFile(mappedFile);
                 this.hasException = false;
             }
+        } catch (InterruptedException e) {
+            if (!stopped) {
+                log.warn(this.getServiceName() + " service has exception.");
+            } else {
+                log.warn(getServiceName() + " service is interrupted as it's being shut down");
         }
-        catch (InterruptedException e) {
-            log.warn(this.getServiceName() + " service has exception, maybe by shutdown");
+
             this.hasException = true;
             return false;
         }

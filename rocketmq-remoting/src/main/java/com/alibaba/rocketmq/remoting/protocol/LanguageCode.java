@@ -8,5 +8,6 @@ public enum LanguageCode {
     DELPHI,
     ERLANG,
     RUBY,
+    HTTP,
     OTHER,
 }

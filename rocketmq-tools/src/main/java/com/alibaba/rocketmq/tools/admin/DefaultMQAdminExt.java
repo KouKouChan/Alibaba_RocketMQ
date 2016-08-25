@@ -621,4 +621,10 @@ public class DefaultMQAdminExt extends ClientConfig implements MQAdminExt {
             throws RemotingException, MQClientException, InterruptedException, MQBrokerException {
         this.defaultMQAdminExtImpl.cloneGroupOffset(srcGroup, destGroup, topic, isOffline, timeoutMillis);
     }
+
+    @Override
+    public BrokerStatsData viewBrokerStatsData(String brokerAddr, String statsName, String statsKey)
+            throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
+        return this.defaultMQAdminExtImpl.viewBrokerStatsData(brokerAddr, statsName, statsKey);
+    }
 }
