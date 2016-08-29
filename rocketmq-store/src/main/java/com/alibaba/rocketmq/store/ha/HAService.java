@@ -77,10 +77,8 @@ public class HAService {
 
     public boolean isSlaveOK(final long masterPutWhere) {
         boolean result = this.connectionCount.get() > 0;
-        result =
-                result
-                        && ((masterPutWhere - this.push2SlaveMaxOffset.get()) < this.defaultMessageStore
-                            .getMessageStoreConfig().getHaSlaveFallbehindMax());
+        result = result && ((masterPutWhere - this.push2SlaveMaxOffset.get()) < this.defaultMessageStore
+                .getMessageStoreConfig().getHaSlaveFallbehindMax());
         return result;
     }
 
@@ -276,7 +274,7 @@ public class HAService {
                     }
 
                     if (!transferOK) {
-                        log.warn("transfer messsage to slave timeout, " + req.getNextOffset());
+                        log.warn("transfer message to slave timeout, " + req.getNextOffset());
                     }
 
                     req.wakeupCustomer(transferOK);
@@ -324,7 +322,7 @@ public class HAService {
         private Selector selector;
         private long lastWriteTimestamp = System.currentTimeMillis();
         private long currentReportedOffset = 0;
-        private int dispatchPostion = 0;
+        private int dispatchPosition = 0;
         private byte[] checksum;
         private ByteBuffer byteBufferRead = ByteBuffer.allocate(ReadMaxBufferSize);
         private ByteBuffer byteBufferBackup = ByteBuffer.allocate(ReadMaxBufferSize);
@@ -361,8 +359,7 @@ public class HAService {
                     this.socketChannel.write(this.reportOffset);
                 }
                 catch (IOException e) {
-                    log.error(this.getServiceName()
-                            + "reportSlaveMaxOffset this.socketChannel.write exception", e);
+                    log.error(this.getServiceName() + "reportSlaveMaxOffset this.socketChannel.write exception", e);
                     return false;
                 }
             }
@@ -371,9 +368,9 @@ public class HAService {
         }
 
         private void reallocateByteBuffer() {
-            int remain = ReadMaxBufferSize - this.dispatchPostion;
+            int remain = ReadMaxBufferSize - this.dispatchPosition;
             if (remain > 0) {
-                this.byteBufferRead.position(this.dispatchPostion);
+                this.byteBufferRead.position(this.dispatchPosition);
 
                 this.byteBufferBackup.clear();
                 this.byteBufferBackup.put(this.byteBufferRead);
@@ -383,7 +380,7 @@ public class HAService {
 
             this.byteBufferRead.position(remain);
             this.byteBufferRead.limit(ReadMaxBufferSize);
-            this.dispatchPostion = 0;
+            this.dispatchPosition = 0;
         }
 
 
@@ -434,10 +431,10 @@ public class HAService {
             int readSocketPos = this.byteBufferRead.position();
 
             while (true) {
-                int diff = this.byteBufferRead.position() - this.dispatchPostion;
+                int diff = this.byteBufferRead.position() - this.dispatchPosition;
                 if (diff >= MSG_HEADER_SIZE) {
-                    long masterPhyOffset = this.byteBufferRead.getLong(this.dispatchPostion);
-                    int bodySize = this.byteBufferRead.getInt(this.dispatchPostion + 8);
+                    long masterPhyOffset = this.byteBufferRead.getLong(this.dispatchPosition);
+                    int bodySize = this.byteBufferRead.getInt(this.dispatchPosition + 8);
                     this.byteBufferRead.get(checksum, 0, 16);
 
                     long slavePhyOffset = HAService.this.defaultMessageStore.getMaxPhyOffset();
@@ -452,7 +449,7 @@ public class HAService {
 
                     if (diff >= (MSG_HEADER_SIZE + bodySize)) {
                         byte[] bodyData = new byte[bodySize];
-                        this.byteBufferRead.position(this.dispatchPostion + MSG_HEADER_SIZE);
+                        this.byteBufferRead.position(this.dispatchPosition + MSG_HEADER_SIZE);
                         this.byteBufferRead.get(bodyData);
 
                         // Validate MD5 checksum
@@ -466,7 +463,7 @@ public class HAService {
                         HAService.this.defaultMessageStore.appendToCommitLog(masterPhyOffset, bodyData);
 
                         this.byteBufferRead.position(readSocketPos);
-                        this.dispatchPostion += MSG_HEADER_SIZE + bodySize;
+                        this.dispatchPosition += MSG_HEADER_SIZE + bodySize;
 
                         if (!reportSlaveMaxOffsetPlus()) {
                             return false;
@@ -549,7 +546,7 @@ public class HAService {
                 }
 
                 this.lastWriteTimestamp = 0;
-                this.dispatchPostion = 0;
+                this.dispatchPosition = 0;
 
                 this.byteBufferBackup.position(0);
                 this.byteBufferBackup.limit(ReadMaxBufferSize);
