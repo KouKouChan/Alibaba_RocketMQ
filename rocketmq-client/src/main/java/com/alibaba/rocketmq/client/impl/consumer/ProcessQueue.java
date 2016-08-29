@@ -96,7 +96,7 @@ public class ProcessQueue {
      * @return 是否需要分发当前队列到消费线程池
      */
     public boolean putMessage(final List<MessageExt> msgs) {
-        boolean dispathToConsume = false;
+        boolean dispatchToConsume = false;
         try {
             this.lockTreeMap.writeLock().lockInterruptibly();
             try {
@@ -111,7 +111,7 @@ public class ProcessQueue {
                 msgCount.addAndGet(validMsgCnt);
 
                 if (!msgTreeMap.isEmpty() && !this.consuming) {
-                    dispathToConsume = true;
+                    dispatchToConsume = true;
                     this.consuming = true;
                 }
 
@@ -135,7 +135,7 @@ public class ProcessQueue {
             log.error("putMessage exception", e);
         }
 
-        return dispathToConsume;
+        return dispatchToConsume;
     }
 
 
