@@ -357,14 +357,22 @@ public class HAService {
             for (int i = 0; i < 3 && this.reportOffset.hasRemaining(); i++) {
                 try {
                     this.socketChannel.write(this.reportOffset);
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     log.error(this.getServiceName() + "reportSlaveMaxOffset this.socketChannel.write exception", e);
                     return false;
                 }
             }
 
-            return !this.reportOffset.hasRemaining();
+            boolean heartbeatOK = !this.reportOffset.hasRemaining();
+
+            if (heartbeatOK) {
+
+                // Update last write timestamp to mark current connection alive in application tier.
+                // This time is actually the heartbeat time.
+                lastWriteTimestamp = System.currentTimeMillis();
+            }
+
+            return heartbeatOK;
         }
 
         private void reallocateByteBuffer() {
@@ -593,9 +601,8 @@ public class HAService {
                             continue;
                         }
 
-                        long interval =
-                                HAService.this.getDefaultMessageStore().getSystemClock().now()
-                                        - this.lastWriteTimestamp;
+                        long interval = HAService.this.getDefaultMessageStore().getSystemClock().now()
+                                - this.lastWriteTimestamp;
                         if (interval > HAService.this.getDefaultMessageStore().getMessageStoreConfig()
                             .getHaHousekeepingInterval()) {
                             log.warn("HAClient, housekeeping, found this connection[" + this.masterAddress

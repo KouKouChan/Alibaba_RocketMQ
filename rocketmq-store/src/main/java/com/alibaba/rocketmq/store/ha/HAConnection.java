@@ -21,7 +21,6 @@ import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 import com.alibaba.rocketmq.store.SelectMapedBufferResult;
 import com.google.common.hash.Hashing;
-import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +95,7 @@ public class HAConnection {
         private final Selector selector;
         private final SocketChannel socketChannel;
         private final ByteBuffer byteBufferRead = ByteBuffer.allocate(ReadMaxBufferSize);
-        private int processPostion = 0;
+        private int processPosition = 0;
         private volatile long lastReadTimestamp = System.currentTimeMillis();
 
 
@@ -121,7 +120,9 @@ public class HAConnection {
                         break;
                     }
 
-                    long interval = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now() - this.lastReadTimestamp;
+                    long currentTimestamp = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now();
+                    long interval = currentTimestamp - Math.max(getLastReadTimestamp(), writeSocketService.getLastWriteTimestamp());
+
                     if (interval > HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig().getHaHousekeepingInterval()) {
                         log.warn("ha housekeeping, found this connection[" + HAConnection.this.clientAddr + "] expired, " + interval);
                         break;
@@ -163,7 +164,7 @@ public class HAConnection {
 
             if (!this.byteBufferRead.hasRemaining()) {
                 this.byteBufferRead.flip();
-                this.processPostion = 0;
+                this.processPosition = 0;
             }
 
             while (this.byteBufferRead.hasRemaining()) {
@@ -172,10 +173,10 @@ public class HAConnection {
                     if (readSize > 0) {
                         readSizeZeroTimes = 0;
                         this.lastReadTimestamp = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now();
-                        if ((this.byteBufferRead.position() - this.processPostion) >= 8) {
+                        if ((this.byteBufferRead.position() - this.processPosition) >= 8) {
                             int pos = this.byteBufferRead.position() - (this.byteBufferRead.position() % 8);
                             long readOffset = this.byteBufferRead.getLong(pos - 8);
-                            this.processPostion = pos;
+                            this.processPosition = pos;
 
                             HAConnection.this.slaveAckOffset = readOffset;
                             if (HAConnection.this.slaveRequestOffset < 0) {
@@ -205,6 +206,9 @@ public class HAConnection {
             return true;
         }
 
+        public long getLastReadTimestamp() {
+            return lastReadTimestamp;
+        }
 
         @Override
         public String getServiceName() {
@@ -220,7 +224,7 @@ public class HAConnection {
         private long nextTransferFromWhere = -1;
         private SelectMapedBufferResult selectMapedBufferResult;
         private boolean lastWriteOver = true;
-        private long lastWriteTimestamp = System.currentTimeMillis();
+        private volatile long lastWriteTimestamp = System.currentTimeMillis();
 
 
         public WriteSocketService(final SocketChannel socketChannel) throws IOException {
@@ -267,8 +271,8 @@ public class HAConnection {
                     }
 
                     if (this.lastWriteOver) {
-                        long interval =
-                                HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now() - this.lastWriteTimestamp;
+                        long currentTimestamp = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now();
+                        long interval = currentTimestamp - Math.max(getLastWriteTimestamp(), readSocketService.getLastReadTimestamp());
 
                         if (interval > HAConnection.this.haService.getDefaultMessageStore().getMessageStoreConfig()
                             .getHaSendHeartbeatInterval()) {
@@ -412,6 +416,9 @@ public class HAConnection {
             return result;
         }
 
+        public long getLastWriteTimestamp() {
+            return lastWriteTimestamp;
+        }
 
         @Override
         public String getServiceName() {
