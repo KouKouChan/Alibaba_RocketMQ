@@ -20,6 +20,8 @@ import com.alibaba.rocketmq.common.ServiceThread;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 import com.alibaba.rocketmq.store.SelectMapedBufferResult;
+import com.google.common.hash.Hashing;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -212,7 +214,7 @@ public class HAConnection {
     class WriteSocketService extends ServiceThread {
         private final Selector selector;
         private final SocketChannel socketChannel;
-        private final int HEADER_SIZE = 8 + 4;
+        private final int HEADER_SIZE = 8 /* physical offset */ + 4 /* data length */ + 16 /* MD5 checksum */;
         private final ByteBuffer byteBufferHeader = ByteBuffer.allocate(HEADER_SIZE);
         private long nextTransferFromWhere = -1;
         private SelectMapedBufferResult selectMapedBufferResult;
@@ -273,6 +275,8 @@ public class HAConnection {
                             this.byteBufferHeader.limit(HEADER_SIZE);
                             this.byteBufferHeader.putLong(this.nextTransferFromWhere);
                             this.byteBufferHeader.putInt(0);
+                            ByteBuffer md5ChecksumByteBuffer = ByteBuffer.allocate(16);
+                            this.byteBufferHeader.put(md5ChecksumByteBuffer);
                             this.byteBufferHeader.flip();
 
                             this.lastWriteOver = this.transferData();
@@ -304,6 +308,12 @@ public class HAConnection {
                         this.byteBufferHeader.limit(HEADER_SIZE);
                         this.byteBufferHeader.putLong(thisOffset);
                         this.byteBufferHeader.putInt(size);
+
+                        ByteBuffer byteBuffer = this.selectMapedBufferResult.getByteBuffer().slice();
+                        byte[] data = new byte[byteBuffer.capacity()];
+                        byteBuffer.get(data, 0, data.length);
+                        this.byteBufferHeader.put(Hashing.md5().hashBytes(data).asBytes());
+
                         this.byteBufferHeader.flip();
 
                         this.lastWriteOver = this.transferData();

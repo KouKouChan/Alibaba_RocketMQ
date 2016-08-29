@@ -21,6 +21,8 @@ import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 import com.alibaba.rocketmq.store.CommitLog.GroupCommitRequest;
 import com.alibaba.rocketmq.store.DefaultMessageStore;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -323,12 +325,14 @@ public class HAService {
         private long lastWriteTimestamp = System.currentTimeMillis();
         private long currentReportedOffset = 0;
         private int dispatchPostion = 0;
+        private byte[] checksum;
         private ByteBuffer byteBufferRead = ByteBuffer.allocate(ReadMaxBufferSize);
         private ByteBuffer byteBufferBackup = ByteBuffer.allocate(ReadMaxBufferSize);
 
 
         public HAClient() throws IOException {
             this.selector = RemotingUtil.openSelector();
+            this.checksum = new byte[16];
         }
 
 
@@ -342,22 +346,15 @@ public class HAService {
 
 
         private boolean isTimeToReportOffset() {
-            long interval =
-                    HAService.this.defaultMessageStore.getSystemClock().now() - this.lastWriteTimestamp;
-            boolean needHeart =
-                    (interval > HAService.this.defaultMessageStore.getMessageStoreConfig()
-                        .getHaSendHeartbeatInterval());
-
-            return needHeart;
+            long interval = HAService.this.defaultMessageStore.getSystemClock().now() - this.lastWriteTimestamp;
+            return interval > HAService.this.defaultMessageStore.getMessageStoreConfig().getHaSendHeartbeatInterval();
         }
 
 
         private boolean reportSlaveMaxOffset(final long maxOffset) {
-            this.reportOffset.position(0);
-            this.reportOffset.limit(8);
+            this.reportOffset.clear();
             this.reportOffset.putLong(maxOffset);
-            this.reportOffset.position(0);
-            this.reportOffset.limit(8);
+            this.reportOffset.flip();
 
             for (int i = 0; i < 3 && this.reportOffset.hasRemaining(); i++) {
                 try {
@@ -378,8 +375,7 @@ public class HAService {
             if (remain > 0) {
                 this.byteBufferRead.position(this.dispatchPostion);
 
-                this.byteBufferBackup.position(0);
-                this.byteBufferBackup.limit(ReadMaxBufferSize);
+                this.byteBufferBackup.clear();
                 this.byteBufferBackup.put(this.byteBufferRead);
             }
 
@@ -434,7 +430,7 @@ public class HAService {
 
 
         private boolean dispatchReadRequest() {
-            final int MSG_HEADER_SIZE = 8 + 4; // phyoffset + size
+            final int MSG_HEADER_SIZE = 8 /* physical offset */ + 4 /* data length */ + 16 /* MD5 checksum */;
             int readSocketPos = this.byteBufferRead.position();
 
             while (true) {
@@ -442,6 +438,7 @@ public class HAService {
                 if (diff >= MSG_HEADER_SIZE) {
                     long masterPhyOffset = this.byteBufferRead.getLong(this.dispatchPostion);
                     int bodySize = this.byteBufferRead.getInt(this.dispatchPostion + 8);
+                    this.byteBufferRead.get(checksum, 0, 16);
 
                     long slavePhyOffset = HAService.this.defaultMessageStore.getMaxPhyOffset();
 
@@ -457,6 +454,14 @@ public class HAService {
                         byte[] bodyData = new byte[bodySize];
                         this.byteBufferRead.position(this.dispatchPostion + MSG_HEADER_SIZE);
                         this.byteBufferRead.get(bodyData);
+
+                        // Validate MD5 checksum
+                        HashCode md5HashCode = Hashing.md5().hashBytes(bodyData);
+                        if (!md5HashCode.equals(HashCode.fromBytes(checksum))) {
+                            log.error("MD5 checksum failed: Bad Network");
+                            reportSlaveMaxOffsetPlus(true);
+                            return false;
+                        }
 
                         HAService.this.defaultMessageStore.appendToCommitLog(masterPhyOffset, bodyData);
 
@@ -483,9 +488,14 @@ public class HAService {
 
 
         private boolean reportSlaveMaxOffsetPlus() {
+            return reportSlaveMaxOffsetPlus(false);
+        }
+
+
+        private boolean reportSlaveMaxOffsetPlus(boolean immediately) {
             boolean result = true;
             long currentPhyOffset = HAService.this.defaultMessageStore.getMaxPhyOffset();
-            if (currentPhyOffset > this.currentReportedOffset) {
+            if (immediately || currentPhyOffset > this.currentReportedOffset) {
                 this.currentReportedOffset = currentPhyOffset;
                 result = this.reportSlaveMaxOffset(this.currentReportedOffset);
                 if (!result) {
