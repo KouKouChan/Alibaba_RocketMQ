@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 
 
 /**
@@ -275,8 +276,11 @@ public class HAConnection {
                             this.byteBufferHeader.limit(HEADER_SIZE);
                             this.byteBufferHeader.putLong(this.nextTransferFromWhere);
                             this.byteBufferHeader.putInt(0);
-                            ByteBuffer md5ChecksumByteBuffer = ByteBuffer.allocate(16);
-                            this.byteBufferHeader.put(md5ChecksumByteBuffer);
+
+                            byte[] randomMD5 = new byte[16];
+                            Arrays.fill(randomMD5, (byte) 'x');
+                            this.byteBufferHeader.put(randomMD5);
+
                             this.byteBufferHeader.flip();
 
                             this.lastWriteOver = this.transferData();

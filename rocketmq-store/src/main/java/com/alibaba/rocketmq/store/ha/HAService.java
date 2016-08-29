@@ -435,7 +435,16 @@ public class HAService {
                 if (diff >= MSG_HEADER_SIZE) {
                     long masterPhyOffset = this.byteBufferRead.getLong(this.dispatchPosition);
                     int bodySize = this.byteBufferRead.getInt(this.dispatchPosition + 8);
+
+                    // Mark the position.
+                    int pos = this.byteBufferRead.position();
+                    this.byteBufferRead.position(this.dispatchPosition + 8 + 4);
+
+                    // Read MD5 checksum
                     this.byteBufferRead.get(checksum, 0, 16);
+
+                    // Restore original position.
+                    this.byteBufferRead.position(pos);
 
                     long slavePhyOffset = HAService.this.defaultMessageStore.getMaxPhyOffset();
 
@@ -452,12 +461,14 @@ public class HAService {
                         this.byteBufferRead.position(this.dispatchPosition + MSG_HEADER_SIZE);
                         this.byteBufferRead.get(bodyData);
 
-                        // Validate MD5 checksum
-                        HashCode md5HashCode = Hashing.md5().hashBytes(bodyData);
-                        if (!md5HashCode.equals(HashCode.fromBytes(checksum))) {
-                            log.error("MD5 checksum failed: Bad Network");
-                            reportSlaveMaxOffsetPlus(true);
-                            return false;
+                        if (bodySize > 0) {
+                            // Validate MD5 checksum
+                            HashCode md5HashCode = Hashing.md5().hashBytes(bodyData);
+                            if (!md5HashCode.equals(HashCode.fromBytes(checksum))) {
+                                log.error("MD5 checksum failed: Bad Network");
+                                reportSlaveMaxOffsetPlus(true);
+                                return false;
+                            }
                         }
 
                         HAService.this.defaultMessageStore.appendToCommitLog(masterPhyOffset, bodyData);
