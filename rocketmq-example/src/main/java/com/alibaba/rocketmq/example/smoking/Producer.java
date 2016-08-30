@@ -41,6 +41,8 @@ public class Producer {
                 } catch (InterruptedException e) {
                     LOGGER.warn("Thread interrupted", e);
                     break;
+                } catch (Exception e) {
+                    LOGGER.error("Unexpected Exception", e);
                 }
             }
         } catch (MQClientException e) {
