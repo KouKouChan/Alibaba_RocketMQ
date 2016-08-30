@@ -23,26 +23,28 @@ public class Producer {
             byte[] body = new byte[1024];
             Arrays.fill(body, (byte)'x');
             Message message = new Message("TestTopic", body);
-            for (;;) {
-                producer.send(message, new SendCallback() {
-                    @Override
-                    public void onSuccess(SendResult sendResult) {
-                        LOGGER.debug(sendResult.getMsgId());
-                    }
+            while (true) {
+                try {
+                    producer.send(message, new SendCallback() {
+                        @Override
+                        public void onSuccess(SendResult sendResult) {
+                            LOGGER.debug(sendResult.getMsgId());
+                        }
 
-                    @Override
-                    public void onException(Throwable e) {
-                        LOGGER.error("Send failed", e);
-                    }
-                });
+                        @Override
+                        public void onException(Throwable e) {
+                            LOGGER.error("Send failed", e);
+                        }
+                    });
+                } catch (RemotingException e) {
+                    LOGGER.error("Send failed", e);
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Thread interrupted", e);
+                    break;
+                }
             }
-
         } catch (MQClientException e) {
-            e.printStackTrace();
-        } catch (RemotingException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.error("Start producer failed", e);
         } finally {
             producer.shutdown();
         }
