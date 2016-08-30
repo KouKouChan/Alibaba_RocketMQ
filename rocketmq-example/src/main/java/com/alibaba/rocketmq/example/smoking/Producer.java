@@ -25,24 +25,10 @@ public class Producer {
             Message message = new Message("TestTopic", body);
             while (true) {
                 try {
-                    producer.send(message, new SendCallback() {
-                        @Override
-                        public void onSuccess(SendResult sendResult) {
-                            LOGGER.debug(sendResult.getMsgId());
-                        }
-
-                        @Override
-                        public void onException(Throwable e) {
-                            LOGGER.error("Send failed", e);
-                        }
-                    });
-                } catch (RemotingException e) {
-                    LOGGER.error("Send failed", e);
-                } catch (InterruptedException e) {
-                    LOGGER.warn("Thread interrupted", e);
-                    break;
+                    SendResult sendResult = producer.send(message);
+                    LOGGER.debug(sendResult.getMsgId());
                 } catch (Exception e) {
-                    LOGGER.error("Unexpected Exception", e);
+                    LOGGER.error("Send Failed", e);
                 }
             }
         } catch (MQClientException e) {
