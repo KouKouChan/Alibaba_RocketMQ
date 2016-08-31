@@ -80,6 +80,10 @@ public class RunningFlags {
         return false;
     }
 
+    public boolean isDiskFull() {
+        return (flagBits & DiskFullBit) == DiskFullBit;
+    }
+
 
     public boolean getAndMakeNotWriteable() {
         boolean result = this.isWriteable();

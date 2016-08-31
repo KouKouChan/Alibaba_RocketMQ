@@ -333,25 +333,31 @@ public class ConsumeQueue {
     }
 
 
-    public void putMessagePostionInfoWrapper(long offset, int size, long tagsCode, long storeTimestamp,
-            long logicOffset) {
+    public void putMessagePositionInfoWrapper(long offset, int size, long tagsCode, long storeTimestamp,
+                                              long logicOffset) {
         final int MaxRetries = 30;
         boolean canWrite = this.defaultMessageStore.getRunningFlags().isWriteable();
-        for (int i = 0; i < MaxRetries && canWrite; i++) {
-            boolean result = this.putMessagePostionInfo(offset, size, tagsCode, logicOffset);
-            if (result) {
-                this.defaultMessageStore.getStoreCheckpoint().setLogicsMsgTimestamp(storeTimestamp);
-                return;
-            }
-            else {
-                log.warn("[BUG]put commit log postion info to " + topic + ":" + queueId + " " + offset
-                        + " failed, retry " + i + " times");
+        boolean diskFull = this.defaultMessageStore.getRunningFlags().isDiskFull();
 
-                try {
-                    Thread.sleep(1000);
-                }
-                catch (InterruptedException e) {
-                    log.warn("", e);
+        // Though disk has been marked full, it normally still has some free space.
+        // Considering size of the consume queue, we would still try to write consume queue instead of marking consume
+        // queue as logic error which requires service restart.
+        // This change allows broker automatically recovers from disk-full state once deprecated files are removed.
+        if (canWrite || diskFull) {
+            for (int i = 0; i < MaxRetries; i++) {
+                boolean result = this.putMessagePostionInfo(offset, size, tagsCode, logicOffset);
+                if (result) {
+                    this.defaultMessageStore.getStoreCheckpoint().setLogicsMsgTimestamp(storeTimestamp);
+                    return;
+                } else {
+                    log.warn("[BUG]put commit log position info to " + topic + ":" + queueId + " " + offset
+                            + " failed, retry " + i + " times");
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        log.warn("", e);
+                    }
                 }
             }
         }
