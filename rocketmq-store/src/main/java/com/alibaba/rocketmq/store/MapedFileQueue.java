@@ -409,6 +409,8 @@ public class MapedFileQueue {
                             boolean success = file.delete();
                             if (!success) {
                                 log.error("Unable to delete dangling file: {}", mapedFile.getFileName());
+                            } else {
+                                log.info("Deleted dangling file: {}", mapedFile.getFileName());
                             }
                         }
                     } else {
