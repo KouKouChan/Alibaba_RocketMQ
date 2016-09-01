@@ -17,7 +17,7 @@ public class LocalStore {
     public static void main(String[] args) throws IOException {
         final LocalMessageStore localMessageStore = new DefaultLocalMessageStore("Test");
         localMessageStore.start();
-        int parallelism = 10;
+        int parallelism = 4;
         final AtomicInteger count = new AtomicInteger();
 
         final byte[] data = new byte[1024];
@@ -51,6 +51,6 @@ public class LocalStore {
                     localMessageStore.close();
                 }
             }
-        }, 30, TimeUnit.SECONDS);
+        }, 10, TimeUnit.SECONDS);
     }
 }
