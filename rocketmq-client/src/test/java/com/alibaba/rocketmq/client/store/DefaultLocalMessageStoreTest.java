@@ -1,6 +1,8 @@
 package com.alibaba.rocketmq.client.store;
 
 import com.alibaba.rocketmq.common.message.Message;
+import com.alibaba.rocketmq.common.message.MessageDecoder;
+import com.alibaba.rocketmq.common.message.MessageEncoder;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -9,6 +11,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -231,5 +235,21 @@ public class DefaultLocalMessageStoreTest {
         defaultLocalMessageStore.close();
 
         Assert.assertEquals(0, counter.intValue());
+    }
+
+
+    @Test
+    public void testEncode() {
+
+        Message message = new Message("中文", "abc中文abc".getBytes(Charset.forName("UTF-8")));
+        ByteBuffer data = MessageEncoder.encode(StoreHelper.wrap(message));
+        Message msg = MessageDecoder.decode(data, true, false);
+
+        if (null == msg) {
+            Assert.fail("Failed to decode msg");
+        }
+
+        Assert.assertEquals(message.getTopic(), msg.getTopic());
+        Assert.assertArrayEquals(message.getBody(), msg.getBody());
     }
 }

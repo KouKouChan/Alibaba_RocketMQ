@@ -49,7 +49,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
 
     private ReentrantLock lock = new ReentrantLock();
 
-    private static final int QUEUE_CAPACITY = 1000;
+    private static final int QUEUE_CAPACITY = 10000;
 
     private LinkedBlockingQueue<MessageExt> messageQueue = new LinkedBlockingQueue<MessageExt>(QUEUE_CAPACITY);
 
@@ -276,6 +276,10 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
                 readOffSet.set(null == properties.getProperty("readOffSet") ? 0L :
                         Long.parseLong(properties.getProperty("readOffSet")));
 
+                if (null == dataFiles) {
+                    return;
+                }
+
                 for (String dataFile : dataFiles) {
                     messageStoreNameFileMapping.putIfAbsent(Long.parseLong(dataFile),
                             new File(localMessageStoreDirectory, dataFile));
@@ -363,7 +367,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
                 throw new RuntimeException("Message data files are corrupted and unable to recover automatically");
             }
 
-            if (dataFiles.length > 0) {
+            if (null != dataFiles && dataFiles.length > 0) {
                 readIndex.set(Long.parseLong(dataFiles[0]) - 1);
                 readOffSet.set(0);
 
@@ -391,6 +395,11 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
 
     private void cleanDeprecatedData() throws IOException {
         String[] dataFiles = getMessageDataFiles();
+
+        if (null == dataFiles) {
+            return;
+        }
+
         //Remove possibly existing deprecated message data files.
         LOGGER.info("Start cleaning deprecated message data files.");
         for (String dataFile : dataFiles) {
@@ -808,7 +817,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
                     byteBuffer.putInt(magicCode);
                     byteBuffer.put(data);
                     byteBuffer.flip();
-                    messages[messageRead++] = MessageDecoder.decode(byteBuffer);
+                    messages[messageRead++] = MessageDecoder.decode(byteBuffer, true, false);
                     readIndex.incrementAndGet();
                     readOffSet.addAndGet(messageSize);
 
@@ -868,12 +877,5 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         flushDiskService.shutdown();
         deleteAbortFile();
         LOGGER.info("Default local message store shuts down completely");
-    }
-
-    /**
-     * All messages will forcefully flushed to disk.
-     */
-    public void suspend() {
-        flushDiskService.putRequest(new FlushDiskRequest(true));
     }
 }

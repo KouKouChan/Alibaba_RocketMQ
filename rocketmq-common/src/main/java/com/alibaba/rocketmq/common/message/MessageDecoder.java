@@ -169,8 +169,7 @@ public class MessageDecoder {
                     byteBuffer.get(body);
 
                     // uncompress body
-                    if (deCompressBody
-                            && (sysFlag & MessageSysFlag.CompressedFlag) == MessageSysFlag.CompressedFlag) {
+                    if (deCompressBody && (sysFlag & MessageSysFlag.CompressedFlag) == MessageSysFlag.CompressedFlag) {
                         body = UtilAll.uncompress(body);
                     }
 
