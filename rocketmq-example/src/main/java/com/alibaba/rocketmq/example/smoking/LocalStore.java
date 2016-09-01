@@ -41,7 +41,7 @@ public class LocalStore {
             });
         }
 
-        executorService.schedule(new Runnable() {
+        executorService.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 int stopWatch = count.get();
@@ -51,6 +51,6 @@ public class LocalStore {
                     localMessageStore.close();
                 }
             }
-        }, 10, TimeUnit.SECONDS);
+        }, 10, 10, TimeUnit.SECONDS);
     }
 }
