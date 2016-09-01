@@ -25,6 +25,8 @@ import static com.alibaba.rocketmq.client.store.StoreHelper.wrap;
 
 public class DefaultLocalMessageStore implements LocalMessageStore {
 
+    private static final ConcurrentHashMap<String, DefaultLocalMessageStore> STORE_MAP = new ConcurrentHashMap<>();
+
     private static final String ABORT_FILE_NAME = ".abort";
 
     private static final String CONFIG_FILE_NAME = ".config";
@@ -72,6 +74,8 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
     private static final String ACCESS_FILE_MODE = "rw";
 
     private FlushDiskService flushDiskService;
+
+    private final String storeName;
 
     /**
      * Flush request.
@@ -178,6 +182,15 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
     }
 
     public DefaultLocalMessageStore(String storeName) throws IOException {
+
+        this.storeName = storeName;
+
+        if (null != STORE_MAP.putIfAbsent(storeName, this)) {
+            LOGGER.error("Multiple stores of same name found");
+
+            // abort
+            System.exit(1);
+        }
 
         localMessageStoreDirectory = StoreHelper.getLocalMessageStoreDirectory(storeName);
 
@@ -875,6 +888,10 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         LOGGER.info("Default local message store starts to shut down.");
         status = ClientStatus.CLOSED;
         flushDiskService.shutdown();
+
+        // remove store name to avoid memory leakage.
+        STORE_MAP.remove(storeName);
+
         deleteAbortFile();
         LOGGER.info("Default local message store shuts down completely");
     }
