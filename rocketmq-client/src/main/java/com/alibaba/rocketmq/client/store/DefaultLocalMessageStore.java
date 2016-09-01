@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.rocketmq.client.ClientStatus;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.common.ServiceThread;
+import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
@@ -239,14 +240,75 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
             if (!abortFile.createNewFile()) {
                 LOGGER.error("Failed to create abort file");
             } else {
+
+                FileWriter fileWriter = null;
+                try {
+                    fileWriter = new FileWriter(abortFile, false);
+                    fileWriter.write("pid=" + UtilAll.getPid());
+                } finally {
+                    if (null != fileWriter) {
+                        fileWriter.close();
+                    }
+                }
+
                 LOGGER.info("Abort file created: " + abortFile.getAbsolutePath());
             }
         }
     }
 
+    private boolean hasProcessCrashed() {
+        File abortFile = new File(localMessageStoreDirectory, ABORT_FILE_NAME);
+        if (!abortFile.exists()) {
+            LOGGER.error("Abort file does not exist");
+            return false;
+        }
+
+        FileReader fileReader = null;
+        try {
+            fileReader = new FileReader(abortFile);
+            Properties properties = new Properties();
+            properties.load(fileReader);
+
+            if (!properties.containsKey("pid")) {
+                LOGGER.error("Illegal .abort file format");
+            }
+
+            String pid = properties.getProperty("pid").trim();
+            return isProcessAbsent(pid);
+        } catch (IOException e) {
+            LOGGER.error("IO error", e);
+            return false;
+        } finally {
+            if (null != fileReader) {
+                try {
+                    fileReader.close();
+                } catch (IOException ignore) {
+                }
+            }
+        }
+    }
+
+
+    public static boolean isProcessAbsent(String pid) {
+
+        File proc = new File("/proc/" + pid);
+        if (!proc.exists()) {
+            return true;
+        }
+
+        try {
+            Process process = Runtime.getRuntime().exec("kill -0 " + pid);
+            process.waitFor();
+            return process.exitValue() != 0;
+        } catch (InterruptedException | IOException e) {
+            LOGGER.error("Check PID existence error", e);
+            return false;
+        }
+    }
+
     private void deleteAbortFile() {
         File abortFile = new File(localMessageStoreDirectory, ABORT_FILE_NAME);
-        if (abortFile.exists()) {
+        if (abortFile.exists() && hasProcessCrashed()) {
             if (!abortFile.delete()) {
                 LOGGER.error("Failed to delete abort file");
             } else {
@@ -345,9 +407,9 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
                     }
 
                     updateConfig();
-                    if (isLastShutdownAbort()) {
-                        deleteAbortFile();
-                    }
+
+                    tryToDeleteAbortFile();
+
                     LOGGER.info("Data Recovery completes.");
                 }
 
@@ -396,14 +458,23 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
             }
             updateConfig();
 
-            if (isLastShutdownAbort()) {
-                deleteAbortFile();
-            }
+            tryToDeleteAbortFile();
 
             LOGGER.info("Data recovery completes.");
         }
 
         cleanDeprecatedData();
+    }
+
+    private void tryToDeleteAbortFile() {
+        if (isLastShutdownAbort()) {
+            if (hasProcessCrashed()) {
+                deleteAbortFile();
+            } else {
+                LOGGER.error("Store name has been taken");
+                System.exit(1);
+            }
+        }
     }
 
     private void cleanDeprecatedData() throws IOException {
