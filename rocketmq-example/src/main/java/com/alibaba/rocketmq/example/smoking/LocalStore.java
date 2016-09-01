@@ -17,15 +17,15 @@ public class LocalStore {
     public static void main(String[] args) throws IOException {
         final LocalMessageStore localMessageStore = new DefaultLocalMessageStore("Test");
         localMessageStore.start();
-        int parallelism = 4;
+        int parallelism = 10;
         final AtomicInteger count = new AtomicInteger();
 
         final byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'x');
         final Message message = new Message("TestTopic", data);
-        final AtomicInteger round = new AtomicInteger(5);
+        final AtomicInteger round = new AtomicInteger(10);
 
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(parallelism);
+        final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(parallelism);
         for (int i = 0; i < parallelism - 1; i++) {
             executorService.submit(new Runnable() {
                 @Override
@@ -49,6 +49,7 @@ public class LocalStore {
                 prev = stopWatch;
                 if (round.decrementAndGet() < 0) {
                     localMessageStore.close();
+                    executorService.shutdown();
                 }
             }
         }, 10, 10, TimeUnit.SECONDS);

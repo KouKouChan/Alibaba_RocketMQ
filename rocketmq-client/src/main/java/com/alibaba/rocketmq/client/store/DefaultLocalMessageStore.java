@@ -69,7 +69,7 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
 
     private volatile long lastWarnTime = -1;
 
-    private static final String ACCESS_FILE_MODE = "rws";
+    private static final String ACCESS_FILE_MODE = "rw";
 
     private FlushDiskService flushDiskService;
 
