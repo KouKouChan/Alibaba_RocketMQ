@@ -45,7 +45,7 @@ public class LocalStore {
             @Override
             public void run() {
                 int stopWatch = count.get();
-                System.out.println("QPS: " + (stopWatch - prev) / 30);
+                System.out.println("QPS: " + (stopWatch - prev) / 10);
                 prev = stopWatch;
                 if (round.decrementAndGet() < 0) {
                     localMessageStore.close();
