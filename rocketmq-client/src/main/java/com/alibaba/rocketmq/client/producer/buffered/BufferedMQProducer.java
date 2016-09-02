@@ -54,7 +54,7 @@ public class BufferedMQProducer {
 
     private int count;
 
-    private final List<MessageQueueSelector> messageQueueSelectors = new ArrayList<MessageQueueSelector>();
+    private final List<MessageQueueSelector> messageQueueSelectors = new ArrayList<>();
 
     private LinkedBlockingQueue<Message> messageQueue;
 
