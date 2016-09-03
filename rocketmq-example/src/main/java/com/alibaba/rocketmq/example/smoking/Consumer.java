@@ -5,7 +5,7 @@ import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
 import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
 import com.alibaba.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import com.alibaba.rocketmq.client.exception.MQClientException;
-import com.alibaba.rocketmq.common.message.Message;
+import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import org.apache.commons.cli.*;
 
@@ -43,6 +43,7 @@ public class Consumer {
         consumer.subscribe(topic, null);
         consumer.setNamesrvAddr(namesrv);
         consumer.setPullBatchSize(Integer.parseInt(commandLine.getOptionValue("b", "32")));
+        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
 
         final AtomicInteger prev = new AtomicInteger();
         final AtomicInteger count = new AtomicInteger();
