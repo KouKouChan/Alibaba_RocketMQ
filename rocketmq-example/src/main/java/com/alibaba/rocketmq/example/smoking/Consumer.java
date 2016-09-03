@@ -10,6 +10,10 @@ import com.alibaba.rocketmq.common.message.MessageExt;
 import org.apache.commons.cli.*;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Consumer {
 
@@ -19,6 +23,7 @@ public class Consumer {
         options.addOption("g", "group", true, "Consumer Group");
         options.addOption("t", "topic", true, "Topic");
         options.addOption("n", "namesrv", true, "Name Server");
+        options.addOption("b", "batch", true, "Pull batch size");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine commandLine = parser.parse(options, args);
@@ -37,17 +42,29 @@ public class Consumer {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(consumerGroup);
         consumer.subscribe(topic, null);
         consumer.setNamesrvAddr(namesrv);
+        consumer.setPullBatchSize(Integer.parseInt(commandLine.getOptionValue("b", "32")));
+
+        final AtomicInteger prev = new AtomicInteger();
+        final AtomicInteger count = new AtomicInteger();
 
         consumer.registerMessageListener(new MessageListenerConcurrently() {
             @Override
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs, ConsumeConcurrentlyContext context) {
-                for (MessageExt msg : msgs) {
-                    System.out.println(msg);
-                }
+                count.addAndGet(msgs.size());
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
         });
 
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         consumer.start();
+        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                int curr = count.get();
+                int diff = curr - prev.get();
+                prev.set(curr);
+                System.out.println("QPS: " + (diff / 10));
+            }
+        }, 10, 10, TimeUnit.SECONDS);
     }
 }
