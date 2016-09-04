@@ -54,7 +54,7 @@ public class Producer {
             Arrays.fill(body, (byte)'x');
             Message message = new Message(topic, body);
             long start = System.currentTimeMillis();
-            CountDownLatch countDownLatch = new CountDownLatch((int)number);
+            final CountDownLatch countDownLatch = new CountDownLatch((int)number);
             final AtomicInteger successCount = new AtomicInteger();
             final AtomicInteger prevSuccessCount = new AtomicInteger();
             final AtomicInteger errorCount = new AtomicInteger();
@@ -82,11 +82,13 @@ public class Producer {
                         @Override
                         public void onSuccess(SendResult sendResult) {
                             successCount.incrementAndGet();
+                            countDownLatch.countDown();
                         }
 
                         @Override
                         public void onException(Throwable e) {
                             errorCount.incrementAndGet();
+                            countDownLatch.countDown();
                         }
                     });
                 } catch (Exception ignore) {
