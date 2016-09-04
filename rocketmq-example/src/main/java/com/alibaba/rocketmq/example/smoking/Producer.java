@@ -90,6 +90,8 @@ public class Producer {
                         }
                     });
                 } catch (Exception ignore) {
+                    countDownLatch.countDown();
+                    errorCount.incrementAndGet();
                 }
             }
 
