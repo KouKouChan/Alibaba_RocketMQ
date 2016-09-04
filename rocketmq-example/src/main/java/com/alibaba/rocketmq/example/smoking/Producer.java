@@ -89,23 +89,20 @@ public class Producer {
                             errorCount.incrementAndGet();
                         }
                     });
-                } catch (Exception e) {
-                    LOGGER.error("Send Failed", e);
+                } catch (Exception ignore) {
                 }
             }
 
             try {
                 countDownLatch.await();
-            } catch (InterruptedException e) {
-                LOGGER.error("Thread Interrupted", e);
+            } catch (InterruptedException ignore) {
             }
             long interval = System.currentTimeMillis() - start;
-            executorService.shutdown();
-            System.out.println("Success QPS: " + (successCount.get() * 1000L / interval));
-            System.out.println("Error QPS: " + (errorCount.get() * 1000L / interval));
-        } catch (MQClientException e) {
-            LOGGER.error("Start producer failed", e);
+            System.out.println("Holistic Success QPS: " + (successCount.get() * 1000L / interval));
+            System.out.println("Holistic Error QPS: " + (errorCount.get() * 1000L / interval));
+        } catch (MQClientException ignore) {
         } finally {
+            executorService.shutdown();
             producer.shutdown();
         }
     }
