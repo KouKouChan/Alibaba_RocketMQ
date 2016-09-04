@@ -100,6 +100,7 @@ public class Producer {
                 LOGGER.error("Thread Interrupted", e);
             }
             long interval = System.currentTimeMillis() - start;
+            executorService.shutdown();
             System.out.println("Success QPS: " + (successCount.get() * 1000L / interval));
             System.out.println("Error QPS: " + (errorCount.get() * 1000L / interval));
         } catch (MQClientException e) {
