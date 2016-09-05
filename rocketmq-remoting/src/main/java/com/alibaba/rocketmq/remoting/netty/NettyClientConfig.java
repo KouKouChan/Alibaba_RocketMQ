@@ -38,7 +38,7 @@ public class NettyClientConfig {
 
     private int clientSocketSndBufSize = NettySystemConfig.SocketSndbufSize;
     private int clientSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
-    private boolean clientPooledByteBufAllocatorEnable = false;
+    private boolean clientPooledByteBufAllocatorEnable = NettySystemConfig.NettyPooledByteBufAllocatorEnable;
 
     private boolean clientSocketOverTLS;
 

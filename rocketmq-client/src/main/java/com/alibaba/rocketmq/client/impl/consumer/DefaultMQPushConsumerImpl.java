@@ -918,8 +918,8 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
 
         // consumeMessageBatchMaxSize
         if (this.defaultMQPushConsumer.getConsumeMessageBatchMaxSize() < 1
-                || this.defaultMQPushConsumer.getConsumeMessageBatchMaxSize() > 1024) {
-            throw new MQClientException("consumeMessageBatchMaxSize Out of range [1, 1024]" //
+                || this.defaultMQPushConsumer.getConsumeMessageBatchMaxSize() > 4096) {
+            throw new MQClientException("consumeMessageBatchMaxSize Out of range [1, 4096]" //
                     + FAQUrl.suggestTodo(FAQUrl.CLIENT_PARAMETER_CHECK_URL), //
                 null);
         }
