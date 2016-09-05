@@ -1,23 +1,12 @@
 package com.alibaba.rocketmq.example.buffered;
 
-import com.alibaba.rocketmq.client.exception.MQBrokerException;
 import com.alibaba.rocketmq.client.exception.MQClientException;
-import com.alibaba.rocketmq.client.log.ClientLogger;
-import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
-import com.alibaba.rocketmq.client.producer.SendCallback;
-import com.alibaba.rocketmq.client.producer.SendResult;
 import com.alibaba.rocketmq.client.producer.buffered.BufferedMQProducer;
 import com.alibaba.rocketmq.client.producer.selector.Region;
-import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.message.Message;
-import com.alibaba.rocketmq.remoting.exception.RemotingException;
-import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ExampleBufferedProducer {
@@ -37,7 +26,9 @@ public class ExampleBufferedProducer {
         bufferedMQProducer.setTargetRegion(Region.US_WEST);
         bufferedMQProducer.start();
 
-        bufferedMQProducer.send(buildMessages(100));
+        for (int i = 0; i < 1000; i++) {
+            bufferedMQProducer.send(buildMessages(100));
+        }
     }
 
     public static Message[] buildMessages(int n) {

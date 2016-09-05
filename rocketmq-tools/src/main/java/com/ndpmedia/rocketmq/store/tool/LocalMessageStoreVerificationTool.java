@@ -8,6 +8,7 @@ import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
 import com.alibaba.rocketmq.client.producer.MessageQueueSelector;
 import com.alibaba.rocketmq.client.producer.SendResult;
 import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByDataCenter;
+import com.alibaba.rocketmq.client.producer.selector.Util;
 import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageDecoder;
@@ -226,7 +227,7 @@ public class LocalMessageStoreVerificationTool {
 
             for (MessageQueue messageQueue : messageQueuesList) {
                 String brokerName = messageQueue.getBrokerName();
-                if (SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID.equals(brokerName.split("_")[1])) {
+                if (Util.LOCAL_DATA_CENTER_ID.equals(brokerName.split("_")[1])) {
                     return messageQueue;
                 }
             }

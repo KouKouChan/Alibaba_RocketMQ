@@ -116,9 +116,7 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
             if (null != suspendConsumerIPRanges && !suspendConsumerIPRanges.trim().isEmpty()) {
                 ranges = MQHelper.buildIPRanges(suspendConsumerIPRanges);
             }
-        } catch (InterruptedException e) {
-            LOGGER.error("Error fetching suspended consumers", e);
-        } catch (RemotingException e) {
+        } catch (InterruptedException | RemotingException e) {
             LOGGER.error("Error fetching suspended consumers", e);
         } catch (MQClientException e) {
             if (e.getMessage().contains("DC_SELECTOR")) {

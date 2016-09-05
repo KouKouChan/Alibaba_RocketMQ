@@ -43,9 +43,6 @@ public class ClientConfig {
     private ClientType clientType;
     private WeakReference weakReference;
 
-    private static final AtomicInteger INSTANCE_COUNTER = new AtomicInteger(0);
-
-
     public String buildMQClientId() {
         StringBuilder sb = new StringBuilder();
         sb.append(this.getClientIP());
@@ -59,7 +56,7 @@ public class ClientConfig {
 
     public void changeInstanceNameToPID() {
         if (this.instanceName.equals("DEFAULT")) {
-            this.instanceName = String.valueOf(UtilAll.getPid()) + "_" + INSTANCE_COUNTER.incrementAndGet();
+            this.instanceName = String.valueOf(UtilAll.getPid());
         }
     }
 
