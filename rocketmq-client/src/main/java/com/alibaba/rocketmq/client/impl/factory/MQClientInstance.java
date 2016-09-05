@@ -37,6 +37,7 @@ import com.alibaba.rocketmq.client.impl.producer.TopicPublishInfo;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
 import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByDataCenter;
+import com.alibaba.rocketmq.client.producer.selector.Util;
 import com.alibaba.rocketmq.client.stat.ConsumerStatsManager;
 import com.alibaba.rocketmq.common.MQVersion;
 import com.alibaba.rocketmq.common.MixAll;
@@ -1127,7 +1128,7 @@ public class MQClientInstance {
      * If not found, choose the first one whatever it is.
      */
     private BrokerData findLocalBroker(List<BrokerData> brokers) {
-        String dcId = SelectMessageQueueByDataCenter.LOCAL_DATA_CENTER_ID;
+        String dcId = Util.LOCAL_DATA_CENTER_ID;
         for (BrokerData brokerData : brokers) {
             if (dcId.equalsIgnoreCase(getDataCenterIdByBrokerName(brokerData.getBrokerName()))) {
                 return brokerData;

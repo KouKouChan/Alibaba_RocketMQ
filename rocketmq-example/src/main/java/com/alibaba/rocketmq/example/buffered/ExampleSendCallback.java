@@ -13,15 +13,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ExampleSendCallback implements SendCallback {
 
-    private AtomicLong successfulSentCounter;
-
-    public ExampleSendCallback(AtomicLong successfulSentCounter) {
-        this.successfulSentCounter = successfulSentCounter;
-    }
-
     @Override
     public void onSuccess(SendResult sendResult) {
-        successfulSentCounter.incrementAndGet();
+        System.out.println(sendResult);
     }
 
     @Override

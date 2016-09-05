@@ -7,7 +7,8 @@ import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
 import com.alibaba.rocketmq.client.producer.MessageQueueSelector;
 import com.alibaba.rocketmq.client.producer.SendCallback;
 import com.alibaba.rocketmq.client.producer.TraceLevel;
-import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByDataCenter;
+import com.alibaba.rocketmq.client.producer.selector.Region;
+import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByRegion;
 import com.alibaba.rocketmq.client.store.DefaultLocalMessageStore;
 import com.alibaba.rocketmq.client.store.LocalMessageStore;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
@@ -51,7 +52,7 @@ public class BufferedMQProducer {
         producer = new DefaultMQProducer(producerGroup);
         producer.setTraceLevel(TraceLevel.PRODUCTION.name());
         localMessageStore = new DefaultLocalMessageStore(producerGroup);
-        messageQueueSelector = new SelectMessageQueueByDataCenter(producer);
+        messageQueueSelector = new SelectMessageQueueByRegion(Region.ANY);
         messageQueue = new LinkedBlockingQueue<>(MAX_NUMBER_OF_MESSAGE_IN_QUEUE);
         addShutdownHook();
         messageSender = new MessageSender();
@@ -99,18 +100,22 @@ public class BufferedMQProducer {
     }
 
     private void scheduleResendMessageService() {
+        LOGGER.info("Schedule send failure message");
         executorService.scheduleWithFixedDelay(new ResendMessageTask(localMessageStore, this), 30, 30, TimeUnit.SECONDS);
-        LOGGER.info("Resend failure message service starts.");
     }
 
     public void registerCallback(SendCallback sendCallback) {
         this.sendCallback = sendCallback;
     }
 
+    public void setSendMsgTimeout(int timeout) {
+        producer.setSendMsgTimeout(timeout);
+    }
+
     public void send(final Message msg) {
         try {
             producer.send(msg, messageQueueSelector, new SendMessageCallback(this, sendCallback, msg));
-        } catch (MQClientException | RemotingException | InterruptedException | MQBrokerException e) {
+        } catch (MQClientException | RemotingException | MQBrokerException | InterruptedException e) {
             errorSendingCounter.incrementAndGet();
             try {
                 messageQueue.offer(msg, 5, TimeUnit.SECONDS);
