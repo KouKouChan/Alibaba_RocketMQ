@@ -33,7 +33,7 @@ import java.util.List;
 public class Consumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException {
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("CG_QuickStart");
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("CG_BI_YM_EVENT_TEST");
         /**
          * 设置Consumer第一次启动是从队列头部开始消费还是队列尾部开始消费<br>
          * 如果非第一次启动，那么按照上次消费的位置继续消费

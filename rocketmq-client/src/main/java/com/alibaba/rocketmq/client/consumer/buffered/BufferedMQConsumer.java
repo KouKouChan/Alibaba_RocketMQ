@@ -30,10 +30,6 @@ public class BufferedMQConsumer {
 
     private final ConcurrentHashMap<String, MessageHandler> topicHandlerMap;
 
-    private static final AtomicLong CONSUMER_NAME_COUNTER = new AtomicLong();
-
-    private static final String BASE_INSTANCE_NAME = "BufferedMQConsumer";
-
     private DefaultMQPushConsumer defaultMQPushConsumer;
 
     private volatile ClientStatus status = ClientStatus.CREATED;
