@@ -24,9 +24,6 @@ public class SendMessageCallback implements SendCallback {
 
     @Override
     public void onSuccess(SendResult sendResult) {
-        //Release the semaphore token.
-        bufferedMQProducer.getSemaphore().release();
-
         //Update statistical data.
         bufferedMQProducer.getSuccessSendingCounter().incrementAndGet();
 
@@ -42,8 +39,16 @@ public class SendMessageCallback implements SendCallback {
 
     @Override
     public void onException(Throwable e) {
+
+        // Update statistical data
+        bufferedMQProducer.getErrorSendingCounter().incrementAndGet();
+
         //Stash the message and log the exception.
-        bufferedMQProducer.handleSendMessageFailure(message, e);
+        bufferedMQProducer.getLocalMessageStore().stash(message);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Message stashed due to sending failure");
+        }
+
         if (null != hook) {
             try {
                 hook.onException(e);

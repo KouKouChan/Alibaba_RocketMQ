@@ -255,22 +255,6 @@
                 </snapshotRepository>
             </distributionManagement>
         </profile>
-
-		<profile>
-			<id>deployTP</id>
-			<distributionManagement>
-				<repository>
-					<id>tp-release</id>
-					<name>Local Nexus Repository</name>
-					<url>http://172.30.10.200:8081/nexus/content/repositories/releases/</url>
-				</repository>
-				<snapshotRepository>
-					<id>tp-snapshot</id>
-					<name>Local Nexus Repository</name>
-					<url>http://172.30.10.200:8081/nexus/content/repositories/snapshots/</url>
-				</snapshotRepository>
-			</distributionManagement>
-		</profile>
 	</profiles>
 
 	<dependencyManagement>

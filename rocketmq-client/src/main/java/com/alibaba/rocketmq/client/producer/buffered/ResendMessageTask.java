@@ -35,32 +35,17 @@ public class ResendMessageTask implements Runnable {
                 return;
             }
 
-            int popSize = Math.min(bufferedMQProducer.getSemaphore().availablePermits(),
-                    BATCH_FETCH_MESSAGE_FROM_STORE_SIZE);
-
-            if (popSize <= 0) {
-                LOGGER.debug("No permits available in semaphore. Yield and wait for next round.");
-                return;
-            }
-
-            Message[] messages = localMessageStore.pop(popSize);
+            Message[] messages = localMessageStore.pop(BATCH_FETCH_MESSAGE_FROM_STORE_SIZE);
             if (null == messages || messages.length == 0) {
                 LOGGER.debug("No stashed messages to re-send");
                 return;
             }
 
             int totalNumberOfMessagesSubmitted = 0;
-
             while (null != messages && messages.length > 0) {
                 bufferedMQProducer.send(messages);
                 totalNumberOfMessagesSubmitted += messages.length;
-                //Prepare for next loop step.
-                popSize = Math.min(bufferedMQProducer.getSemaphore().availablePermits(),
-                        BATCH_FETCH_MESSAGE_FROM_STORE_SIZE);
-                if (popSize <= 0) {
-                    break;
-                }
-                messages = localMessageStore.pop(popSize);
+                messages = localMessageStore.pop(BATCH_FETCH_MESSAGE_FROM_STORE_SIZE);
             }
 
             LOGGER.debug(totalNumberOfMessagesSubmitted + " stashed messages re-sending completes: scheduled job submitted.");
