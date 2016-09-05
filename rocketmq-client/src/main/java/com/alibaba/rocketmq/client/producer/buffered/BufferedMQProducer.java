@@ -57,7 +57,8 @@ public class BufferedMQProducer {
         messageSender = new MessageSender();
     }
 
-    public void start() throws MQClientException {
+    public void start() throws MQClientException, IOException {
+        localMessageStore.start();
         producer.start();
         scheduleResendMessageService();
         scheduleTPSReport();
