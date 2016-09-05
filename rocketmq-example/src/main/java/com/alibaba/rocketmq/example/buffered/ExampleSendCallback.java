@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.example.cacheable;
+package com.alibaba.rocketmq.example.buffered;
 
 import com.alibaba.rocketmq.client.producer.SendCallback;
 import com.alibaba.rocketmq.client.producer.SendResult;

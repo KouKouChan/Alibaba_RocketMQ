@@ -1,4 +1,4 @@
-package com.alibaba.rocketmq.example.cacheable;
+package com.alibaba.rocketmq.example.buffered;
 
 import com.alibaba.rocketmq.client.consumer.buffered.BufferedMQConsumer;
 import com.alibaba.rocketmq.client.consumer.buffered.MessageHandler;
@@ -7,9 +7,7 @@ import com.alibaba.rocketmq.common.consumer.ConsumeFromWhere;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel;
 
-import java.util.Random;
-
-public class ExampleCacheableConsumer {
+public class ExampleBufferedConsumer {
 
     static class ExampleMessageHandler extends MessageHandler {
         public ExampleMessageHandler() {

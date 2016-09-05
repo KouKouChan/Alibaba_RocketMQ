@@ -5,7 +5,7 @@ import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.producer.buffered.BufferedMQProducer;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.message.Message;
-import com.alibaba.rocketmq.example.cacheable.ExampleSendCallback;
+import com.alibaba.rocketmq.example.buffered.ExampleSendCallback;
 import org.slf4j.Logger;
 
 import java.text.SimpleDateFormat;
