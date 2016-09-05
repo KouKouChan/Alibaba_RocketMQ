@@ -39,11 +39,13 @@ public class BufferedMQProducer {
     private final AtomicLong errorSendingCounter;
     private long error;
 
-    private final MessageQueueSelector messageQueueSelector;
+    private MessageQueueSelector messageQueueSelector;
 
     private final LinkedBlockingQueue<Message> messageQueue;
 
     private final MessageSender messageSender;
+
+    private Region targetRegion = Region.SAME;
 
     public BufferedMQProducer(String producerGroup) throws IOException {
         executorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl("ResendFailureMessageService"));
@@ -52,13 +54,13 @@ public class BufferedMQProducer {
         producer = new DefaultMQProducer(producerGroup);
         producer.setTraceLevel(TraceLevel.PRODUCTION.name());
         localMessageStore = new DefaultLocalMessageStore(producerGroup);
-        messageQueueSelector = new SelectMessageQueueByRegion(Region.ANY);
         messageQueue = new LinkedBlockingQueue<>(MAX_NUMBER_OF_MESSAGE_IN_QUEUE);
         addShutdownHook();
         messageSender = new MessageSender();
     }
 
     public void start() throws MQClientException, IOException {
+        messageQueueSelector = new SelectMessageQueueByRegion(targetRegion);
         localMessageStore.start();
         producer.start();
         scheduleResendMessageService();
@@ -114,8 +116,8 @@ public class BufferedMQProducer {
 
     public void send(final Message msg) {
         try {
-            producer.send(msg, messageQueueSelector, new SendMessageCallback(this, sendCallback, msg));
-        } catch (MQClientException | RemotingException | MQBrokerException | InterruptedException e) {
+            producer.send(msg, messageQueueSelector, null, new SendMessageCallback(this, sendCallback, msg));
+        } catch (MQClientException | RemotingException | InterruptedException e) {
             errorSendingCounter.incrementAndGet();
             try {
                 messageQueue.offer(msg, 5, TimeUnit.SECONDS);
@@ -174,6 +176,14 @@ public class BufferedMQProducer {
 
     public LocalMessageStore getLocalMessageStore() {
         return localMessageStore;
+    }
+
+    public Region getTargetRegion() {
+        return targetRegion;
+    }
+
+    public void setTargetRegion(Region targetRegion) {
+        this.targetRegion = targetRegion;
     }
 
     private class MessageSender implements Runnable {

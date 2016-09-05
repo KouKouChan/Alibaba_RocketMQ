@@ -7,6 +7,7 @@ import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
 import com.alibaba.rocketmq.client.producer.SendCallback;
 import com.alibaba.rocketmq.client.producer.SendResult;
 import com.alibaba.rocketmq.client.producer.buffered.BufferedMQProducer;
+import com.alibaba.rocketmq.client.producer.selector.Region;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.remoting.exception.RemotingException;
@@ -33,6 +34,7 @@ public class ExampleBufferedProducer {
         BufferedMQProducer bufferedMQProducer = new BufferedMQProducer("PG_QuickStart");
         bufferedMQProducer.setSendMsgTimeout(30000);
         bufferedMQProducer.registerCallback(new ExampleSendCallback());
+        bufferedMQProducer.setTargetRegion(Region.US_WEST);
         bufferedMQProducer.start();
 
         bufferedMQProducer.send(buildMessages(100));
