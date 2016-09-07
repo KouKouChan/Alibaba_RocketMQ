@@ -29,7 +29,7 @@
 	</appender>
 
 	<appender name="RocketmqClientAppender" class="org.apache.log4j.RollingFileAppender">
-		<param name="file" value="${user.home}/logs/rocketmqlogs/rocketmq_client.log" />
+		<param name="file" value="${log.home}/logs/rocketmqlogs/rocketmq_client.log" />
 		<param name="append" value="true" />
 		<param name="encoding" value="UTF-8" />
 		<param name="maxFileSize" value="1073741824" />
