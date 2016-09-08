@@ -95,6 +95,23 @@ public class RemotingUtil {
         return result;
     }
 
+    public static String getLocalAddress(boolean acquireCloudIP) {
+
+        if (acquireCloudIP) {
+            String cloudIP = CloudUtil.awsEC2QueryPublicIPv4();
+            if (null != cloudIP) {
+                return cloudIP;
+            }
+
+            cloudIP = CloudUtil.awsEC2V2QueryPublicIPv4();
+            if (cloudIP != null) {
+                return cloudIP;
+            }
+        }
+
+        return getLocalAddress();
+    }
+
 
     public static String getLocalAddress() {
         try {
