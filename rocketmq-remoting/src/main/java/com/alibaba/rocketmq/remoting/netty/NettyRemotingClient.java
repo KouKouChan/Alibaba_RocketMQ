@@ -29,6 +29,7 @@ import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTooMuchRequestException;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -278,6 +279,10 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                         new NettyClientHandler());
                 }
             });
+
+        if (nettyClientConfig.isClientPooledByteBufAllocatorEnable()) {
+            handler.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+        }
 
         this.timer.scheduleAtFixedRate(new TimerTask() {
 

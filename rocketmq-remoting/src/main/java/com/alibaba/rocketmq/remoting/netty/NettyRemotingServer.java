@@ -159,9 +159,9 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                     //
                     .childOption(ChannelOption.TCP_NODELAY, true)
                     //
-                    .option(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())
+                    .childOption(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())
                     //
-                    .option(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize())
+                    .childOption(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize())
                     //
                     .localAddress(new InetSocketAddress(this.nettyServerConfig.getListenPort()))
                     .childHandler(new ChannelInitializer<SocketChannel>() {
