@@ -24,15 +24,18 @@ public class NettySystemConfig {
             Boolean
                 .parseBoolean(System.getProperty(SystemPropertyNettyPooledByteBufAllocatorEnable, "false"));
 
-    public static final String SystemPropertySocketSndbufSize = //
-            "com.rocketmq.remoting.socket.sndbuf.size";
-    public static int SocketSndbufSize = //
-            Integer.parseInt(System.getProperty(SystemPropertySocketSndbufSize, "65535"));
+    public static final String SystemPropertySocketSndbufSize = "com.rocketmq.remoting.socket.sndbuf.size";
+    public static int SocketSndbufSize = Integer.parseInt(System.getProperty(SystemPropertySocketSndbufSize, "65535"));
 
-    public static final String SystemPropertySocketRcvbufSize = //
-            "com.rocketmq.remoting.socket.rcvbuf.size";
-    public static int SocketRcvbufSize = //
-            Integer.parseInt(System.getProperty(SystemPropertySocketRcvbufSize, "65535"));
+    public static final String SystemPropertySocketRcvbufSizeMin = "com.rocketmq.remoting.socket.rcvbuf.size.min";
+    public static int SocketRcvbufSizeMin = Integer.parseInt(System.getProperty(SystemPropertySocketRcvbufSizeMin, "65535"));
+
+    public static final String SystemPropertySocketRcvbufSizeDefault = "com.rocketmq.remoting.socket.rcvbuf.size.default";
+    public static int SocketRcvbufSizeDefault = Integer.parseInt(System.getProperty(SystemPropertySocketRcvbufSizeDefault, "4194304"));
+
+    public static final String SystemPropertySocketRcvbufSizeMax = "com.rocketmq.remoting.socket.rcvbuf.size.max";
+    public static int SocketRcvbufSizeMax = Integer.parseInt(System.getProperty(SystemPropertySocketRcvbufSizeMax, "33554432"));
+
 
     public static final String SystemPropertyClientAsyncSemaphoreValue = //
             "com.rocketmq.remoting.clientAsyncSemaphoreValue";

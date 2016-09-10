@@ -26,10 +26,7 @@ import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
 import com.alibaba.rocketmq.tools.admin.DefaultMQAdminExt;
 import com.alibaba.rocketmq.tools.command.SubCommand;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.*;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -155,7 +152,7 @@ public class ResetOffsetByTimeCommand implements SubCommand {
                 new String[] { "-t qatest_TopicTest", "-g qatest_consumer", "-s 1389098416742", "-f true" };
         final CommandLine commandLine =
                 ServerUtil.parseCmdLine("mqadmin " + cmd.commandName(), subargs,
-                    cmd.buildCommandlineOptions(options), new PosixParser());
+                    cmd.buildCommandlineOptions(options), new DefaultParser());
         cmd.execute(commandLine, options, null);
     }
 }

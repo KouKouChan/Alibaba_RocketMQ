@@ -16,12 +16,7 @@
  */
 package com.alibaba.rocketmq.example.operation;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.*;
 
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
@@ -59,7 +54,7 @@ public class Producer {
 
         // ////////////////////////////////////////////////////
 
-        PosixParser parser = new PosixParser();
+        DefaultParser parser = new DefaultParser();
         HelpFormatter hf = new HelpFormatter();
         hf.setWidth(110);
         CommandLine commandLine = null;

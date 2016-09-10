@@ -177,8 +177,11 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                     //
                     .childOption(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())
                     //
-                    .childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1024 * 64, 1024 * 1024 * 4, 1024 * 1024 * 32))
-                    //
+                    .childOption(ChannelOption.RCVBUF_ALLOCATOR,
+                            new AdaptiveRecvByteBufAllocator(
+                                    nettyServerConfig.getServerSocketRcvBufSizeMin(),
+                                    nettyServerConfig.getServerSocketRcvBufSizeDefault(),
+                                    nettyServerConfig.getServerSocketRcvBufSizeMax()))
                     .localAddress(new InetSocketAddress(this.nettyServerConfig.getListenPort()))
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override

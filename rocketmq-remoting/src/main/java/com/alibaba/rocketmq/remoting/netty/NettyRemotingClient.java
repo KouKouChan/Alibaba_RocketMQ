@@ -276,8 +276,10 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             //
             .option(ChannelOption.SO_SNDBUF, nettyClientConfig.getClientSocketSndBufSize())
             //
-            .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1024 * 64 /*64KB*/, 1024 * 1024 * 4 /* 4MB */, 1024 * 1024 * 32 /* 32MB */))
-            //
+            .option(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(
+                    nettyClientConfig.getClientSocketRcvBufSizeMin(),
+                    nettyClientConfig.getClientSocketRcvBufSizeDefault(),
+                    nettyClientConfig.getClientSocketRcvBufSizeMax()))
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel ch) throws Exception {

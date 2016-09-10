@@ -40,8 +40,8 @@ import com.alibaba.rocketmq.tools.command.stats.StatsAllSubCommand;
 import com.alibaba.rocketmq.tools.command.topic.*;
 import com.alibaba.rocketmq.tools.github.SyncDocsToGithubSubCommand;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
@@ -152,7 +152,7 @@ public class MQAdminStartup {
                     Options options = ServerUtil.buildCommandlineOptions(new Options());
                     final CommandLine commandLine =
                             ServerUtil.parseCmdLine("mqadmin " + cmd.commandName(), subargs, cmd.buildCommandlineOptions(options),
-                                new PosixParser());
+                                new DefaultParser());
                     if (null == commandLine) {
                         System.exit(-1);
                         return;

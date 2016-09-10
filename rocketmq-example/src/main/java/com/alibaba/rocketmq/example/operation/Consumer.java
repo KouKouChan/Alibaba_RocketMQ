@@ -16,22 +16,16 @@
  */
 package com.alibaba.rocketmq.example.operation;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
-
 import com.alibaba.rocketmq.client.consumer.DefaultMQPushConsumer;
 import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
 import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
 import com.alibaba.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.common.message.MessageExt;
+import org.apache.commons.cli.*;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 public class Consumer {
@@ -61,7 +55,7 @@ public class Consumer {
 
         // ////////////////////////////////////////////////////
 
-        PosixParser parser = new PosixParser();
+        DefaultParser parser = new DefaultParser();
         HelpFormatter hf = new HelpFormatter();
         hf.setWidth(110);
         CommandLine commandLine = null;

@@ -29,7 +29,9 @@ public class NettyServerConfig implements Cloneable{
     private int serverChannelMaxIdleTimeSeconds = 120;
 
     private int serverSocketSndBufSize = NettySystemConfig.SocketSndbufSize;
-    private int serverSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
+    private int serverSocketRcvBufSizeMin = NettySystemConfig.SocketRcvbufSizeMin;
+    private int serverSocketRcvBufSizeDefault = NettySystemConfig.SocketRcvbufSizeDefault;
+    private int serverSocketRcvBufSizeMax = NettySystemConfig.SocketRcvbufSizeMax;
     private boolean serverPooledByteBufAllocatorEnable = true;
     private boolean serverSocketOverTLS = true;
 
@@ -122,16 +124,29 @@ public class NettyServerConfig implements Cloneable{
         this.serverSocketSndBufSize = serverSocketSndBufSize;
     }
 
-
-    public int getServerSocketRcvBufSize() {
-        return serverSocketRcvBufSize;
+    public int getServerSocketRcvBufSizeMin() {
+        return serverSocketRcvBufSizeMin;
     }
 
-
-    public void setServerSocketRcvBufSize(int serverSocketRcvBufSize) {
-        this.serverSocketRcvBufSize = serverSocketRcvBufSize;
+    public void setServerSocketRcvBufSizeMin(int serverSocketRcvBufSizeMin) {
+        this.serverSocketRcvBufSizeMin = serverSocketRcvBufSizeMin;
     }
 
+    public int getServerSocketRcvBufSizeDefault() {
+        return serverSocketRcvBufSizeDefault;
+    }
+
+    public void setServerSocketRcvBufSizeDefault(int serverSocketRcvBufSizeDefault) {
+        this.serverSocketRcvBufSizeDefault = serverSocketRcvBufSizeDefault;
+    }
+
+    public int getServerSocketRcvBufSizeMax() {
+        return serverSocketRcvBufSizeMax;
+    }
+
+    public void setServerSocketRcvBufSizeMax(int serverSocketRcvBufSizeMax) {
+        this.serverSocketRcvBufSizeMax = serverSocketRcvBufSizeMax;
+    }
 
     public boolean isServerPooledByteBufAllocatorEnable() {
         return serverPooledByteBufAllocatorEnable;

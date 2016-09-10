@@ -37,7 +37,9 @@ public class NettyClientConfig {
     private int clientChannelMaxIdleTimeSeconds = 120;
 
     private int clientSocketSndBufSize = NettySystemConfig.SocketSndbufSize;
-    private int clientSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
+    private int clientSocketRcvBufSizeMin = NettySystemConfig.SocketRcvbufSizeMin;
+    private int clientSocketRcvBufSizeDefault = NettySystemConfig.SocketRcvbufSizeDefault;
+    private int clientSocketRcvBufSizeMax = NettySystemConfig.SocketRcvbufSizeMax;
     private boolean clientPooledByteBufAllocatorEnable = false;
     private boolean clientSocketOverTLS = true;
 
@@ -121,16 +123,29 @@ public class NettyClientConfig {
         this.clientSocketSndBufSize = clientSocketSndBufSize;
     }
 
-
-    public int getClientSocketRcvBufSize() {
-        return clientSocketRcvBufSize;
+    public int getClientSocketRcvBufSizeMin() {
+        return clientSocketRcvBufSizeMin;
     }
 
-
-    public void setClientSocketRcvBufSize(int clientSocketRcvBufSize) {
-        this.clientSocketRcvBufSize = clientSocketRcvBufSize;
+    public void setClientSocketRcvBufSizeMin(int clientSocketRcvBufSizeMin) {
+        this.clientSocketRcvBufSizeMin = clientSocketRcvBufSizeMin;
     }
 
+    public int getClientSocketRcvBufSizeDefault() {
+        return clientSocketRcvBufSizeDefault;
+    }
+
+    public void setClientSocketRcvBufSizeDefault(int clientSocketRcvBufSizeDefault) {
+        this.clientSocketRcvBufSizeDefault = clientSocketRcvBufSizeDefault;
+    }
+
+    public int getClientSocketRcvBufSizeMax() {
+        return clientSocketRcvBufSizeMax;
+    }
+
+    public void setClientSocketRcvBufSizeMax(int clientSocketRcvBufSizeMax) {
+        this.clientSocketRcvBufSizeMax = clientSocketRcvBufSizeMax;
+    }
 
     public boolean isClientPooledByteBufAllocatorEnable() {
         return clientPooledByteBufAllocatorEnable;

@@ -31,10 +31,7 @@ import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
 import com.alibaba.rocketmq.store.config.BrokerRole;
 import com.alibaba.rocketmq.store.config.MessageStoreConfig;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,17 +81,12 @@ public class BrokerStartup {
             NettySystemConfig.SocketSndbufSize = 131072;
         }
 
-        if (null == System.getProperty(NettySystemConfig.SystemPropertySocketRcvbufSize)) {
-            NettySystemConfig.SocketRcvbufSize = 131072;
-        }
-
         try {
             PackageConflictDetect.detectFastjson();
 
             Options options = ServerUtil.buildCommandlineOptions(new Options());
-            commandLine =
-                    ServerUtil.parseCmdLine("mqbroker", args, buildCommandlineOptions(options),
-                        new PosixParser());
+            commandLine = ServerUtil.parseCmdLine("mqbroker", args, buildCommandlineOptions(options),
+                    new DefaultParser());
             if (null == commandLine) {
                 System.exit(-1);
                 return null;

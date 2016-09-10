@@ -17,10 +17,7 @@
 
 package com.alibaba.rocketmq.tools.command.offset;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.*;
 
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.remoting.RPCHook;
@@ -108,7 +105,7 @@ public class CloneGroupOffsetCommand implements SubCommand {
                 new String[] { "-t qatest_TopicTest", "-g qatest_consumer", "-s 1389098416742", "-f true" };
         final CommandLine commandLine =
                 ServerUtil.parseCmdLine("mqadmin " + cmd.commandName(), subargs,
-                    cmd.buildCommandlineOptions(options), new PosixParser());
+                    cmd.buildCommandlineOptions(options), new DefaultParser());
         cmd.execute(commandLine, options, null);
     }
 }
