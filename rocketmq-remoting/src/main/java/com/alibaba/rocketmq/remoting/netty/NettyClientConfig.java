@@ -39,6 +39,7 @@ public class NettyClientConfig {
     private int clientSocketSndBufSize = NettySystemConfig.SocketSndbufSize;
     private int clientSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
     private boolean clientPooledByteBufAllocatorEnable = false;
+    private boolean clientSocketOverTLS = true;
 
 
     public int getClientWorkerThreads() {
@@ -138,5 +139,13 @@ public class NettyClientConfig {
 
     public void setClientPooledByteBufAllocatorEnable(boolean clientPooledByteBufAllocatorEnable) {
         this.clientPooledByteBufAllocatorEnable = clientPooledByteBufAllocatorEnable;
+    }
+
+    public boolean isClientSocketOverTLS() {
+        return clientSocketOverTLS;
+    }
+
+    public void setClientSocketOverTLS(boolean clientSocketOverTLS) {
+        this.clientSocketOverTLS = clientSocketOverTLS;
     }
 }

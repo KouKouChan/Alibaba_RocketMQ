@@ -31,6 +31,7 @@ public class NettyServerConfig implements Cloneable{
     private int serverSocketSndBufSize = NettySystemConfig.SocketSndbufSize;
     private int serverSocketRcvBufSize = NettySystemConfig.SocketRcvbufSize;
     private boolean serverPooledByteBufAllocatorEnable = true;
+    private boolean serverSocketOverTLS = true;
 
     /**
      * make make install
@@ -154,5 +155,13 @@ public class NettyServerConfig implements Cloneable{
     @Override  
     public Object clone() throws CloneNotSupportedException {  
         return (NettyServerConfig)super.clone();  
-    }  
+    }
+
+    public boolean isServerSocketOverTLS() {
+        return serverSocketOverTLS;
+    }
+
+    public void setServerSocketOverTLS(boolean serverSocketOverTLS) {
+        this.serverSocketOverTLS = serverSocketOverTLS;
+    }
 }
