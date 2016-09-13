@@ -1,9 +1,5 @@
 #!/bin/bash
 
-function init() {
-   source `pwd`/env.sh
-}
-
 function name_server() {
    nohup sh mqnamesrv &
 }
@@ -42,11 +38,7 @@ function broker() {
   fi
 }
 
-
-
 function main() {
-   init;
-
    case $1 in
       nameserver)
          name_server;
