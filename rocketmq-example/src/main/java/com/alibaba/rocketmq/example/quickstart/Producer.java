@@ -27,7 +27,6 @@ import com.alibaba.rocketmq.common.message.Message;
 public class Producer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
-        producer.setNamesrvAddr("localhost:9876");
         producer.setSendMsgTimeout(10000);
         producer.start();
 

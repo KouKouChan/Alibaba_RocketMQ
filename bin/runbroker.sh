@@ -10,7 +10,8 @@ error_exit ()
 }
 
 [ ! -e "$JAVA_HOME/bin/java" ] && JAVA_HOME=$HOME/jdk/java
-[ ! -e "$JAVA_HOME/bin/java" ] && JAVA_HOME=/opt/taobao/java
+[ ! -e "$JAVA_HOME/bin/java" ] && JAVA_HOME=/opt/java/default
+[ ! -e "$JAVA_HOME/bin/java" ] && JAVA_HOME=/usr/java/default
 [ ! -e "$JAVA_HOME/bin/java" ] && error_exit "Please set the JAVA_HOME variable in your environment, We need java(x64)!"
 
 export JAVA_HOME
@@ -26,7 +27,7 @@ JAVA_OPT="${JAVA_OPT} -XX:+UseConcMarkSweepGC -XX:+UseCMSCompactAtFullCollection
 JAVA_OPT="${JAVA_OPT} -verbose:gc -Xloggc:${HOME}/rmq_bk_gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps"
 JAVA_OPT="${JAVA_OPT} -XX:-OmitStackTraceInFastThrow"
 JAVA_OPT="${JAVA_OPT} -XX:-HeapDumpOnOutOfMemoryError"
-JAVA_OPT="${JAVA_OPT} -Djava.ext.dirs=${BASE_DIR}/lib"
+JAVA_OPT="${JAVA_OPT} -Djava.ext.dirs=${BASE_DIR}/lib:${JAVA_HOME}/jre/lib/ext"
 JAVA_OPT="${JAVA_OPT} -Dcom.rocketmq.remoting.socket.sndbuf.size=8388608 -Dcom.rocketmq.remoting.socket.rcvbuf.size=8388608"
 JAVA_OPT="${JAVA_OPT} -Drocketmq.namesrv.domain=config.graphene.spellso.com"
 JAVA_OPT="${JAVA_OPT} -Duser.timezone=UTC"
