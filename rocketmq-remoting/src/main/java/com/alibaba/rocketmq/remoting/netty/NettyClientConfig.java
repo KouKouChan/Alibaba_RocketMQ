@@ -28,7 +28,7 @@ public class NettyClientConfig {
     private int clientOneWaySemaphoreValue = NettySystemConfig.ClientOnewaySemaphoreValue;
     private int clientAsyncSemaphoreValue = NettySystemConfig.ClientAsyncSemaphoreValue;
     //
-    private long connectTimeoutMillis = NettySystemConfig.NETTY_CONNECT_TIMEOUT;
+    private int connectTimeoutMillis = NettySystemConfig.NETTY_CONNECT_TIMEOUT;
     private long ioTimeoutMillis = NettySystemConfig.NETTY_IO_TIMEOUT;
 
     // channel超过1分钟不被访问 就关闭
@@ -66,12 +66,12 @@ public class NettyClientConfig {
     }
 
 
-    public long getConnectTimeoutMillis() {
+    public int getConnectTimeoutMillis() {
         return connectTimeoutMillis;
     }
 
 
-    public void setConnectTimeoutMillis(long connectTimeoutMillis) {
+    public void setConnectTimeoutMillis(int connectTimeoutMillis) {
         this.connectTimeoutMillis = connectTimeoutMillis;
     }
 

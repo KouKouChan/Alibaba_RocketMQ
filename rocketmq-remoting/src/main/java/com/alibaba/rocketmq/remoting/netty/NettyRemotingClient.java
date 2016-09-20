@@ -273,6 +273,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.SO_KEEPALIVE, false)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, nettyClientConfig.getConnectTimeoutMillis())
                 .option(ChannelOption.SO_SNDBUF, nettyClientConfig.getClientSocketSndBufSize())
                 .option(ChannelOption.SO_RCVBUF, nettyClientConfig.getClientSocketRcvBufSize())
                 .handler(new ChannelInitializer<SocketChannel>() {
@@ -476,16 +477,12 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             ChannelFuture channelFuture = cw.getChannelFuture();
             if (channelFuture.awaitUninterruptibly(this.nettyClientConfig.getConnectTimeoutMillis())) {
                 if (cw.isOK()) {
-                    log.info("createChannel: connect remote host[{}] success, {}", addr,
-                        channelFuture.toString());
+                    log.info("createChannel: connect remote host[{}] success. {}", addr, channelFuture.toString());
                     return cw.getChannel();
+                } else {
+                    log.warn("createChannel: connect remote host[{}] failed. {}", addr, channelFuture.cause());
                 }
-                else {
-                    log.warn("createChannel: connect remote host[" + addr + "] failed, "
-                                + channelFuture.toString(), channelFuture.cause());
-                }
-            }
-            else {
+            } else {
                 log.warn("createChannel: connect remote host[{}] timeout {}ms, {}", addr,
                     this.nettyClientConfig.getConnectTimeoutMillis(), channelFuture.toString());
             }
