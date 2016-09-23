@@ -16,13 +16,13 @@
  */
 package com.alibaba.rocketmq.example.transaction;
 
-import com.alibaba.rocketmq.client.producer.LocalTransactionExecuter;
+import com.alibaba.rocketmq.client.producer.LocalTransactionExecutor;
 import com.alibaba.rocketmq.client.producer.LocalTransactionState;
 import com.alibaba.rocketmq.common.message.Message;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TransactionExecuterImpl implements LocalTransactionExecuter {
+public class TransactionExecutorImpl implements LocalTransactionExecutor {
     private AtomicInteger transactionIndex = new AtomicInteger(1);
 
 

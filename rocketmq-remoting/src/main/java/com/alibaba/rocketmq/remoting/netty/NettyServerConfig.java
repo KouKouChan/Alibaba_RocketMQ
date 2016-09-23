@@ -44,6 +44,8 @@ public class NettyServerConfig implements Cloneable {
      */
     private boolean useEpollNativeSelector = false;
 
+    private boolean serverSocketOverTLS = NettySystemConfig.SERVER_SOCKET_OVER_TLS;
+
 
     public int getListenPort() {
         return listenPort;
@@ -152,6 +154,10 @@ public class NettyServerConfig implements Cloneable {
 
     public void setUseEpollNativeSelector(boolean useEpollNativeSelector) {
         this.useEpollNativeSelector = useEpollNativeSelector;
+    }
+
+    public boolean isServerSocketOverTLS() {
+        return serverSocketOverTLS;
     }
 
     @Override

@@ -28,9 +28,15 @@ public class NettySystemConfig {
             "com.rocketmq.remoting.clientAsyncSemaphoreValue";
     public static final String SystemPropertyClientOnewaySemaphoreValue = //
             "com.rocketmq.remoting.clientOnewaySemaphoreValue";
+
+    public static final String SystemPropertyClientSocketOverTLS = //
+            "com.rocketmq.remoting.clientSocketOverTLS";
+
+    public static final String SystemPropertyServerSocketOverTLS = //
+            "com.rocketmq.remoting.serverSocketOverTLS";
+
     public static final boolean NettyPooledByteBufAllocatorEnable = //
-            Boolean
-                    .parseBoolean(System.getProperty(SystemPropertyNettyPooledByteBufAllocatorEnable, "false"));
+            Boolean.parseBoolean(System.getProperty(SystemPropertyNettyPooledByteBufAllocatorEnable, "false"));
     public static int socketSndbufSize = //
             Integer.parseInt(System.getProperty(SystemPropertySocketSndbufSize, "65535"));
     public static int socketRcvbufSize = //
@@ -39,4 +45,11 @@ public class NettySystemConfig {
             Integer.parseInt(System.getProperty(SystemPropertyClientAsyncSemaphoreValue, "65535"));
     public static final int ClientOnewaySemaphoreValue = //
             Integer.parseInt(System.getProperty(SystemPropertyClientOnewaySemaphoreValue, "65535"));
+
+    public static final boolean CLIENT_SOCKET_OVER_TLS = //
+            Boolean.parseBoolean(System.getProperty(SystemPropertyClientSocketOverTLS, "true"));
+
+    public static final boolean SERVER_SOCKET_OVER_TLS = //
+            Boolean.parseBoolean(System.getProperty(SystemPropertyServerSocketOverTLS, "true"));
+
 }

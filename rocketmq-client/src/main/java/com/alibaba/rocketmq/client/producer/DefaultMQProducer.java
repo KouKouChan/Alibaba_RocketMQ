@@ -186,7 +186,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
 
     @Override
-    public TransactionSendResult sendMessageInTransaction(Message msg, LocalTransactionExecuter tranExecuter, final Object arg)
+    public TransactionSendResult sendMessageInTransaction(Message msg, LocalTransactionExecutor tranExecuter, final Object arg)
             throws MQClientException {
         throw new RuntimeException("sendMessageInTransaction not implement, please use TransactionMQProducer class");
     }

@@ -35,6 +35,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
 import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -62,10 +63,11 @@ public abstract class NettyRemotingAbstract {
 
     protected final HashMap<Integer/* request code */, Pair<NettyRequestProcessor, ExecutorService>> processorTable =
             new HashMap<Integer, Pair<NettyRequestProcessor, ExecutorService>>(64);
-    protected final NettyEventExecuter nettyEventExecuter = new NettyEventExecuter();
+    protected final NettyEventExecutor nettyEventExecutor = new NettyEventExecutor();
 
     protected Pair<NettyRequestProcessor, ExecutorService> defaultRequestProcessor;
 
+    protected SSLContext sslContext;
 
     public NettyRemotingAbstract(final int permitsOneway, final int permitsAsync) {
         this.semaphoreOneway = new Semaphore(permitsOneway, true);
@@ -75,7 +77,7 @@ public abstract class NettyRemotingAbstract {
     public abstract ChannelEventListener getChannelEventListener();
 
     public void putNettyEvent(final NettyEvent event) {
-        this.nettyEventExecuter.putNettyEvent(event);
+        this.nettyEventExecutor.putNettyEvent(event);
     }
 
     public void processMessageReceived(ChannelHandlerContext ctx, RemotingCommand msg) throws Exception {
@@ -388,7 +390,7 @@ public abstract class NettyRemotingAbstract {
         }
     }
 
-    class NettyEventExecuter extends ServiceThread {
+    class NettyEventExecutor extends ServiceThread {
         private final LinkedBlockingQueue<NettyEvent> eventQueue = new LinkedBlockingQueue<NettyEvent>();
         private final int maxSize = 10000;
 
@@ -441,7 +443,7 @@ public abstract class NettyRemotingAbstract {
 
         @Override
         public String getServiceName() {
-            return NettyEventExecuter.class.getSimpleName();
+            return NettyEventExecutor.class.getSimpleName();
         }
     }
 }

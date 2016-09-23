@@ -34,6 +34,7 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -135,6 +136,10 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 }
             });
         }
+
+        if (nettyServerConfig.isServerSocketOverTLS()) {
+            sslContext = SslHelper.getSSLContext(SslRole.SERVER);
+        }
     }
 
 
@@ -172,6 +177,14 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                         .childHandler(new ChannelInitializer<SocketChannel>() {
                             @Override
                             public void initChannel(SocketChannel ch) throws Exception {
+
+                                if (null != sslContext) {
+                                    ch.pipeline().addLast(
+                                            defaultEventExecutorGroup,
+                                            new SslHandler(SslHelper.getSSLEngine(sslContext, SslRole.SERVER)),
+                                            new FileRegionEncoder());
+                                }
+
                                 ch.pipeline().addLast(
                                         //
                                         defaultEventExecutorGroup, //
@@ -196,7 +209,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
         }
 
         if (this.channelEventListener != null) {
-            this.nettyEventExecuter.start();
+            this.nettyEventExecutor.start();
         }
 
         this.timer.scheduleAtFixedRate(new TimerTask() {
@@ -223,8 +236,8 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
             this.eventLoopGroupSelector.shutdownGracefully();
 
-            if (this.nettyEventExecuter != null) {
-                this.nettyEventExecuter.shutdown();
+            if (this.nettyEventExecutor != null) {
+                this.nettyEventExecutor.shutdown();
             }
 
             if (this.defaultEventExecutorGroup != null) {

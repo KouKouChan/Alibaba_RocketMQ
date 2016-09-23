@@ -42,6 +42,8 @@ public class NettyClientConfig {
     private boolean clientPooledByteBufAllocatorEnable = false;
     private boolean clientCloseSocketIfTimeout = false;
 
+    private boolean clientSocketOverTLS = NettySystemConfig.CLIENT_SOCKET_OVER_TLS;
+
     public boolean isClientCloseSocketIfTimeout() {
         return clientCloseSocketIfTimeout;
     }
@@ -147,5 +149,9 @@ public class NettyClientConfig {
 
     public void setClientPooledByteBufAllocatorEnable(boolean clientPooledByteBufAllocatorEnable) {
         this.clientPooledByteBufAllocatorEnable = clientPooledByteBufAllocatorEnable;
+    }
+
+    public boolean isClientSocketOverTLS() {
+        return clientSocketOverTLS;
     }
 }

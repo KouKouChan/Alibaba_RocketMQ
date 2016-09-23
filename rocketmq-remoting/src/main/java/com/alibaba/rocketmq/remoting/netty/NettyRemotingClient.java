@@ -29,10 +29,12 @@ import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTooMuchRequestException;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -109,6 +111,10 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 return new Thread(r, String.format("NettyClientSelector_%d", this.threadIndex.incrementAndGet()));
             }
         });
+
+        if (nettyClientConfig.isClientSocketOverTLS()) {
+            sslContext = SslHelper.getSSLContext(SslRole.CLIENT) ;
+        }
     }
 
     private static int initValueIndex() {
@@ -147,6 +153,13 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
+
+                        if (null != sslContext) {
+                            ch.pipeline().addLast(
+                                    defaultEventExecutorGroup,
+                                    new SslHandler(SslHelper.getSSLEngine(sslContext, SslRole.CLIENT)));
+                        }
+
                         ch.pipeline().addLast(//
                                 defaultEventExecutorGroup, //
                                 new NettyEncoder(), //
@@ -156,6 +169,10 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                                 new NettyClientHandler());
                     }
                 });
+
+        if (nettyClientConfig.isClientPooledByteBufAllocatorEnable()) {
+            handler.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+        }
 
         this.timer.scheduleAtFixedRate(new TimerTask() {
 
@@ -170,7 +187,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         }, 1000 * 3, 1000);
 
         if (this.channelEventListener != null) {
-            this.nettyEventExecuter.start();
+            this.nettyEventExecutor.start();
         }
     }
 
@@ -187,8 +204,8 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
 
             this.eventLoopGroupWorker.shutdownGracefully();
 
-            if (this.nettyEventExecuter != null) {
-                this.nettyEventExecuter.shutdown();
+            if (this.nettyEventExecutor != null) {
+                this.nettyEventExecutor.shutdown();
             }
 
             if (this.defaultEventExecutorGroup != null) {

@@ -102,5 +102,5 @@ public interface MQProducer extends MQAdmin {
 
 
     TransactionSendResult sendMessageInTransaction(final Message msg,
-                                                   final LocalTransactionExecuter tranExecuter, final Object arg) throws MQClientException;
+                                                   final LocalTransactionExecutor tranExecuter, final Object arg) throws MQClientException;
 }

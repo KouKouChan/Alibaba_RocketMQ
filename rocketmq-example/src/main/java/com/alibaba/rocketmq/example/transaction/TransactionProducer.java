@@ -40,7 +40,7 @@ public class TransactionProducer {
         producer.start();
 
         String[] tags = new String[]{"TagA", "TagB", "TagC", "TagD", "TagE"};
-        TransactionExecuterImpl tranExecuter = new TransactionExecuterImpl();
+        TransactionExecutorImpl tranExecuter = new TransactionExecutorImpl();
         for (int i = 0; i < 100; i++) {
             try {
                 Message msg =
