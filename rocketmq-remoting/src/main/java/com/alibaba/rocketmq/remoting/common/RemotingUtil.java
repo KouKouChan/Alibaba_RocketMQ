@@ -91,6 +91,27 @@ public class RemotingUtil {
         return isLinuxPlatform;
     }
 
+    public static String getLocalAddress(boolean acquireCloudIP) {
+        String localAddress;
+        if (acquireCloudIP) {
+            if (CloudUtil.isEC2Instance()) {
+                localAddress = CloudUtil.awsEC2QueryPublicIPv4();
+                if (null != localAddress) {
+                    return localAddress;
+                }
+            }
+
+            if (CloudUtil.isEC2Instance2()) {
+                localAddress = CloudUtil.awsEC2V2QueryPublicIPv4();
+                if (null != localAddress) {
+                    return localAddress;
+                }
+            }
+        }
+
+        return getLocalAddress();
+    }
+
     public static String getLocalAddress() {
         try {
             // Traversal Network interface to get the first non-loopback and non-private address
@@ -115,6 +136,7 @@ public class RemotingUtil {
             // prefer ipv4
             if (!ipv4Result.isEmpty()) {
                 for (String ip : ipv4Result) {
+                    // TODO filter more site local address. Refer to InetAddress
                     if (ip.startsWith("127.0") || ip.startsWith("192.168")) {
                         continue;
                     }
