@@ -31,8 +31,14 @@ public class Producer {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
         producer.start();
         int total = 1000000;
+        int tpsThrottle = 1000;
+
+        if (args.length > 0) {
+            tpsThrottle = Integer.parseInt(args[0]);
+        }
+
         final CountDownLatch countDownLatch = new CountDownLatch(total);
-        RateLimiter rateLimiter = RateLimiter.create(6000);
+        RateLimiter rateLimiter = RateLimiter.create(tpsThrottle);
         for (int i = 0; i < total; i++) {
             try {
                 rateLimiter.acquire();
@@ -53,6 +59,7 @@ public class Producer {
                         countDownLatch.countDown();
                     }
                 });
+                System.out.println("sent");
             } catch (Exception e) {
                 countDownLatch.countDown();
                 System.out.println(e.getMessage());
