@@ -144,8 +144,7 @@ public class RouteInfoManager {
                         && MixAll.MASTER_ID == brokerId) {
                     if (this.isBrokerTopicConfigChanged(brokerAddr, topicConfigWrapper.getDataVersion())//
                             || registerFirst) {
-                        ConcurrentHashMap<String, TopicConfig> tcTable =
-                                topicConfigWrapper.getTopicConfigTable();
+                        ConcurrentHashMap<String, TopicConfig> tcTable = topicConfigWrapper.getTopicConfigTable();
                         if (tcTable != null) {
                             for(Map.Entry<String,TopicConfig> entry: tcTable.entrySet()){
                                 this.createAndUpdateQueueData(brokerName, entry.getValue());
@@ -162,7 +161,7 @@ public class RouteInfoManager {
                                 channel, //
                                 haServerAddr));
                 if (null == prevBrokerLiveInfo) {
-                    log.info("new broker registerd, {} HAServer: {}", brokerAddr, haServerAddr);
+                    log.info("new broker registered, {} HAServer: {}", brokerAddr, haServerAddr);
                 }
 
 

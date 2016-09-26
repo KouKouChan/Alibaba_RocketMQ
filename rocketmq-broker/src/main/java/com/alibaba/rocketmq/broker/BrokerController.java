@@ -85,7 +85,7 @@ public class BrokerController {
     private final RebalanceLockManager rebalanceLockManager = new RebalanceLockManager();
     private final BrokerOuterAPI brokerOuterAPI;
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl(
-            "BrokerControllerScheduledThread"));
+            "BrokerControllerScheduledThread_"));
     private final SlaveSynchronize slaveSynchronize;
     private final BlockingQueue<Runnable> sendThreadPoolQueue;
     private final BlockingQueue<Runnable> pullThreadPoolQueue;
@@ -132,7 +132,7 @@ public class BrokerController {
 
         if (this.brokerConfig.getNamesrvAddr() != null) {
             this.brokerOuterAPI.updateNameServerAddressList(this.brokerConfig.getNamesrvAddr());
-            log.info("user specfied name server address: {}", this.brokerConfig.getNamesrvAddr());
+            log.info("user specified name server address: {}", this.brokerConfig.getNamesrvAddr());
         }
 
         this.slaveSynchronize = new SlaveSynchronize(this);
@@ -559,14 +559,19 @@ public class BrokerController {
     private void unregisterBrokerAll() {
         this.brokerOuterAPI.unregisterBrokerAll(//
                 this.brokerConfig.getBrokerClusterName(), //
-                this.getBrokerAddr(), //
+                this.getBrokerAddress(), //
                 this.brokerConfig.getBrokerName(), //
                 this.brokerConfig.getBrokerId());
     }
 
-    public String getBrokerAddr() {
-        String addr = this.brokerConfig.getBrokerIP1() + ":" + this.nettyServerConfig.getListenPort();
-        return addr;
+    public String getBrokerAddress() {
+        String ip = this.brokerConfig.getBrokerIP1();
+
+        if (!ip.equals(this.brokerConfig.getBrokerIP2())) {
+            ip += "," + this.brokerConfig.getBrokerIP2();
+        }
+
+        return ip + ":" + this.nettyServerConfig.getListenPort();
     }
 
     public void start() throws Exception {
@@ -638,7 +643,7 @@ public class BrokerController {
 
         RegisterBrokerResult registerBrokerResult = this.brokerOuterAPI.registerBrokerAll(//
                 this.brokerConfig.getBrokerClusterName(), //
-                this.getBrokerAddr(), //
+                this.getBrokerAddress(), //
                 this.brokerConfig.getBrokerName(), //
                 this.brokerConfig.getBrokerId(), //
                 this.getHAServerAddr(), //

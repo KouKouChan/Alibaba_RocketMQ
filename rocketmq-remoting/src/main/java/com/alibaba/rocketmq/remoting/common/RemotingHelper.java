@@ -19,14 +19,17 @@ package com.alibaba.rocketmq.remoting.common;
 import com.alibaba.rocketmq.remoting.exception.RemotingConnectException;
 import com.alibaba.rocketmq.remoting.exception.RemotingSendRequestException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
+import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import io.netty.channel.Channel;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 
 
 /**
@@ -52,12 +55,70 @@ public class RemotingHelper {
         return sb.toString();
     }
 
+
+    /**
+     * IP1,IP2,IP3:PORT
+     */
     public static SocketAddress string2SocketAddress(final String addr) {
         String[] s = addr.split(":");
-        InetSocketAddress isa = new InetSocketAddress(s[0], Integer.parseInt(s[1]));
+        InetSocketAddress isa = new InetSocketAddress(filterIP(s[0]), Integer.valueOf(s[1]));
         return isa;
     }
 
+    /**
+     * This method is to preferably choose the first IP that shares the same subnet. If not found in the previous step,
+     * a public IP is chosen then.
+     * @param ipCSV List of IP separated by comma to choose.
+     * @return preferable IP.
+     */
+    public static String filterIP(String ipCSV) {
+        if (!ipCSV.contains(",")) {
+            return ipCSV;
+        } else {
+            String[] ipArray = ipCSV.split(",");
+            List<InetAddress> addressList = new ArrayList<>();
+            for (String ip : ipArray) {
+                try {
+                    InetAddress inetAddress = InetAddress.getByName(ip);
+                    if (inetAddress.isLoopbackAddress()) {
+                        continue;
+                    } else if (inetAddress.isSiteLocalAddress()){
+                        addressList.add(0, inetAddress); // prepend to the beginning of the list.
+                    } else {
+                        addressList.add(inetAddress); // Append to the end of the list.
+                    }
+                } catch (UnknownHostException ignore) {
+                }
+            }
+
+            for (InetAddress inetAddress : addressList) {
+                if (isReachable(inetAddress)) {
+                    return inetAddress.getHostAddress();
+                }
+            }
+
+            return ipArray[0];
+        }
+    }
+
+    public static boolean isReachable(InetAddress inetAddress) {
+        try {
+            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            while (networkInterfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = networkInterfaces.nextElement();
+                if (inetAddress.isReachable(networkInterface, 64, NettySystemConfig.CONNECT_TIMEOUT)) {
+                    return true;
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        return false;
+    }
+
+
+    /**
+     * 短连接调用 TODO
+     */
     public static RemotingCommand invokeSync(final String addr, final RemotingCommand request,
                                              final long timeoutMillis) throws InterruptedException, RemotingConnectException,
             RemotingSendRequestException, RemotingTimeoutException {

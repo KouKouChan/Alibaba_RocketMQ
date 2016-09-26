@@ -489,7 +489,7 @@ public class PullMessageProcessor implements NettyRequestProcessor {
             msgInner.setQueueId(0);
             msgInner.setSysFlag(0);
             msgInner.setBornTimestamp(System.currentTimeMillis());
-            msgInner.setBornHost(RemotingUtil.string2SocketAddress(this.brokerController.getBrokerAddr()));
+            msgInner.setBornHost(RemotingUtil.string2SocketAddress(this.brokerController.getBrokerAddress()));
             msgInner.setStoreHost(msgInner.getBornHost());
 
             msgInner.setReconsumeTimes(0);

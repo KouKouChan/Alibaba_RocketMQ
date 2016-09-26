@@ -84,7 +84,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
         mqtraceContext.setTopic(requestHeader.getTopic());
         mqtraceContext.setMsgProps(requestHeader.getProperties());
         mqtraceContext.setBornHost(RemotingHelper.parseChannelRemoteAddr(ctx.channel()));
-        mqtraceContext.setBrokerAddr(this.brokerController.getBrokerAddr());
+        mqtraceContext.setBrokerAddr(this.brokerController.getBrokerAddress());
         mqtraceContext.setBrokerRegionId(this.brokerController.getBrokerConfig().getRegionId());
         mqtraceContext.setBornTimeStamp(requestHeader.getBornTimestamp());
 
@@ -267,7 +267,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
                         context.setBodyLength(request.getBody().length);
                         context.setMsgProps(requestHeader.getProperties());
                         context.setBornHost(RemotingHelper.parseChannelRemoteAddr(ctx.channel()));
-                        context.setBrokerAddr(this.brokerController.getBrokerAddr());
+                        context.setBrokerAddr(this.brokerController.getBrokerAddress());
                         context.setQueueId(requestHeader.getQueueId());
                     }
 

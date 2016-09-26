@@ -1145,7 +1145,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
             brokerConsumeStatsList.add(subscripTopicConsumeMap);
         }
         ConsumeStatsList consumeStats = new ConsumeStatsList();
-        consumeStats.setBrokerAddr(brokerController.getBrokerAddr());
+        consumeStats.setBrokerAddr(brokerController.getBrokerAddress());
         consumeStats.setConsumeStatsList(brokerConsumeStatsList);
         consumeStats.setTotalDiff(totalDiff);
         response.setBody(consumeStats.encode());
