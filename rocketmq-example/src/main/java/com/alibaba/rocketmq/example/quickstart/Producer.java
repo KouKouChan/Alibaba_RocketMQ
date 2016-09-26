@@ -18,29 +18,49 @@ package com.alibaba.rocketmq.example.quickstart;
 
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
+import com.alibaba.rocketmq.client.producer.SendCallback;
 import com.alibaba.rocketmq.client.producer.SendResult;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
+import com.google.common.util.concurrent.RateLimiter;
+
+import java.util.concurrent.CountDownLatch;
 
 public class Producer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
         producer.start();
-
-        for (int i = 0; i < 1000; i++) {
+        int total = 1000000;
+        final CountDownLatch countDownLatch = new CountDownLatch(total);
+        RateLimiter rateLimiter = RateLimiter.create(6000);
+        for (int i = 0; i < total; i++) {
             try {
+                rateLimiter.acquire();
                 Message msg = new Message("TopicTest",// topic
                         "TagA",// tag
                         ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET)// body
                 );
-                SendResult sendResult = producer.send(msg);
-                //producer.sendMessageInTransaction(msg, localTransactionExecutor, arg)
-                System.out.println(sendResult);
+                producer.send(msg, new SendCallback() {
+                    @Override
+                    public void onSuccess(SendResult sendResult) {
+                        System.out.println(sendResult);
+                        countDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onException(Throwable e) {
+                        e.printStackTrace();
+                        countDownLatch.countDown();
+                    }
+                });
             } catch (Exception e) {
                 e.printStackTrace();
+                countDownLatch.countDown();
                 Thread.sleep(1000);
             }
         }
+
+        countDownLatch.await();
 
         producer.shutdown();
     }

@@ -72,8 +72,22 @@ public class RemotingHelper {
      */
     public static SocketAddress string2SocketAddress(final String addr) {
         String[] s = addr.split(":");
-        InetSocketAddress isa = new InetSocketAddress(filterIP(s[0]), Integer.valueOf(s[1]));
+        InetSocketAddress isa = new InetSocketAddress(s[0], Integer.valueOf(s[1]));
         return isa;
+    }
+
+    public static String filterAddress(String address) {
+        if (null == address || address.trim().isEmpty()) {
+            return address;
+        }
+
+        if (!address.contains(":")) {
+            return filterIP(address);
+        }
+
+        String[] segments = address.split(":");
+
+        return filterIP(segments[0]) + ":" + segments[1];
     }
 
     /**

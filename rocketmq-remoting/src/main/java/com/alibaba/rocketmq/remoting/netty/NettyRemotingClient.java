@@ -382,12 +382,14 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         if (null == addr)
             return getAndCreateNameserverChannel();
 
-        ChannelWrapper cw = this.channelTables.get(addr);
+        String address = RemotingHelper.filterAddress(addr);
+
+        ChannelWrapper cw = this.channelTables.get(address);
         if (cw != null && cw.isOK()) {
             return cw.getChannel();
         }
 
-        return this.createChannel(addr);
+        return this.createChannel(address);
     }
 
     private Channel getAndCreateNameserverChannel() throws InterruptedException {
