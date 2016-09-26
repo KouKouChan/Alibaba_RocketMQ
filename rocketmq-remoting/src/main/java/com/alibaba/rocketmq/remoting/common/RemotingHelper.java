@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,6 +14,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 package com.alibaba.rocketmq.remoting.common;
 
 import com.alibaba.rocketmq.remoting.exception.RemotingConnectException;
@@ -24,7 +25,11 @@ import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import io.netty.channel.Channel;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -39,6 +44,12 @@ public class RemotingHelper {
     public static final String RemotingLogName = "RocketmqRemoting";
     public static final String DEFAULT_CHARSET = "UTF-8";
 
+    /**
+     * Exception simple description.
+     *
+     * @param e {@link Throwable instance}
+     * @return short description of the throwable instance.
+     */
     public static String exceptionSimpleDesc(final Throwable e) {
         StringBuffer sb = new StringBuffer();
         if (e != null) {
