@@ -24,9 +24,14 @@ import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
 import com.google.common.util.concurrent.RateLimiter;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Producer {
+    static volatile boolean stopped = false;
+
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
         producer.start();
@@ -37,36 +42,59 @@ public class Producer {
             tpsThrottle = Integer.parseInt(args[0]);
         }
 
-        final CountDownLatch countDownLatch = new CountDownLatch(total);
+        final AtomicLong ssc = new AtomicLong(0);
+        final AtomicLong prevSSC = new AtomicLong(0);
+
+        final AtomicLong fsc = new AtomicLong(0);
+        final AtomicLong prevFSC = new AtomicLong(0);
+
+        ScheduledExecutorService statService = Executors.newSingleThreadScheduledExecutor();
+        statService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                long sscCurrent = ssc.get();
+                long fscCurrent = fsc.get();
+                long sscDiff = sscCurrent - prevSSC.get();
+                long fscDiff = fscCurrent - prevFSC.get();
+                prevSSC.set(sscCurrent);
+                prevFSC.set(fscCurrent);
+                System.out.println("Success TPS: " + sscDiff / 60);
+                System.out.println("Failure TPS: " + fscDiff / 60);
+            }
+        }, 1, 1, TimeUnit.MINUTES);
+
         RateLimiter rateLimiter = RateLimiter.create(tpsThrottle);
-        for (int i = 0; i < total; i++) {
+        while (!stopped) {
             try {
                 rateLimiter.acquire();
                 Message msg = new Message("TopicTest",// topic
                         "TagA",// tag
-                        ("Hello RocketMQ " + i).getBytes(RemotingHelper.DEFAULT_CHARSET)// body
+                        ("Hello RocketMQ").getBytes(RemotingHelper.DEFAULT_CHARSET)// body
                 );
                 producer.send(msg, new SendCallback() {
                     @Override
                     public void onSuccess(SendResult sendResult) {
-                        System.out.println(sendResult);
-                        countDownLatch.countDown();
+                        ssc.incrementAndGet();
                     }
 
                     @Override
                     public void onException(Throwable e) {
-                        e.printStackTrace();
-                        countDownLatch.countDown();
+                        if (e instanceof InterruptedException) {
+                            stopped = true;
+                        }
+
+                        fsc.incrementAndGet();
                     }
                 });
-                System.out.println("sent");
             } catch (Exception e) {
-                countDownLatch.countDown();
-                System.out.println(e.getMessage());
+
+                if (e instanceof InterruptedException) {
+                    stopped = true;
+                }
+
+                fsc.incrementAndGet();
             }
         }
-
-        countDownLatch.await();
 
         producer.shutdown();
     }
