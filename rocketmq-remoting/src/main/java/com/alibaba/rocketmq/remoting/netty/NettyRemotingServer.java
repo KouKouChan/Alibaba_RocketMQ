@@ -158,43 +158,41 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                     }
                 });
 
-        ServerBootstrap childHandler = //
-                this.serverBootstrap.group(this.eventLoopGroupBoss, this.eventLoopGroupSelector).channel(NioServerSocketChannel.class)
-                        //
-                        .option(ChannelOption.SO_BACKLOG, 1024)
-                        //
-                        .option(ChannelOption.SO_REUSEADDR, true)
-                        //
-                        .option(ChannelOption.SO_KEEPALIVE, false)
-                        //
-                        .childOption(ChannelOption.TCP_NODELAY, true)
-                        //
-                        .option(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())
-                        //
-                        .option(ChannelOption.SO_RCVBUF, nettyServerConfig.getServerSocketRcvBufSize())
-                        //
-                        .localAddress(new InetSocketAddress(this.nettyServerConfig.getListenPort()))
-                        .childHandler(new ChannelInitializer<SocketChannel>() {
-                            @Override
-                            public void initChannel(SocketChannel ch) throws Exception {
+        ServerBootstrap childHandler = this.serverBootstrap
+                .group(this.eventLoopGroupBoss, this.eventLoopGroupSelector)
+                .channel(NioServerSocketChannel.class)
+                .option(ChannelOption.SO_BACKLOG, 1024)
+                .option(ChannelOption.SO_REUSEADDR, true)
+                .option(ChannelOption.SO_KEEPALIVE, false)
+                .childOption(ChannelOption.TCP_NODELAY, true)
+                .childOption(ChannelOption.SO_SNDBUF, nettyServerConfig.getServerSocketSndBufSize())
+                .childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(
+                        nettyServerConfig.getServerSocketRcvBufSize() / 4,
+                        nettyServerConfig.getServerSocketRcvBufSize() / 2,
+                        nettyServerConfig.getServerSocketRcvBufSize()
+                ))
+                .localAddress(new InetSocketAddress(this.nettyServerConfig.getListenPort()))
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel ch) throws Exception {
 
-                                if (null != sslContext) {
-                                    ch.pipeline().addLast(
-                                            defaultEventExecutorGroup,
-                                            new SslHandler(SslHelper.getSSLEngine(sslContext, SslRole.SERVER)),
-                                            new FileRegionEncoder());
-                                }
+                        if (null != sslContext) {
+                            ch.pipeline().addLast(
+                                    defaultEventExecutorGroup,
+                                    new SslHandler(SslHelper.getSSLEngine(sslContext, SslRole.SERVER)),
+                                    new FileRegionEncoder());
+                        }
 
-                                ch.pipeline().addLast(
-                                        //
-                                        defaultEventExecutorGroup, //
-                                        new NettyEncoder(), //
-                                        new NettyDecoder(), //
-                                        new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()), //
-                                        new NettyConnetManageHandler(), //
-                                        new NettyServerHandler());
-                            }
-                        });
+                        ch.pipeline().addLast(
+                                //
+                                defaultEventExecutorGroup, //
+                                new NettyEncoder(), //
+                                new NettyDecoder(), //
+                                new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()), //
+                                new NettyConnetManageHandler(), //
+                                new NettyServerHandler());
+                    }
+                });
 
         if (nettyServerConfig.isServerPooledByteBufAllocatorEnable()) {
             childHandler.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);

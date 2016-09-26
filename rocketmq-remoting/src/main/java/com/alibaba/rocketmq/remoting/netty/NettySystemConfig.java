@@ -37,10 +37,19 @@ public class NettySystemConfig {
 
     public static final boolean NettyPooledByteBufAllocatorEnable = //
             Boolean.parseBoolean(System.getProperty(SystemPropertyNettyPooledByteBufAllocatorEnable, "true"));
-    public static int socketSndbufSize = //
-            Integer.parseInt(System.getProperty(SystemPropertySocketSndbufSize, "65535"));
-    public static int socketRcvbufSize = //
-            Integer.parseInt(System.getProperty(SystemPropertySocketRcvbufSize, "65535"));
+
+    /**
+     * Default send buffer size: 8M.
+     */
+    public static final int socketSndbufSize = //
+            Integer.parseInt(System.getProperty(SystemPropertySocketSndbufSize, "8388608"));
+
+    /**
+     * Default receive buffer size: 8M.
+     */
+    public static final int socketRcvbufSize = //
+            Integer.parseInt(System.getProperty(SystemPropertySocketRcvbufSize, "8388608"));
+
     public static final int ClientAsyncSemaphoreValue = //
             Integer.parseInt(System.getProperty(SystemPropertyClientAsyncSemaphoreValue, "65535"));
     public static final int ClientOnewaySemaphoreValue = //

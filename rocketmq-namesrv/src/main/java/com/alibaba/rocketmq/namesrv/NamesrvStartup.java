@@ -23,7 +23,6 @@ import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.namesrv.NamesrvConfig;
 import com.alibaba.rocketmq.remoting.netty.NettyServerConfig;
-import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
 import org.apache.commons.cli.CommandLine;
@@ -52,17 +51,8 @@ public class NamesrvStartup {
     }
 
     public static NamesrvController main0(String[] args) {
+
         System.setProperty(RemotingCommand.RemotingVersionKey, Integer.toString(MQVersion.CurrentVersion));
-
-
-        if (null == System.getProperty(NettySystemConfig.SystemPropertySocketSndbufSize)) {
-            NettySystemConfig.socketSndbufSize = 4096;
-        }
-
-
-        if (null == System.getProperty(NettySystemConfig.SystemPropertySocketRcvbufSize)) {
-            NettySystemConfig.socketRcvbufSize = 4096;
-        }
 
         try {
             //PackageConflictDetect.detectFastjson();
