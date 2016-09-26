@@ -35,6 +35,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -43,6 +44,8 @@ import java.util.List;
 public class RemotingHelper {
     public static final String RemotingLogName = "RocketmqRemoting";
     public static final String DEFAULT_CHARSET = "UTF-8";
+
+    private static ConcurrentHashMap<String, String> filterResultCache = new ConcurrentHashMap<>();
 
     /**
      * Exception simple description.
@@ -100,6 +103,12 @@ public class RemotingHelper {
         if (!ipCSV.contains(",")) {
             return ipCSV;
         } else {
+
+            // Check if already cached previously.
+            if (filterResultCache.containsKey(ipCSV)) {
+                return filterResultCache.get(ipCSV);
+            }
+
             String[] ipArray = ipCSV.split(",");
             List<InetAddress> addressList = new ArrayList<>();
             for (String ip : ipArray) {
@@ -116,13 +125,20 @@ public class RemotingHelper {
                 }
             }
 
+            String filterResult = null;
             for (InetAddress inetAddress : addressList) {
                 if (isReachable(inetAddress)) {
-                    return inetAddress.getHostAddress();
+                    filterResult = inetAddress.getHostAddress();
+                    break;
                 }
             }
 
-            return ipArray[0];
+            filterResult = (null == filterResult) ? ipArray[0] : filterResult;
+
+            // Add cache
+            filterResultCache.putIfAbsent(ipCSV, filterResult);
+
+            return filterResult;
         }
     }
 
