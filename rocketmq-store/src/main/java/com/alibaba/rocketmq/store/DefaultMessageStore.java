@@ -286,7 +286,7 @@ public class DefaultMessageStore implements MessageStore {
         if (!this.runningFlags.isWriteable()) {
             long value = this.printTimes.getAndIncrement();
             if ((value % 50000) == 0) {
-                log.warn("message store is not writeable, so putMessage is forbidden " + this.runningFlags.getFlagBits());
+                log.warn("message store is not writable, so putMessage is forbidden " + this.runningFlags.getFlagBits());
             }
 
             return new PutMessageResult(PutMessageStatus.SERVICE_NOT_AVAILABLE, null);
@@ -1289,7 +1289,7 @@ public class DefaultMessageStore implements MessageStore {
         switch (tranType) {
             case MessageSysFlag.TransactionNotType:
             case MessageSysFlag.TransactionCommitType:
-                DefaultMessageStore.this.putMessagePostionInfo(req.getTopic(), req.getQueueId(), req.getCommitLogOffset(), req.getMsgSize(),
+                DefaultMessageStore.this.putMessagePositionInfo(req.getTopic(), req.getQueueId(), req.getCommitLogOffset(), req.getMsgSize(),
                         req.getTagsCode(), req.getStoreTimestamp(), req.getConsumeQueueOffset());
                 break;
             case MessageSysFlag.TransactionPreparedType:
@@ -1302,8 +1302,8 @@ public class DefaultMessageStore implements MessageStore {
         }
     }
 
-    public void putMessagePostionInfo(String topic, int queueId, long offset, int size, long tagsCode, long storeTimestamp,
-                                      long logicOffset) {
+    public void putMessagePositionInfo(String topic, int queueId, long offset, int size, long tagsCode, long storeTimestamp,
+                                       long logicOffset) {
         ConsumeQueue cq = this.findConsumeQueue(topic, queueId);
         cq.putMessagePostionInfoWrapper(offset, size, tagsCode, storeTimestamp, logicOffset);
     }

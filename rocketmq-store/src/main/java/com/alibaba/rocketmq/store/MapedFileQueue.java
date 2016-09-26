@@ -427,8 +427,20 @@ public class MapedFileQueue {
                                 + maxOffsetInLogicQueue + ", delete it");
                     }
                 } else {
-                    log.warn("this being not excuted forever.");
-                    break;
+                    log.warn("this being not executed forever.");
+                    if (mapedFile.isCleanupOver()) { // Process dangling file.
+                        File file = new File(mapedFile.getFileName());
+                        if (file.exists()) {
+                            boolean success = file.delete();
+                            if (!success) {
+                                log.error("Unable to delete dangling file: {}", mapedFile.getFileName());
+                            } else {
+                                log.info("Deleted dangling file: {}", mapedFile.getFileName());
+                            }
+                        }
+                    } else {
+                        break;
+                    }
                 }
 
                 if (destroy && mapedFile.destroy(1000 * 60)) {

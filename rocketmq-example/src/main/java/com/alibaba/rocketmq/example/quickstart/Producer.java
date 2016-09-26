@@ -54,9 +54,8 @@ public class Producer {
                     }
                 });
             } catch (Exception e) {
-                e.printStackTrace();
                 countDownLatch.countDown();
-                Thread.sleep(1000);
+                System.out.println(e.getMessage());
             }
         }
 

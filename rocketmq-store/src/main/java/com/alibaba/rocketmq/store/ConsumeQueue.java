@@ -344,27 +344,26 @@ public class ConsumeQueue {
                                              long logicOffset) {
         final int MaxRetries = 30;
         boolean canWrite = this.defaultMessageStore.getRunningFlags().isWriteable();
-        for (int i = 0; i < MaxRetries && canWrite; i++) {
-            boolean result = this.putMessagePostionInfo(offset, size, tagsCode, logicOffset);
-            if (result) {
-                this.defaultMessageStore.getStoreCheckpoint().setLogicsMsgTimestamp(storeTimestamp);
-                return;
-            }
+        boolean diskFull = this.defaultMessageStore.getRunningFlags().isDiskFull();
+        if (canWrite || diskFull) {
+            for (int i = 0; i < MaxRetries; i++) {
+                boolean result = this.putMessagePostionInfo(offset, size, tagsCode, logicOffset);
+                if (result) {
+                    this.defaultMessageStore.getStoreCheckpoint().setLogicsMsgTimestamp(storeTimestamp);
+                    return;
+                } else {
+                    log.warn("[BUG]put commit log position info to " + topic + ":" + queueId + " " + offset
+                            + " failed, retry " + i + " times");
 
-            else {
-                // XXX: warn and notify me
-                log.warn("[BUG]put commit log postion info to " + topic + ":" + queueId + " " + offset
-                        + " failed, retry " + i + " times");
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    log.warn("", e);
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        log.warn("", e);
+                    }
                 }
             }
         }
 
-        // XXX: warn and notify me
         log.error("[BUG]consume queue can not write, {} {}", this.topic, this.queueId);
         this.defaultMessageStore.getRunningFlags().makeLogicsQueueError();
     }

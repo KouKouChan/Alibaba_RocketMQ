@@ -25,7 +25,12 @@ import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.TopicConfig;
 import com.alibaba.rocketmq.common.help.FAQUrl;
-import com.alibaba.rocketmq.common.message.*;
+import com.alibaba.rocketmq.common.message.MessageClientIDSetter;
+import com.alibaba.rocketmq.common.message.MessageConst;
+import com.alibaba.rocketmq.common.message.MessageDecoder;
+import com.alibaba.rocketmq.common.message.MessageExt;
+import com.alibaba.rocketmq.common.message.MessageId;
+import com.alibaba.rocketmq.common.message.MessageQueue;
 import com.alibaba.rocketmq.common.protocol.ResponseCode;
 import com.alibaba.rocketmq.common.protocol.header.QueryMessageRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.QueryMessageResponseHeader;
@@ -46,6 +51,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -297,6 +304,7 @@ public class MQAdminImpl {
             if (!brokerAddrs.isEmpty()) {
                 final CountDownLatch countDownLatch = new CountDownLatch(brokerAddrs.size());
                 final List<QueryResult> queryResultList = new LinkedList<QueryResult>();
+                final Lock lock = new ReentrantLock();
 
                 for (String addr : brokerAddrs) {
                     try {
@@ -330,7 +338,12 @@ public class MQAdminImpl {
                                                                 MessageDecoder.decodes(ByteBuffer.wrap(response.getBody()), true);
 
                                                         QueryResult qr = new QueryResult(responseHeader.getIndexLastUpdateTimestamp(), wrappers);
-                                                        queryResultList.add(qr);
+                                                        lock.lock();
+                                                        try {
+                                                                queryResultList.add(qr);
+                                                        } finally {
+                                                            lock.unlock();
+                                                        }
                                                         break;
                                                     }
                                                     default:
