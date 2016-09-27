@@ -360,25 +360,20 @@ public class MQClientAPIImpl {
                 RemotingCommand response = responseFuture.getResponseCommand();
                 if (response != null) {
                     try {
-                        SendResult sendResult =
-                                MQClientAPIImpl.this.processSendResponse(brokerName, msg, response);
+                        SendResult sendResult = MQClientAPIImpl.this.processSendResponse(brokerName, msg, response);
                         assert sendResult != null;
                         sendCallback.onSuccess(sendResult);
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         sendCallback.onException(e);
                     }
                 } else {
                     if (!responseFuture.isSendRequestOK()) {
-                        sendCallback.onException(new MQClientException("send request failed", responseFuture
-                            .getCause()));
+                        sendCallback.onException(new MQClientException("send request failed", responseFuture.getCause()));
                     } else if (responseFuture.isTimeout()) {
                         sendCallback.onException(new MQClientException("wait response timeout "
                                 + responseFuture.getTimeoutMillis() + "ms", responseFuture.getCause()));
-                    }
-                    else {
-                        sendCallback.onException(new MQClientException("unknown reason", responseFuture
-                            .getCause()));
+                    } else {
+                        sendCallback.onException(new MQClientException("unknown reason", responseFuture.getCause()));
                     }
                 }
             }

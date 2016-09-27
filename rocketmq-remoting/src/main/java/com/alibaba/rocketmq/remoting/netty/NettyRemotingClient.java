@@ -654,19 +654,25 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                     this.rpcHook.doBeforeRequest(addr, request);
                 }
                 this.invokeAsyncImpl(channel, request, timeoutMillis, invokeCallback);
-            }
-            catch (RemotingSendRequestException e) {
+            } catch (RemotingSendRequestException e) {
                 log.warn("invokeAsync: send request exception, so close the channel[{}]", addr);
                 this.closeChannel(addr, channel);
-                throw e;
+
+                handleAsyncException(timeoutMillis, invokeCallback, e);
             }
-        }
-        else {
+        } else {
             this.closeChannel(addr, channel);
-            throw new RemotingConnectException(addr);
+
+            handleAsyncException(timeoutMillis, invokeCallback, new RemotingConnectException(addr));
         }
     }
 
+    private void handleAsyncException(long timeoutMillis, InvokeCallback invokeCallback, Throwable cause) {
+        ResponseFuture future = new ResponseFuture(-1, timeoutMillis, invokeCallback, null);
+        future.setSendRequestOK(false);
+        future.setCause(cause);
+        invokeCallback.operationComplete(future);
+    }
 
     @Override
     public void invokeOneWay(String addr, RemotingCommand request, long timeoutMillis)
