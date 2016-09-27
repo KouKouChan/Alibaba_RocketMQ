@@ -588,6 +588,12 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 return sendResult;
             }
 
+            // TODO: find a better place to invoke callback#onException.
+            if (communicationMode == CommunicationMode.ASYNC) {
+                sendCallback.onException(exception);
+                return null;
+            }
+
             String info = String.format("Send [%d] times, still failed, cost [%d]ms, Topic: %s, BrokersSent: %s", //
                     times, //
                     (System.currentTimeMillis() - beginTimestamp), //
