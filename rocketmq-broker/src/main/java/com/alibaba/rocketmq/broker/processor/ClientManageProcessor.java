@@ -287,7 +287,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
                 // 如果是单元化模式，则对 topic 进行设置
                 int topicSysFlag = 0;
                 if (data.isUnitMode()) {
-                    topicSysFlag = TopicSysFlag.buildSysFlag(false, true);
+                    topicSysFlag = TopicSysFlag.buildSysFlag(false, true, false);
                 }
                 String newTopic = MixAll.getRetryTopic(data.getGroupName());
                 this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(//

@@ -17,8 +17,11 @@ package com.alibaba.rocketmq.example.quickstart;
 
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
+import com.alibaba.rocketmq.client.producer.SendCallback;
 import com.alibaba.rocketmq.client.producer.SendResult;
+import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByRegion;
 import com.alibaba.rocketmq.common.message.Message;
+import com.alibaba.rocketmq.common.protocol.ResponseCode;
 
 
 /**
@@ -28,6 +31,7 @@ public class Producer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
         producer.setSendMsgTimeout(10000);
+        producer.setNamesrvAddr("localhost:9876");
         producer.start();
 
         for (int i = 0; i < 1; i++) {
@@ -37,11 +41,23 @@ public class Producer {
                         ("Hello RocketMQ " + i).getBytes()// body
                 );
                 msg.putUserProperty("id", "aaa");
+                msg.setUnitTestCode(ResponseCode.SYSTEM_BUSY);
 
                 //Unique key may be used to query message using command line and web console.
                 msg.setKeys("Key-A");
-                SendResult sendResult = producer.send(msg);
-                System.out.println(sendResult);
+//                SendResult sendResult = producer.send(msg);
+//                System.out.println(sendResult);
+                producer.send(msg, new SelectMessageQueueByRegion(null), null, new SendCallback() {
+                    @Override
+                    public void onSuccess(SendResult sendResult) {
+                        System.out.println(sendResult);
+                    }
+
+                    @Override
+                    public void onException(Throwable e) {
+                        e.printStackTrace();
+                    }
+                });
             } catch (Exception e) {
                 e.printStackTrace();
                 Thread.sleep(1000);

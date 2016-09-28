@@ -251,6 +251,23 @@ public class Message implements Serializable {
         return getProperty(MessageConst.PROPERTY_BUYER_ID);
     }
 
+    /**
+     * Set unit test code.
+     * @param unitTestCode Refer to {@link com.alibaba.rocketmq.common.protocol.ResponseCode}
+     */
+    public void setUnitTestCode(int unitTestCode) {
+        putProperty(MessageConst.PROPERTY_MESSAGE_UNIT_TEST_CODE, String.valueOf(unitTestCode));
+    }
+
+    public int getUnitTestCode() {
+        String code = getProperty(MessageConst.PROPERTY_MESSAGE_UNIT_TEST_CODE);
+        if (null == code || code.isEmpty()) {
+            return -1;
+        } else {
+            return Integer.parseInt(code);
+        }
+    }
+
 
     @Override
     public String toString() {

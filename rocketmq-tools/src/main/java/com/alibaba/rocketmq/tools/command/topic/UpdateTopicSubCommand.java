@@ -90,6 +90,10 @@ public class UpdateTopicSubCommand implements SubCommand {
         opt.setRequired(false);
         options.addOption(opt);
 
+        opt = new Option("d", "supportUnitTest", true, "support unit test (true|false)");
+        opt.setRequired(false);
+        options.addOption(opt);
+
         return options;
     }
 
@@ -130,7 +134,12 @@ public class UpdateTopicSubCommand implements SubCommand {
                 isCenterSync = Boolean.parseBoolean(commandLine.getOptionValue('s').trim());
             }
 
-            int topicCenterSync = TopicSysFlag.buildSysFlag(isUnit, isCenterSync);
+            boolean supportUnitTest = false;
+            if (commandLine.hasOption("d")) {
+                supportUnitTest = Boolean.parseBoolean(commandLine.getOptionValue('d').trim());
+            }
+
+            int topicCenterSync = TopicSysFlag.buildSysFlag(isUnit, isCenterSync, supportUnitTest);
             topicConfig.setTopicSysFlag(topicCenterSync);
 
             boolean isOrder = false;

@@ -53,6 +53,7 @@ public class MessageConst {
     public static final String PROPERTY_MQ2_FLAG = "MQ2_FLAG";
     public static final String PROPERTY_RECONSUME_TIME = "RECONSUME_TIME";
     public static final String PROPERTY_MESSAGE_TRACE_ID = "TRACE_ID";
+    public static final String PROPERTY_MESSAGE_UNIT_TEST_CODE = "UNIT_TEST_CODE";
 
     public static final String KEY_SEPARATOR = " ";
 
@@ -76,5 +77,6 @@ public class MessageConst {
         systemKeySet.add(PROPERTY_CORRECTION_FLAG);
         systemKeySet.add(PROPERTY_MQ2_FLAG);
         systemKeySet.add(PROPERTY_RECONSUME_TIME);
+        systemKeySet.add(PROPERTY_MESSAGE_UNIT_TEST_CODE);
     }
 }

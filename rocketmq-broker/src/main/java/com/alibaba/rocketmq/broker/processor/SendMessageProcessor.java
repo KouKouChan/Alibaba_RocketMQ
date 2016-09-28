@@ -184,7 +184,7 @@ public class SendMessageProcessor implements NettyRequestProcessor {
         // 如果是单元化模式，则对 topic 进行设置
         int topicSysFlag = 0;
         if (requestHeader.isUnitMode()) {
-            topicSysFlag = TopicSysFlag.buildSysFlag(false, true);
+            topicSysFlag = TopicSysFlag.buildSysFlag(false, true, false);
         }
 
         // 检查topic是否存在
@@ -368,14 +368,13 @@ public class SendMessageProcessor implements NettyRequestProcessor {
             int topicSysFlag = 0;
             if (requestHeader.isUnitMode()) {
                 if (requestHeader.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
-                    topicSysFlag = TopicSysFlag.buildSysFlag(false, true);
+                    topicSysFlag = TopicSysFlag.buildSysFlag(false, true, false);
                 } else {
-                    topicSysFlag = TopicSysFlag.buildSysFlag(true, false);
+                    topicSysFlag = TopicSysFlag.buildSysFlag(true, false, false);
                 }
             }
 
-            log.warn("the topic " + requestHeader.getTopic() + " not exist, producer: "
-                    + ctx.channel().remoteAddress());
+            log.warn("the topic " + requestHeader.getTopic() + " not exist, producer: " + ctx.channel().remoteAddress());
             topicConfig = this.brokerController.getTopicConfigManager().createTopicInSendMessageMethod(//
                     requestHeader.getTopic(), //
                     requestHeader.getDefaultTopic(), //
@@ -385,10 +384,8 @@ public class SendMessageProcessor implements NettyRequestProcessor {
             // 尝试看下是否是失败消息发回
             if (null == topicConfig) {
                 if (requestHeader.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
-                    topicConfig =
-                            this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(
-                                    requestHeader.getTopic(), 1, PermName.PERM_WRITE | PermName.PERM_READ,
-                                    topicSysFlag);
+                    topicConfig = this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(
+                            requestHeader.getTopic(), 1, PermName.PERM_WRITE | PermName.PERM_READ, topicSysFlag);
                 }
             }
 
@@ -399,17 +396,6 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                 return response;
             }
         }
-
-        /**
-         * Broker本身不做Topic的权限验证，由Name Server负责通知Client处理
-         */
-        // // 检查topic权限
-        // if (!PermName.isWritable(topicConfig.getPerm())) {
-        // response.setCode(ResponseCode.NO_PERMISSION);
-        // response.setRemark("the topic[" + requestHeader.getOriginTopic() +
-        // "] sending message is forbidden");
-        // return response;
-        // }
 
         // 检查队列有效性
         int queueIdInt = requestHeader.getQueueId();
@@ -461,6 +447,16 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                 response.setCode(ResponseCode.NO_PERMISSION);
                 response.setRemark("the broker[" + this.brokerController.getBrokerConfig().getBrokerIP1()
                         + "] sending transaction message is forbidden");
+                return response;
+            }
+        }
+
+        // Check if there is any defined test-purpose actions
+        if (TopicSysFlag.hasSupportUnitTestFlag(topicConfig.getTopicSysFlag())) {
+            int unitTestCode = msgInner.getUnitTestCode();
+            if (unitTestCode > 0) {
+                response.setCode(unitTestCode);
+                response.setRemark("unitTest Flag and code are set");
                 return response;
             }
         }

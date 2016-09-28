@@ -24,11 +24,14 @@ package com.alibaba.rocketmq.common.sysflag;
 public class TopicSysFlag {
     // 单元化逻辑 topic 标识
     private final static int FLAG_UNIT = 0x1 << 0;
+
     // 该 topic 有单元化订阅组
     private final static int FLAG_UNIT_SUB = 0x1 << 1;
 
+    // Support of unit test.
+    private final static int FLAG_SUPPORT_UNIT_TEST = 0x1 << 2;
 
-    public static int buildSysFlag(final boolean unit, final boolean hasUnitSub) {
+    public static int buildSysFlag(final boolean unit, final boolean hasUnitSub, final boolean supportUnitTest) {
         int sysFlag = 0;
 
         if (unit) {
@@ -37,6 +40,10 @@ public class TopicSysFlag {
 
         if (hasUnitSub) {
             sysFlag |= FLAG_UNIT_SUB;
+        }
+
+        if (supportUnitTest) {
+            sysFlag |= FLAG_SUPPORT_UNIT_TEST;
         }
 
         return sysFlag;
@@ -72,9 +79,15 @@ public class TopicSysFlag {
         return (sysFlag & FLAG_UNIT_SUB) == FLAG_UNIT_SUB;
     }
 
+    public static int setSupportUnitTestFlag(final int sysFlag) {
+        return sysFlag | FLAG_SUPPORT_UNIT_TEST;
+    }
 
-    public static void main(String[] args) {
-        System.out.println(0x1 << 0);
-        System.out.println(0x1 << 1);
+    public static int clearSupportUnitTestFlag(final int sysFlag) {
+        return sysFlag & (~FLAG_SUPPORT_UNIT_TEST);
+    }
+
+    public static boolean hasSupportUnitTestFlag(final int sysFlag) {
+        return (sysFlag & FLAG_SUPPORT_UNIT_TEST) == FLAG_SUPPORT_UNIT_TEST;
     }
 }

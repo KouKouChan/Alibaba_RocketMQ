@@ -13,6 +13,7 @@ public class ResponseCode extends RemotingSysResponseCode {
 
     // Broker 同步双写，等待Slave应答超时
     public static final int FLUSH_SLAVE_TIMEOUT = 12;
+
     // Broker 消息非法
     public static final int MESSAGE_ILLEGAL = 13;
 
