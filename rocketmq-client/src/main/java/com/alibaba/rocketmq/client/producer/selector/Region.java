@@ -4,6 +4,7 @@ public enum Region {
     US_EAST(1),
     US_WEST(3),
     SINGAPORE(2),
+    FRANKFURT(4),
     ANY(100),
     SAME(101);
     private int index;
