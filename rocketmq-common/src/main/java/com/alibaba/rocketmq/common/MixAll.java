@@ -157,7 +157,7 @@ public class MixAll {
 
     public static final String file2String(final String fileName) {
         File file = new File(fileName);
-        return file2String(file);
+        return file2StringSafe(file);
     }
 
 
@@ -184,7 +184,35 @@ public class MixAll {
         return null;
     }
 
+    private static String file2StringSafe(final File file) {
+        if (null == file || !file.exists()) {
+            return null;
+        }
 
+        BufferedInputStream bufferedInputStream = null;
+        try {
+            bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
+            byte[] buffer = new byte[1024];
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            int len = 0;
+            while ((len = bufferedInputStream.read(buffer)) > 0) {
+                byteArrayOutputStream.write(buffer, 0, len);
+            }
+            return new String(byteArrayOutputStream.toByteArray());
+        } catch (IOException ignore) {
+        } finally {
+            if (null != bufferedInputStream) {
+                try {
+                    bufferedInputStream.close();
+                } catch (IOException ignore) {
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Deprecated
     private static String file2String(final File file) {
         if (file.exists()) {
             char[] data = new char[(int) file.length()];
@@ -194,12 +222,11 @@ public class MixAll {
             try {
                 fileReader = new FileReader(file);
                 int len = fileReader.read(data);
+                // TODO figure out why len < data.length
                 result = (len == data.length);
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // e.printStackTrace();
-            }
-            finally {
+            } finally {
                 if (fileReader != null) {
                     try {
                         fileReader.close();

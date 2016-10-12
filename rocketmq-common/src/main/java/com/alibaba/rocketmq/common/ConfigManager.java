@@ -15,12 +15,11 @@
  */
 package com.alibaba.rocketmq.common;
 
-import java.io.IOException;
-
+import com.alibaba.rocketmq.common.constant.LoggerName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.rocketmq.common.constant.LoggerName;
+import java.io.IOException;
 
 
 /**
@@ -49,12 +48,14 @@ public abstract class ConfigManager {
         String fileName = null;
         try {
             fileName = this.configFilePath();
+            plog.info("File name to load: {}", fileName);
             String jsonString = MixAll.file2String(fileName);
             // 文件不存在，或者为空文件
             if (null == jsonString || jsonString.length() == 0) {
+                plog.info("file2String failed");
                 return this.loadBak();
-            }
-            else {
+            } else {
+
                 this.decode(jsonString);
                 plog.info("load {} OK", fileName);
                 return true;
