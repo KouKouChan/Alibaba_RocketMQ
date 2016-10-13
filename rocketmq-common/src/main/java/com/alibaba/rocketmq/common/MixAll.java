@@ -27,6 +27,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -66,6 +67,7 @@ public class MixAll {
     public static final List<String> LocalInetAddrs = getLocalInetAddress();
     public static final String Localhost = localhost();
     public static final String DEFAULT_CHARSET = "UTF-8";
+    public static final Charset CHARSET_UTF8 = Charset.forName(DEFAULT_CHARSET);
     public static final long MASTER_ID = 0L;
     public static final long CURRENT_JVM_PID = getPID();
 
@@ -156,25 +158,27 @@ public class MixAll {
 
 
     public static final void string2FileNotSafe(final String str, final String fileName) throws IOException {
+        if (null == str || str.isEmpty()) {
+            return;
+        }
+
         File file = new File(fileName);
         File fileParent = file.getParentFile();
-        if (fileParent != null) {
-            fileParent.mkdirs();
+        if (null != fileParent && !fileParent.exists()) {
+            if(!fileParent.mkdirs()) {
+                throw new IOException("Unable to create directory: " + fileParent.getPath());
+            }
         }
-        FileWriter fileWriter = null;
 
+        byte[] data = str.getBytes(CHARSET_UTF8);
+        BufferedOutputStream bufferedOutputStream = null;
         try {
-            fileWriter = new FileWriter(file);
-            fileWriter.write(str);
-        } catch (IOException e) {
-            throw e;
+            bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(file));
+            bufferedOutputStream.write(data);
+            bufferedOutputStream.flush();
         } finally {
-            if (fileWriter != null) {
-                try {
-                    fileWriter.close();
-                } catch (IOException e) {
-                    throw e;
-                }
+            if (null != bufferedOutputStream) {
+                bufferedOutputStream.close();
             }
         }
     }
@@ -186,32 +190,32 @@ public class MixAll {
     }
 
     public static final String file2String(final File file) {
-        if (file.exists()) {
-            char[] data = new char[(int) file.length()];
-            boolean result = false;
+        if (null == file || !file.exists()) {
+            return null;
+        }
 
-            FileReader fileReader = null;
-            try {
-                fileReader = new FileReader(file);
-                int len = fileReader.read(data);
-                result = (len == data.length);
-            } catch (IOException e) {
-                // e.printStackTrace();
-            } finally {
-                if (fileReader != null) {
-                    try {
-                        fileReader.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+        BufferedInputStream bufferedInputStream = null;
+        ByteArrayOutputStream byteArrayOutputStream = null;
+        try {
+            bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
+            byteArrayOutputStream = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int len = 0;
+            while ((len = bufferedInputStream.read(buffer)) > 0) {
+                byteArrayOutputStream.write(buffer, 0, len);
+            }
+            return new String(byteArrayOutputStream.toByteArray(), CHARSET_UTF8);
+        } catch (FileNotFoundException ignore) {
+        } catch (IOException ignore) {
+        } finally {
+            if (null != bufferedInputStream) {
+                try {
+                    bufferedInputStream.close();
+                } catch (IOException ignore) {
                 }
             }
-
-            if (result) {
-                String value = new String(data);
-                return value;
-            }
         }
+
         return null;
     }
 
@@ -224,7 +228,7 @@ public class MixAll {
             int len = in.available();
             byte[] data = new byte[len];
             in.read(data, 0, len);
-            return new String(data, "UTF-8");
+            return new String(data, CHARSET_UTF8);
         } catch (Exception e) {
         } finally {
             if (null != in) {
@@ -290,7 +294,10 @@ public class MixAll {
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             if (entry.getValue() != null) {
-                sb.append(entry.getKey().toString() + "=" + entry.getValue().toString() + "\n");
+                sb.append(entry.getKey().toString())
+                  .append("=")
+                  .append(entry.getValue().toString())
+                  .append(System.getProperty("line.separator"));
             }
         }
         return sb.toString();
@@ -303,7 +310,7 @@ public class MixAll {
     public static Properties string2Properties(final String str) {
         Properties properties = new Properties();
         try {
-            InputStream in = new ByteArrayInputStream(str.getBytes(DEFAULT_CHARSET));
+            InputStream in = new ByteArrayInputStream(str.getBytes(CHARSET_UTF8));
             properties.load(in);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
