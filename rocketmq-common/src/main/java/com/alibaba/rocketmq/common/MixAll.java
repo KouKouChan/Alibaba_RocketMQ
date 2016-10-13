@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -60,6 +61,7 @@ public class MixAll {
     public static final List<String> LocalInetAddrs = getLocalInetAddress();
     public static final String Localhost = localhost();
     public static final String DEFAULT_CHARSET = "UTF-8";
+    public static final Charset CHARSET_UTF8 = Charset.forName(DEFAULT_CHARSET);
     public static final long MASTER_ID = 0L;
     public static final long CURRENT_JVM_PID = getPID();
     // 为每个Consumer Group建立一个默认的Topic，前缀 + GroupName，用来保存处理失败需要重试的消息
@@ -110,13 +112,13 @@ public class MixAll {
     public static final void string2File(final String str, final String fileName) throws IOException {
         // 先写入临时文件
         String tmpFile = fileName + ".tmp";
-        string2FileNotSafe(str, tmpFile);
+        string2FileNotSafe(str, tmpFile, CHARSET_UTF8);
 
         // 备份之前的文件
         String bakFile = fileName + ".bak";
         String prevContent = file2String(fileName);
         if (prevContent != null) {
-            string2FileNotSafe(prevContent, bakFile);
+            string2FileNotSafe(prevContent, bakFile, CHARSET_UTF8);
         }
 
         // 删除正式文件
@@ -129,27 +131,21 @@ public class MixAll {
     }
 
 
-    public static final void string2FileNotSafe(final String str, final String fileName) throws IOException {
+    public static final void string2FileNotSafe(final String str, final String fileName, Charset charset) throws IOException {
         File file = new File(fileName);
         File fileParent = file.getParentFile();
         if (fileParent != null) {
             fileParent.mkdirs();
         }
-        FileWriter fileWriter = null;
-
+        byte[] data = str.getBytes(charset);
+        BufferedOutputStream bufferedOutputStream = null;
         try {
-            fileWriter = new FileWriter(file);
-            fileWriter.write(str);
-        } catch (IOException e) {
-            throw e;
+            bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(file));
+            bufferedOutputStream.write(data);
+            bufferedOutputStream.flush();
         } finally {
-            if (fileWriter != null) {
-                try {
-                    fileWriter.close();
-                }
-                catch (IOException e) {
-                    throw e;
-                }
+            if (null != bufferedOutputStream) {
+                bufferedOutputStream.close();
             }
         }
     }
@@ -157,7 +153,7 @@ public class MixAll {
 
     public static final String file2String(final String fileName) {
         File file = new File(fileName);
-        return file2StringSafe(file);
+        return file2StringSafe(file, CHARSET_UTF8);
     }
 
 
@@ -170,13 +166,13 @@ public class MixAll {
             int len = in.available();
             byte[] data = new byte[len];
             in.read(data, 0, len);
-            return new String(data, "UTF-8");
-        } catch (Exception e) {
+            return new String(data, CHARSET_UTF8);
+        } catch (Exception ignore) {
         } finally {
             if (null != in) {
                 try {
                     in.close();
-                } catch (IOException e) {
+                } catch (IOException ignore) {
                 }
             }
         }
@@ -184,7 +180,7 @@ public class MixAll {
         return null;
     }
 
-    private static String file2StringSafe(final File file) {
+    private static String file2StringSafe(final File file, Charset charset) {
         if (null == file || !file.exists()) {
             return null;
         }
@@ -198,7 +194,7 @@ public class MixAll {
             while ((len = bufferedInputStream.read(buffer)) > 0) {
                 byteArrayOutputStream.write(buffer, 0, len);
             }
-            return new String(byteArrayOutputStream.toByteArray());
+            return new String(byteArrayOutputStream.toByteArray(), charset);
         } catch (IOException ignore) {
         } finally {
             if (null != bufferedInputStream) {
@@ -211,40 +207,6 @@ public class MixAll {
 
         return null;
     }
-
-    @Deprecated
-    private static String file2String(final File file) {
-        if (file.exists()) {
-            char[] data = new char[(int) file.length()];
-            boolean result = false;
-
-            FileReader fileReader = null;
-            try {
-                fileReader = new FileReader(file);
-                int len = fileReader.read(data);
-                // TODO figure out why len < data.length
-                result = (len == data.length);
-            } catch (IOException e) {
-                // e.printStackTrace();
-            } finally {
-                if (fileReader != null) {
-                    try {
-                        fileReader.close();
-                    }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            if (result) {
-                String value = new String(data);
-                return value;
-            }
-        }
-        return null;
-    }
-
 
     public static String findClassPath(Class<?> c) {
         URL url = c.getProtectionDomain().getCodeSource().getLocation();

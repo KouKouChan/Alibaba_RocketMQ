@@ -15,14 +15,6 @@
  */
 package com.alibaba.rocketmq.tools.command.consumer;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.TreeMap;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-
 import com.alibaba.rocketmq.common.MQVersion;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.protocol.body.Connection;
@@ -32,6 +24,13 @@ import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.tools.admin.DefaultMQAdminExt;
 import com.alibaba.rocketmq.tools.command.MQAdminStartup;
 import com.alibaba.rocketmq.tools.command.SubCommand;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 
 /**
@@ -100,7 +99,7 @@ public class ConsumerStatusSubCommand implements SubCommand {
                         if (consumerRunningInfo != null) {
                             criTable.put(conn.getClientId(), consumerRunningInfo);
                             String filePath = now + "/" + conn.getClientId();
-                            MixAll.string2FileNotSafe(consumerRunningInfo.formatString(), filePath);
+                            MixAll.string2FileNotSafe(consumerRunningInfo.formatString(), filePath, MixAll.CHARSET_UTF8);
                             System.out.printf("%03d  %-40s %-20s %s\n",//
                                 i++,//
                                 conn.getClientId(),//
