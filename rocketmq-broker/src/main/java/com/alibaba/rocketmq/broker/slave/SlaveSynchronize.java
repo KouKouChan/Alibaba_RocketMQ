@@ -92,12 +92,10 @@ public class SlaveSynchronize {
 
                     // delete consume queues of unused topics.
                     if (!unusedTopics.isEmpty()) {
-                        StringBuilder stringBuilder = new StringBuilder();
                         for (String topic : unusedTopics) {
-                            stringBuilder.append(topic).append(", ");
+                            this.brokerController.getTopicConfigManager().deleteTopicConfig(topic);
                         }
-                        log.info("Consume queues of topic: {} are to be cleaned", stringBuilder.substring(0, stringBuilder.length() - 2));
-                        brokerController.getMessageStore().cleanUnusedTopic(unusedTopics);
+                        this.brokerController.addDeleteTopicTask();
                     }
 
                     log.info("update slave topic config from master, {}", masterAddrBak);
