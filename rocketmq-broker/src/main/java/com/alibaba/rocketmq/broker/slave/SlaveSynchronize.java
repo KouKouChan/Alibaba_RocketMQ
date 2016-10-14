@@ -27,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -71,8 +73,15 @@ public class SlaveSynchronize {
             try {
                 TopicConfigSerializeWrapper topicWrapper = this.brokerController.getBrokerOuterAPI()
                         .getAllTopicConfig(masterAddrBak);
-                if (!this.brokerController.getTopicConfigManager().getDataVersion()
-                    .equals(topicWrapper.getDataVersion())) {
+                if (!this.brokerController.getTopicConfigManager().getDataVersion().equals(topicWrapper.getDataVersion())) {
+
+                    // figure out unused topics.
+                    Set<String> unusedTopics = new HashSet<>();
+                    for (String topic : brokerController.getTopicConfigManager().getTopicConfigTable().keySet()) {
+                        if (!topicWrapper.getTopicConfigTable().containsKey(topic)) {
+                            unusedTopics.add(topic);
+                        }
+                    }
 
                     this.brokerController.getTopicConfigManager().getDataVersion()
                         .assignNewOne(topicWrapper.getDataVersion());
@@ -80,6 +89,16 @@ public class SlaveSynchronize {
                     this.brokerController.getTopicConfigManager().getTopicConfigTable()
                         .putAll(topicWrapper.getTopicConfigTable());
                     this.brokerController.getTopicConfigManager().persist();
+
+                    // delete consume queues of unused topics.
+                    if (!unusedTopics.isEmpty()) {
+                        StringBuilder stringBuilder = new StringBuilder();
+                        for (String topic : unusedTopics) {
+                            stringBuilder.append(topic).append(", ");
+                        }
+                        log.info("Consume queues of topic: {} are to be cleaned", stringBuilder.substring(0, stringBuilder.length() - 2));
+                        brokerController.getMessageStore().cleanUnusedTopic(unusedTopics);
+                    }
 
                     log.info("update slave topic config from master, {}", masterAddrBak);
                 }
