@@ -28,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -72,12 +74,25 @@ public class SlaveSynchronize {
                 if (!this.brokerController.getTopicConfigManager().getDataVersion()
                         .equals(topicWrapper.getDataVersion())) {
 
+                    // figure out unused topics.
+                    Set<String> unusedTopics = new HashSet<String>();
+                    for (String topic : brokerController.getTopicConfigManager().getTopicConfigTable().keySet()) {
+                        if (!topicWrapper.getTopicConfigTable().containsKey(topic)) {
+                            unusedTopics.add(topic);
+                        }
+                    }
+
                     this.brokerController.getTopicConfigManager().getDataVersion()
                             .assignNewOne(topicWrapper.getDataVersion());
                     this.brokerController.getTopicConfigManager().getTopicConfigTable().clear();
                     this.brokerController.getTopicConfigManager().getTopicConfigTable()
                             .putAll(topicWrapper.getTopicConfigTable());
                     this.brokerController.getTopicConfigManager().persist();
+
+                    // delete consume queues of unused topics.
+                    if (!unusedTopics.isEmpty()) {
+                        brokerController.getMessageStore().cleanUnusedTopic(unusedTopics);
+                    }
 
                     log.info("update slave topic config from master, {}", masterAddrBak);
                 }
