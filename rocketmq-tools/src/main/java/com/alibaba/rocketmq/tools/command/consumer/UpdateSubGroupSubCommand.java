@@ -15,6 +15,7 @@
  */
 package com.alibaba.rocketmq.tools.command.consumer;
 
+import com.alibaba.rocketmq.client.Validators;
 import com.alibaba.rocketmq.common.subscription.SubscriptionGroupConfig;
 import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
@@ -112,6 +113,7 @@ public class UpdateSubGroupSubCommand implements SubCommand {
 
             // groupName
             subscriptionGroupConfig.setGroupName(commandLine.getOptionValue('g').trim());
+            Validators.checkGroup(subscriptionGroupConfig.getGroupName());
 
             // consumeEnable
             if (commandLine.hasOption('s')) {

@@ -15,6 +15,7 @@
  */
 package com.alibaba.rocketmq.tools.command.topic;
 
+import com.alibaba.rocketmq.client.Validators;
 import com.alibaba.rocketmq.common.TopicConfig;
 import com.alibaba.rocketmq.common.sysflag.TopicSysFlag;
 import com.alibaba.rocketmq.remoting.RPCHook;
@@ -108,6 +109,8 @@ public class UpdateTopicSubCommand implements SubCommand {
             topicConfig.setReadQueueNums(8);
             topicConfig.setWriteQueueNums(8);
             topicConfig.setTopicName(commandLine.getOptionValue('t').trim());
+
+            Validators.checkTopic(topicConfig.getTopicName());
 
             // readQueueNums
             if (commandLine.hasOption('r')) {
