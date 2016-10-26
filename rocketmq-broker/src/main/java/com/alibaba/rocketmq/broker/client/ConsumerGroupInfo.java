@@ -146,8 +146,7 @@ public class ConsumerGroupInfo {
         }
         else {
             if (!infoOld.getClientId().equals(infoNew.getClientId())) {
-                log.error(
-                    "[BUG] consumer channel exist in broker, but clientId not equal. GROUP: {} OLD: {} NEW: {} ",
+                log.error("[BUG] consumer channel exist in broker, but clientId not equal. GROUP: {} OLD: {} NEW: {} ",
                     this.groupName,//
                     infoOld.toString(),//
                     infoNew.toString());
@@ -177,8 +176,7 @@ public class ConsumerGroupInfo {
                     log.info("subscription changed, add new topic, group: {} {}", this.groupName,
                         sub.toString());
                 }
-            }
-            else if (sub.getSubVersion() > old.getSubVersion()) {
+            } else if (sub.getSubVersion() > old.getSubVersion()) {
                 if (this.consumeType == ConsumeType.CONSUME_PASSIVELY) {
                     log.info("subscription changed, group: {} OLD: {} NEW: {}", //
                         this.groupName,//

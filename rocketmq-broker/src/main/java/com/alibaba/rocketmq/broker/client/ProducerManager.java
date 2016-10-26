@@ -15,7 +15,12 @@
  */
 package com.alibaba.rocketmq.broker.client;
 
+import com.alibaba.rocketmq.common.constant.LoggerName;
+import com.alibaba.rocketmq.remoting.common.RemotingHelper;
+import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 import io.netty.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -24,13 +29,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.rocketmq.common.constant.LoggerName;
-import com.alibaba.rocketmq.remoting.common.RemotingHelper;
-import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 
 
 /**
@@ -57,7 +55,7 @@ public class ProducerManager {
     }
 
 
-    public void scanNotActiveChannel() {
+    public void scanInactiveChannel() {
         try {
             if (this.groupChannelLock.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS)) {
                 try {
@@ -88,7 +86,7 @@ public class ProducerManager {
                 }
             }
             else {
-                log.warn("ProducerManager scanNotActiveChannel lock timeout");
+                log.warn("ProducerManager scanInactiveChannel lock timeout");
             }
         }
         catch (InterruptedException e) {

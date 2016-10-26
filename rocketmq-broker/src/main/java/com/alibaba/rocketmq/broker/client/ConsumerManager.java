@@ -96,8 +96,7 @@ public class ConsumerManager {
                 if (info.getChannelInfoTable().isEmpty()) {
                     ConsumerGroupInfo remove = this.consumerTable.remove(next.getKey());
                     if (remove != null) {
-                        log.info("Unregister consumer is OK, no any connection, and remove consumer group, {}",
-                                next.getKey());
+                        log.info("Unregister consumer is OK, no any connection, and remove consumer group, {}", next.getKey());
                     }
                 }
 
@@ -117,12 +116,10 @@ public class ConsumerManager {
         if (null == consumerGroupInfo) {
             ConsumerGroupInfo tmp = new ConsumerGroupInfo(group, consumeType, messageModel, consumeFromWhere);
             ConsumerGroupInfo prev = this.consumerTable.putIfAbsent(group, tmp);
-            consumerGroupInfo = prev != null ? prev : tmp;
+            consumerGroupInfo = (prev != null) ? prev : tmp;
         }
 
-        boolean r1 =
-                consumerGroupInfo.updateChannel(clientChannelInfo, consumeType, messageModel,
-                    consumeFromWhere);
+        boolean r1 = consumerGroupInfo.updateChannel(clientChannelInfo, consumeType, messageModel, consumeFromWhere);
         boolean r2 = consumerGroupInfo.updateSubscription(subList);
 
         if (r1 || r2) {
@@ -148,7 +145,7 @@ public class ConsumerManager {
     }
 
 
-    public void scanNotActiveChannel() {
+    public void scanInactiveChannel() {
         Iterator<Entry<String, ConsumerGroupInfo>> it = this.consumerTable.entrySet().iterator();
         while (it.hasNext()) {
             Entry<String, ConsumerGroupInfo> next = it.next();
@@ -162,8 +159,7 @@ public class ConsumerManager {
                 ClientChannelInfo clientChannelInfo = nextChannel.getValue();
                 long diff = System.currentTimeMillis() - clientChannelInfo.getLastUpdateTimestamp();
                 if (diff > ChannelExpiredTimeout) {
-                    log.warn(
-                        "SCAN: remove expired channel from ConsumerManager consumerTable. channel={}, consumerGroup={}",
+                    log.warn("SCAN: remove expired channel from ConsumerManager consumerTable. channel={}, consumerGroup={}",
                         RemotingHelper.parseChannelRemoteAddr(clientChannelInfo.getChannel()), group);
                     RemotingUtil.closeChannel(clientChannelInfo.getChannel());
                     itChannel.remove();
@@ -171,9 +167,7 @@ public class ConsumerManager {
             }
 
             if (channelInfoTable.isEmpty()) {
-                log.warn(
-                    "SCAN: remove expired channel from ConsumerManager consumerTable, all clear, consumerGroup={}",
-                    group);
+                log.warn("SCAN: remove expired channel from ConsumerManager consumerTable, all clear, consumerGroup={}", group);
                 it.remove();
             }
         }
