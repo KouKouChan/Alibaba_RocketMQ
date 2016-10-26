@@ -15,9 +15,11 @@
  */
 package com.alibaba.rocketmq.tools.command.consumer;
 
+import com.alibaba.rocketmq.client.Validators;
 import com.alibaba.rocketmq.common.protocol.body.SubscriptionGroupWrapper;
 import com.alibaba.rocketmq.common.subscription.SubscriptionGroupConfig;
 import com.alibaba.rocketmq.remoting.RPCHook;
+import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
 import com.alibaba.rocketmq.tools.admin.DefaultMQAdminExt;
 import com.alibaba.rocketmq.tools.command.SubCommand;
@@ -66,9 +68,9 @@ public class ListSubGroupSubCommand implements SubCommand {
                 String addr = commandLine.getOptionValue('b').trim();
 
                 defaultMQAdminExt.start();
-                SubscriptionGroupWrapper subscriptionGroupWrapper = defaultMQAdminExt.fetchAllSubscriptionGroups(addr, 3000);
-                String format = "%-80s  %-12s  %-12s\n";
-                System.out.printf(format, "Consumer Group", "Enabled", "Broadcast");
+                SubscriptionGroupWrapper subscriptionGroupWrapper = defaultMQAdminExt.fetchAllSubscriptionGroups(addr, NettySystemConfig.NETTY_IO_TIMEOUT);
+                String format = "%-80s  %-12s  %-12s %-12s\n";
+                System.out.printf(format, "Consumer Group", "Enabled", "Broadcast", "Valid");
                 for (Map.Entry<String, SubscriptionGroupConfig> entry :
                         subscriptionGroupWrapper.getSubscriptionGroupTable().entrySet()) {
                     SubscriptionGroupConfig subscriptionGroupConfig = entry.getValue();
@@ -76,7 +78,8 @@ public class ListSubGroupSubCommand implements SubCommand {
                     System.out.printf(format,
                             groupName.length() > 80 ? groupName.substring(0, 80) : groupName,
                             subscriptionGroupConfig.isConsumeEnable(),
-                            subscriptionGroupConfig.isConsumeBroadcastEnable());
+                            subscriptionGroupConfig.isConsumeBroadcastEnable(),
+                            Validators.isGroupNameValid(groupName));
                 }
                 return;
             } else {

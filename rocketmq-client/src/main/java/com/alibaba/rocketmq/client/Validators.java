@@ -55,6 +55,17 @@ public class Validators {
         return null;
     }
 
+    public static boolean isTopicValid(String topic) {
+        if (UtilAll.isBlank(topic)) {
+            return false;
+        }
+
+        if (topic.length() > CHARACTER_MAX_LENGTH) {
+            return false;
+        }
+
+        return regularExpressionMatcher(topic, PATTERN);
+    }
 
     /**
      * topic 有效性检查
@@ -84,6 +95,18 @@ public class Validators {
         }
     }
 
+    public static boolean isGroupNameValid(String groupName) {
+        if (UtilAll.isBlank(groupName)) {
+            return false;
+        }
+
+        if (groupName.length() > CHARACTER_MAX_LENGTH) {
+            return false;
+        }
+
+        return regularExpressionMatcher(groupName, PATTERN);
+
+    }
 
     /**
      * group 有效性检查

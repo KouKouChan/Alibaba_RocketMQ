@@ -15,14 +15,7 @@
  */
 package com.alibaba.rocketmq.tools.command.topic;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-
+import com.alibaba.rocketmq.client.Validators;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.UtilAll;
@@ -35,6 +28,13 @@ import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.remoting.exception.RemotingException;
 import com.alibaba.rocketmq.tools.admin.DefaultMQAdminExt;
 import com.alibaba.rocketmq.tools.command.SubCommand;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
 
 
 /**
@@ -117,11 +117,9 @@ public class TopicListSubCommand implements SubCommand {
                     GroupList groupList = new GroupList();
 
                     try {
-                        clusterName =
-                                this.findTopicBelongToWhichCluster(topic, clusterInfo, defaultMQAdminExt);
+                        clusterName = this.findTopicBelongToWhichCluster(topic, clusterInfo, defaultMQAdminExt);
                         groupList = defaultMQAdminExt.queryTopicConsumeByWho(topic);
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                     }
 
                     if (null == groupList || groupList.getGroupList().isEmpty()) {
@@ -137,18 +135,22 @@ public class TopicListSubCommand implements SubCommand {
                             );
                     }
                 }
-            }
-            else {
+            } else {
                 TopicList topicList = defaultMQAdminExt.fetchAllTopicList();
+                System.out.printf("%-48s  %-12s\n",
+                        "#Topic",//
+                        "#Valid"//
+                );
+
                 for (String topic : topicList.getTopicList()) {
-                    System.out.println(topic);
+                    System.out.printf("%-48s  %-12s\n",
+                            UtilAll.frontStringAtLeast(topic, 48),
+                            Validators.isTopicValid(topic));
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
-        }
-        finally {
+        } finally {
             defaultMQAdminExt.shutdown();
         }
     }
