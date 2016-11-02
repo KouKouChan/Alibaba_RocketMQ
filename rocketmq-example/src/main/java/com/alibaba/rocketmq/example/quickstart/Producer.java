@@ -17,11 +17,9 @@ package com.alibaba.rocketmq.example.quickstart;
 
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
-import com.alibaba.rocketmq.client.producer.SendCallback;
-import com.alibaba.rocketmq.client.producer.SendResult;
-import com.alibaba.rocketmq.client.producer.selector.Region;
-import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByRegion;
 import com.alibaba.rocketmq.common.message.Message;
+
+import java.util.Arrays;
 
 
 /**
@@ -33,29 +31,15 @@ public class Producer {
         producer.setSendMsgTimeout(10000);
         producer.start();
 
-        for (int i = 0; i < 1; i++) {
+        byte[] data = new byte[2048];
+        Arrays.fill(data, (byte)'x');
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
             try {
                 Message msg = new Message("T_QuickStart",// topic
                         "TagA",// tag
-                        ("Hello RocketMQ " + i).getBytes()// body
+                        data// body
                 );
-                msg.putUserProperty("id", "aaa");
-
-                //Unique key may be used to query message using command line and web console.
-                msg.setKeys("Key-A");
-//                SendResult sendResult = producer.send(msg);
-//                System.out.println(sendResult);
-                producer.send(msg, new SelectMessageQueueByRegion(Region.FRANKFURT), null, new SendCallback() {
-                    @Override
-                    public void onSuccess(SendResult sendResult) {
-                        System.out.println(sendResult);
-                    }
-
-                    @Override
-                    public void onException(Throwable e) {
-                        e.printStackTrace();
-                    }
-                });
+                producer.sendOneWay(msg);
             } catch (Exception e) {
                 e.printStackTrace();
                 Thread.sleep(1000);

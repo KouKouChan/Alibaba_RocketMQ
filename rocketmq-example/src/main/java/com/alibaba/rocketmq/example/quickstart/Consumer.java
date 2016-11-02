@@ -33,14 +33,15 @@ import java.util.List;
 public class Consumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException {
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("CG_QuickStart");
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("CG_QuickStart3");
         /**
          * 设置Consumer第一次启动是从队列头部开始消费还是队列尾部开始消费<br>
          * 如果非第一次启动，那么按照上次消费的位置继续消费
          */
-        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
+        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
 
         consumer.subscribe("T_QuickStart", "*");
+        consumer.setConsumeMessageBatchMaxSize(16);
         consumer.setMessageModel(MessageModel.CLUSTERING);
 
         consumer.registerMessageListener(new MessageListenerConcurrently() {
@@ -48,7 +49,7 @@ public class Consumer {
             @Override
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
                     ConsumeConcurrentlyContext context) {
-                System.out.println(Thread.currentThread().getName() + " Receive New Messages: " + msgs);
+                System.out.println(msgs.size());
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
         });

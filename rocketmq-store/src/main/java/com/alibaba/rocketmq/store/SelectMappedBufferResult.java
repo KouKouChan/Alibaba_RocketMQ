@@ -63,14 +63,13 @@ public class SelectMappedBufferResult {
         return mappedFile;
     }
 
-
-    @Override
-    protected void finalize() throws Throwable{
-        super.finalize();
-        if (this.mappedFile != null) {
-            this.release();
-        }
-    }
+//    @Override
+//    protected void finalize() throws Throwable{
+//        super.finalize();
+//        if (this.mappedFile != null) {
+//            this.release();
+//        }
+//    }
 
 
     /**
