@@ -1867,6 +1867,11 @@ public class DefaultMessageStore implements MessageStore {
                             if (nextOffset > maxOffset) {
                                 return messageIds;
                             }
+
+                            if (messageIds.size() >= messageStoreConfig.getMaxTransferCountOnMessageInMemory()) {
+                                log.warn("Fetching too many message ids.");
+                                return messageIds;
+                            }
                         }
                     } finally {
                         // 必须释放资源

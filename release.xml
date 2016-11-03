@@ -28,7 +28,6 @@
 				<include>com.alibaba.rocketmq:rocketmq-namesrv</include>
 				<include>com.alibaba.rocketmq:rocketmq-filtersrv</include>
 				<include>com.alibaba.rocketmq:rocketmq-example</include>
-				<include>com.alibaba.rocketmq:rocketmq-cockpit</include>
 			</includes>
 			<binaries>
 				<outputDirectory>lib/</outputDirectory>
@@ -38,6 +37,16 @@
 						<outputDirectory>lib/</outputDirectory>
 					</dependencySet>
 				</dependencySets>
+			</binaries>
+		</moduleSet>
+
+		<moduleSet>
+			<includes>
+				<include>com.alibaba.rocketmq:rocketmq-cockpit</include>
+			</includes>
+			<binaries>
+				<outputDirectory>bin/</outputDirectory>
+				<unpack>false</unpack>
 			</binaries>
 		</moduleSet>
 	</moduleSets>
