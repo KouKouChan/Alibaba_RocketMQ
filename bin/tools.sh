@@ -26,7 +26,7 @@ JAVA_OPT="${JAVA_OPT} -server -Xms1g -Xmx1g -Xmn256m -XX:PermSize=128m -XX:MaxPe
 JAVA_OPT="${JAVA_OPT} -verbose:gc -Xloggc:${HOME}/rmq_srv_gc.log -XX:+PrintGCDetails"
 JAVA_OPT="${JAVA_OPT} -Djava.ext.dirs=${BASE_DIR}/lib:${JAVA_HOME}/jre/lib/ext"
 JAVA_OPT="${JAVA_OPT} -Dcom.rocketmq.remoting.socket.sndbuf.size=8388608 -Dcom.rocketmq.remoting.socket.rcvbuf.size=8388608"
-JAVA_OPT="${JAVA_OPT} -Drocketmq.namesrv.domain=config.graphene.spellso.com"
+JAVA_OPT="${JAVA_OPT} -Drocketmq.namesrv.domain=localhost"
 JAVA_OPT="${JAVA_OPT} -Duser.timezone=UTC"
 JAVA_OPT="${JAVA_OPT} -DRocketMQClientPassword=VVYZZ9NLVdy849XIy/tM3Q=="
 JAVA_OPT="${JAVA_OPT} -cp ${CLASSPATH}"

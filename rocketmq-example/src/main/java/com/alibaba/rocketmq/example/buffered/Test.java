@@ -22,6 +22,6 @@ package com.alibaba.rocketmq.example.buffered;
  */
 public class Test {
     public static void main(String[] args) {
-        System.out.println(System.currentTimeMillis() - 1000L * 3600 * 1);
+        System.out.println(System.currentTimeMillis());
     }
 }

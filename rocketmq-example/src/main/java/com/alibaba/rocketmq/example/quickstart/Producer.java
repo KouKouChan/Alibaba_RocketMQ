@@ -26,6 +26,7 @@ import java.util.Arrays;
  * ExampleCacheableProducer，发送消息
  */
 public class Producer {
+
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
         producer.setSendMsgTimeout(10000);
