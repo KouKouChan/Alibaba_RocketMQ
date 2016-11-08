@@ -26,6 +26,7 @@ import com.alibaba.rocketmq.client.hook.SendMessageHook;
 import com.alibaba.rocketmq.client.impl.CommunicationMode;
 import com.alibaba.rocketmq.client.impl.MQClientManager;
 import com.alibaba.rocketmq.client.impl.factory.MQClientInstance;
+import com.alibaba.rocketmq.client.latency.MQFaultStrategy;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
 import com.alibaba.rocketmq.client.producer.LocalTransactionExecutor;
@@ -107,6 +108,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
      * 通信层hook
      */
     private final RPCHook rpcHook;
+
+    private MQFaultStrategy mqFaultStrategy = new MQFaultStrategy();
 
 
     public DefaultMQProducerImpl(final DefaultMQProducer defaultMQProducer, RPCHook rpcHook) {
@@ -401,7 +404,6 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         if (info != null && topic != null) {
             TopicPublishInfo prev = this.topicPublishInfoTable.put(topic, info);
             if (prev != null) {
-                info.getSendWhichQueue().set(prev.getSendWhichQueue().get());
                 log.info("updateTopicPublishInfo prev is not null, " + prev.toString());
             }
         }
@@ -495,6 +497,13 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         }
     }
 
+    public MessageQueue selectOneMessageQueue(final TopicPublishInfo tpInfo, final String lastBrokerName) {
+        return this.mqFaultStrategy.selectOneMessageQueue(tpInfo, lastBrokerName);
+    }
+
+    public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation) {
+        this.mqFaultStrategy.updateFaultItem(brokerName, currentLatency, isolation);
+    }
 
     private SendResult sendDefaultImpl(//
                                        Message msg,//
@@ -505,27 +514,29 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         this.makeSureStateOK();
         Validators.checkMessage(msg, this.defaultMQProducer);
 
-        final long maxTimeout = this.defaultMQProducer.getSendMsgTimeout() + 1000;
-        final long beginTimestamp = System.currentTimeMillis();
-        long endTimestamp = beginTimestamp;
+        long beginTimestampFirst = System.currentTimeMillis();
+        long beginTimestampPrev = beginTimestampFirst;
+        long endTimestamp;
         TopicPublishInfo topicPublishInfo = this.tryToFindTopicPublishInfo(msg.getTopic());
         if (topicPublishInfo != null && topicPublishInfo.isOK()) {
             MessageQueue mq = null;
             Exception exception = null;
             SendResult sendResult = null;
-            int timesTotal = 1 + this.defaultMQProducer.getRetryTimesWhenSendFailed();
+            int timesTotal = communicationMode == CommunicationMode.SYNC ? 1 + this.defaultMQProducer.getRetryTimesWhenSendFailed() : 1;
             int times = 0;
             // 记录投递的BrokerName
             String[] brokersSent = new String[timesTotal];
-            for (; times < timesTotal && (endTimestamp - beginTimestamp) < maxTimeout; times++) {
+            for (; times < timesTotal; times++) {
                 String lastBrokerName = null == mq ? null : mq.getBrokerName();
-                MessageQueue messageQueue = topicPublishInfo.selectOneMessageQueue(lastBrokerName);
+                MessageQueue messageQueue = selectOneMessageQueue(topicPublishInfo, lastBrokerName);
                 if (messageQueue != null) {
                     mq = messageQueue;
                     brokersSent[times] = mq.getBrokerName();
                     try {
+                        beginTimestampPrev = System.currentTimeMillis();
                         sendResult = this.sendKernelImpl(msg, mq, communicationMode, sendCallback);
                         endTimestamp = System.currentTimeMillis();
+                        updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, false);
                         switch (communicationMode) {
                             case ASYNC:
                                 return null;
@@ -543,22 +554,25 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                 break;
                         }
                     } catch (RemotingException e) {
+                        endTimestamp = System.currentTimeMillis();
+                        updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampFirst, true);
                         log.warn("sendKernelImpl exception", e);
                         log.warn(msg.toString());
                         exception = e;
-                        endTimestamp = System.currentTimeMillis();
                         continue;
                     } catch (MQClientException e) {
+                        endTimestamp = System.currentTimeMillis();
+                        updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, true);
                         log.warn("sendKernelImpl exception", e);
                         log.warn(msg.toString());
                         exception = e;
-                        endTimestamp = System.currentTimeMillis();
                         continue;
                     } catch (MQBrokerException e) {
+                        endTimestamp = System.currentTimeMillis();
+                        updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, true);
                         log.warn("sendKernelImpl exception", e);
                         log.warn(msg.toString());
                         exception = e;
-                        endTimestamp = System.currentTimeMillis();
                         switch (e.getResponseCode()) {
                             case ResponseCode.TOPIC_NOT_EXIST:
                             case ResponseCode.SERVICE_NOT_AVAILABLE:
@@ -575,6 +589,12 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                 throw e;
                         }
                     } catch (InterruptedException e) {
+                        endTimestamp = System.currentTimeMillis();
+                        this.updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, false);
+                        log.warn(String.format("sendKernelImpl exception, throw exception, RT: %sms, Broker: %s", endTimestamp - beginTimestampPrev, mq), e);
+                        log.warn(msg.toString());
+                        exception = e;
+
                         log.warn("sendKernelImpl exception", e);
                         log.warn(msg.toString());
                         throw e;
@@ -590,7 +610,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
             String info = String.format("Send [%d] times, still failed, cost [%d]ms, Topic: %s, BrokersSent: %s", //
                     times, //
-                    (System.currentTimeMillis() - beginTimestamp), //
+                    (System.currentTimeMillis() - beginTimestampFirst), //
                     msg.getTopic(),//
                     Arrays.toString(brokersSent));
 
@@ -1070,5 +1090,29 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
     public void setServiceState(ServiceState serviceState) {
         this.serviceState = serviceState;
+    }
+
+    public long[] getNotAvailableDuration() {
+        return this.mqFaultStrategy.getNotAvailableDuration();
+    }
+
+    public void setNotAvailableDuration(final long[] notAvailableDuration) {
+        this.mqFaultStrategy.setNotAvailableDuration(notAvailableDuration);
+    }
+
+    public long[] getLatencyMax() {
+        return this.mqFaultStrategy.getLatencyMax();
+    }
+
+    public void setLatencyMax(final long[] latencyMax) {
+        this.mqFaultStrategy.setLatencyMax(latencyMax);
+    }
+
+    public boolean isSendLatencyFaultEnable() {
+        return this.mqFaultStrategy.isSendLatencyFaultEnable();
+    }
+
+    public void setSendLatencyFaultEnable(final boolean sendLatencyFaultEnable) {
+        this.mqFaultStrategy.setSendLatencyFaultEnable(sendLatencyFaultEnable);
     }
 }
