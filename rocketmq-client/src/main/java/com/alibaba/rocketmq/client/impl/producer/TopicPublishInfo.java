@@ -15,7 +15,10 @@
  */
 package com.alibaba.rocketmq.client.impl.producer;
 
+import com.alibaba.rocketmq.client.common.ThreadLocalIndex;
 import com.alibaba.rocketmq.common.message.MessageQueue;
+import com.alibaba.rocketmq.common.protocol.route.QueueData;
+import com.alibaba.rocketmq.common.protocol.route.TopicRouteData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +35,8 @@ public class TopicPublishInfo {
     private boolean orderTopic = false;
     private boolean haveTopicRouterInfo = false;
     private List<MessageQueue> messageQueueList = new ArrayList<MessageQueue>();
-    private AtomicInteger sendWhichQueue = new AtomicInteger(0);
+    private volatile ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex(0);
+    private TopicRouteData topicRouteData;
 
 
     public boolean isOrderTopic() {
@@ -60,12 +64,12 @@ public class TopicPublishInfo {
     }
 
 
-    public AtomicInteger getSendWhichQueue() {
+    public ThreadLocalIndex getSendWhichQueue() {
         return sendWhichQueue;
     }
 
 
-    public void setSendWhichQueue(AtomicInteger sendWhichQueue) {
+    public void setSendWhichQueue(ThreadLocalIndex sendWhichQueue) {
         this.sendWhichQueue = sendWhichQueue;
     }
 
@@ -88,19 +92,38 @@ public class TopicPublishInfo {
             int index = this.sendWhichQueue.getAndIncrement();
             for (int i = 0; i < this.messageQueueList.size(); i++) {
                 int pos = Math.abs(index++) % this.messageQueueList.size();
+                if (pos < 0) {
+                    pos = 0;
+                }
                 MessageQueue mq = this.messageQueueList.get(pos);
                 if (!mq.getBrokerName().equals(lastBrokerName)) {
                     return mq;
                 }
             }
 
-            return null;
+            return selectOneMessageQueue();
+        } else {
+            return selectOneMessageQueue();
         }
-        else {
-            int index = this.sendWhichQueue.getAndIncrement();
-            int pos = Math.abs(index) % this.messageQueueList.size();
-            return this.messageQueueList.get(pos);
+    }
+
+    public MessageQueue selectOneMessageQueue() {
+        int index = this.sendWhichQueue.getAndIncrement();
+        int pos = Math.abs(index) % this.messageQueueList.size();
+        if (pos < 0)
+            pos = 0;
+        return this.messageQueueList.get(pos);
+    }
+
+    public int getQueueIdByBroker(final String brokerName) {
+        for (int i = 0; i < topicRouteData.getQueueDatas().size(); i++) {
+            final QueueData queueData = this.topicRouteData.getQueueDatas().get(i);
+            if (queueData.getBrokerName().equals(brokerName)) {
+                return queueData.getWriteQueueNums();
+            }
         }
+
+        return -1;
     }
 
 
@@ -108,5 +131,13 @@ public class TopicPublishInfo {
     public String toString() {
         return "TopicPublishInfo [orderTopic=" + orderTopic + ", messageQueueList=" + messageQueueList
                 + ", sendWhichQueue=" + sendWhichQueue + ", haveTopicRouterInfo=" + haveTopicRouterInfo + "]";
+    }
+
+    public TopicRouteData getTopicRouteData() {
+        return topicRouteData;
+    }
+
+    public void setTopicRouteData(final TopicRouteData topicRouteData) {
+        this.topicRouteData = topicRouteData;
     }
 }
