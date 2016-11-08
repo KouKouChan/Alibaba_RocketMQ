@@ -72,6 +72,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * 发送失败后，重试几次
      */
     private int retryTimesWhenSendFailed = 2;
+    private int retryTimesWhenSendAsyncFailed = 2;
 
     /**
      * 消息已经成功写入Master，但是刷盘超时或者同步到Slave失败，则尝试重试另一个Broker，不建议修改默认值<br>
@@ -357,16 +358,10 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
             traceLevel = TraceLevel.NONE;
         }
 
-        if ("DEBUG".equals(level)) {
-            traceLevel = TraceLevel.DEBUG;
-            return;
-        }
-
         if ("MEDIUM".equals(level)) {
             traceLevel = TraceLevel.MEDIUM;
             return;
         }
-
 
         if ("PRODUCTION".equals(level)) {
             traceLevel = TraceLevel.PRODUCTION;
@@ -383,4 +378,35 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
         return traceCounter;
     }
 
+    public long[] getNotAvailableDuration() {
+        return this.defaultMQProducerImpl.getNotAvailableDuration();
+    }
+
+    public void setNotAvailableDuration(final long[] notAvailableDuration) {
+        this.defaultMQProducerImpl.setNotAvailableDuration(notAvailableDuration);
+    }
+
+    public long[] getLatencyMax() {
+        return this.defaultMQProducerImpl.getLatencyMax();
+    }
+
+    public void setLatencyMax(final long[] latencyMax) {
+        this.defaultMQProducerImpl.setLatencyMax(latencyMax);
+    }
+
+    public boolean isSendLatencyFaultEnable() {
+        return this.defaultMQProducerImpl.isSendLatencyFaultEnable();
+    }
+
+    public void setSendLatencyFaultEnable(final boolean sendLatencyFaultEnable) {
+        this.defaultMQProducerImpl.setSendLatencyFaultEnable(sendLatencyFaultEnable);
+    }
+
+    public int getRetryTimesWhenSendAsyncFailed() {
+        return retryTimesWhenSendAsyncFailed;
+    }
+
+    public void setRetryTimesWhenSendAsyncFailed(final int retryTimesWhenSendAsyncFailed) {
+        this.retryTimesWhenSendAsyncFailed = retryTimesWhenSendAsyncFailed;
+    }
 }
