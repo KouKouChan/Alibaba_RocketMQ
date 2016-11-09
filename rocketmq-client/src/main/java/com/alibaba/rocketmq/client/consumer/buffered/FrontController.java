@@ -16,9 +16,40 @@ public class FrontController implements MessageListenerConcurrently {
 
     private final BufferedMQConsumer bufferedMQConsumer;
 
+    private static final String DELAY_LEVEL = "1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h";
+
+    private int delayLevel[];
+
 
     public FrontController(BufferedMQConsumer bufferedMQConsumer) {
         this.bufferedMQConsumer = bufferedMQConsumer;
+        parseDelayLevel();
+    }
+
+    private void parseDelayLevel() {
+        String[] segments = DELAY_LEVEL.split("\\s");
+        delayLevel = new int[segments.length];
+        int index = 0;
+        for (String segment : segments) {
+            int num = 0;
+            for (int i = 0; i < segment.length(); i++) {
+                char c = segment.charAt(i);
+                if (Character.isDigit(c)) {
+                    num = num * 10 + (c - '0');
+                } else {
+                    break;
+                }
+            }
+            if (segment.trim().endsWith("s")) {
+                delayLevel[index++] = num * 1000;
+            } else if (segment.trim().endsWith("m")) {
+                delayLevel[index++] = num * 60 * 1000;
+            } else if(segment.trim().endsWith("h")) {
+                delayLevel[index++] = num * 60 * 60 * 1000;
+            } else {
+                throw new RuntimeException("Unsupported delay level format");
+            }
+        }
     }
 
     @Override
@@ -28,6 +59,8 @@ public class FrontController implements MessageListenerConcurrently {
             LOGGER.error("Found null while preparing to consume messages in batch.");
             return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
         }
+
+        int ackIndex = -1;
 
         for (MessageExt message : messages) {
             try {
@@ -42,18 +75,39 @@ public class FrontController implements MessageListenerConcurrently {
                 }
 
                 long start = System.currentTimeMillis();
-                bufferedMQConsumer.getTopicHandlerMap().get(message.getTopic()).handle(message);
+                int value = bufferedMQConsumer.getTopicHandlerMap().get(message.getTopic()).handle(message);
                 long cost = System.currentTimeMillis() - start;
                 bufferedMQConsumer.getStatistics().addValue(cost);
                 bufferedMQConsumer.getSuccessCounter().incrementAndGet();
+
+                if (value != 0) {
+
+                    if (value < 0) {
+                        LOGGER.error("Invalid delay time in milliseconds");
+                    }
+
+                    int delayLevelWhenNextConsume = 0;
+                    for (; delayLevelWhenNextConsume < delayLevel.length; delayLevelWhenNextConsume++) {
+                        if (delayLevel[delayLevelWhenNextConsume] >= value) {
+                            break;
+                        }
+                    }
+
+                    context.setDelayLevelWhenNextConsume(delayLevelWhenNextConsume);
+
+                    return ConsumeConcurrentlyStatus.RECONSUME_LATER;
+                }
+
+                ackIndex++;
+                context.setAckIndex(ackIndex);
             } catch (Exception e) {
                 LOGGER.error("Exception while handling message", e);
+                context.setDelayLevelWhenNextConsume(message.getReconsumeTimes());
                 return ConsumeConcurrentlyStatus.RECONSUME_LATER;
             }
         }
 
         return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
     }
-
 }
 
