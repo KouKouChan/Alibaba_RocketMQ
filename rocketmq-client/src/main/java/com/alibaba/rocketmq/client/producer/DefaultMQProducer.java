@@ -74,15 +74,20 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     private int retryTimesWhenSendFailed = 2;
 
     /**
+     * 异步发送失败后, 重试的次数.
+     */
+    private int retryTimesWhenSendAsyncFailed = 2;
+
+    /**
      * 消息已经成功写入Master，但是刷盘超时或者同步到Slave失败，则尝试重试另一个Broker，不建议修改默认值<br>
      * 顺序消息无效
      */
     private boolean retryAnotherBrokerWhenNotStoreOK = false;
 
     /**
-     * 最大消息大小，默认512K
+     * 最大消息大小，默认4M.
      */
-    private int maxMessageSize = 1024 * 512;
+    private int maxMessageSize = 1024 * 1024 * 4;
 
     /**
      * 是否为单元化的发布者
@@ -141,6 +146,17 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
 
     @Override
+    public SendResult send(Message msg, long timeout) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+        return this.defaultMQProducerImpl.send(msg, timeout);
+    }
+
+    @Override
+    public void send(Message msg, SendCallback sendCallback, long timeout)
+            throws MQClientException, RemotingException, InterruptedException {
+        this.defaultMQProducerImpl.send(msg, sendCallback, timeout);
+    }
+
+    @Override
     public void send(Message msg, SendCallback sendCallback) throws MQClientException, RemotingException,
             InterruptedException {
         this.defaultMQProducerImpl.send(msg, sendCallback);
@@ -161,9 +177,23 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
 
     @Override
+    public SendResult send(Message msg, MessageQueue mq, long timeout)
+            throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+        return this.defaultMQProducerImpl.send(msg, mq, timeout);
+    }
+
+
+    @Override
     public void send(Message msg, MessageQueue mq, SendCallback sendCallback) throws MQClientException,
             RemotingException, InterruptedException {
         this.defaultMQProducerImpl.send(msg, mq, sendCallback);
+    }
+
+
+    @Override
+    public void send(Message msg, MessageQueue mq, SendCallback sendCallback, long timeout)
+            throws MQClientException, RemotingException, InterruptedException {
+        this.defaultMQProducerImpl.send(msg, mq, sendCallback, timeout);
     }
 
 
@@ -182,9 +212,23 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
 
     @Override
+    public SendResult send(Message msg, MessageQueueSelector selector, Object arg, long timeout)
+            throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+        return this.defaultMQProducerImpl.send(msg, selector, arg, timeout);
+    }
+
+
+    @Override
     public void send(Message msg, MessageQueueSelector selector, Object arg, SendCallback sendCallback)
             throws MQClientException, RemotingException, InterruptedException {
         this.defaultMQProducerImpl.send(msg, selector, arg, sendCallback);
+    }
+
+
+    @Override
+    public void send(Message msg, MessageQueueSelector selector, Object arg, SendCallback sendCallback, long timeout)
+            throws MQClientException, RemotingException, InterruptedException {
+        this.defaultMQProducerImpl.send(msg, selector, arg, sendCallback, timeout);
     }
 
 
@@ -383,4 +427,36 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
         return traceCounter;
     }
 
+
+    public long[] getNotAvailableDuration() {
+        return this.defaultMQProducerImpl.getNotAvailableDuration();
+    }
+
+    public void setNotAvailableDuration(final long[] notAvailableDuration) {
+        this.defaultMQProducerImpl.setNotAvailableDuration(notAvailableDuration);
+    }
+
+    public long[] getLatencyMax() {
+        return this.defaultMQProducerImpl.getLatencyMax();
+    }
+
+    public void setLatencyMax(final long[] latencyMax) {
+        this.defaultMQProducerImpl.setLatencyMax(latencyMax);
+    }
+
+    public boolean isSendLatencyFaultEnable() {
+        return this.defaultMQProducerImpl.isSendLatencyFaultEnable();
+    }
+
+    public void setSendLatencyFaultEnable(final boolean sendLatencyFaultEnable) {
+        this.defaultMQProducerImpl.setSendLatencyFaultEnable(sendLatencyFaultEnable);
+    }
+
+    public int getRetryTimesWhenSendAsyncFailed() {
+        return retryTimesWhenSendAsyncFailed;
+    }
+
+    public void setRetryTimesWhenSendAsyncFailed(final int retryTimesWhenSendAsyncFailed) {
+        this.retryTimesWhenSendAsyncFailed = retryTimesWhenSendAsyncFailed;
+    }
 }

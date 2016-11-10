@@ -54,11 +54,18 @@ public class MessageConst {
     public static final String PROPERTY_RECONSUME_TIME = "RECONSUME_TIME";
     public static final String PROPERTY_MESSAGE_TRACE_ID = "TRACE_ID";
     public static final String PROPERTY_MESSAGE_UNIT_TEST_CODE = "UNIT_TEST_CODE";
+    public static final String PROPERTY_MSG_REGION = "MSG_REGION";
+    public static final String PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX = "UNIQ_KEY";
+    public static final String PROPERTY_MAX_RECONSUME_TIMES = "MAX_RECONSUME_TIMES";
+    public static final String PROPERTY_CONSUME_START_TIMESTAMP = "CONSUME_START_TIME";
 
     public static final String KEY_SEPARATOR = " ";
 
     public static final HashSet<String> systemKeySet = new HashSet<String>();
+
+
     static {
+        systemKeySet.add(PROPERTY_MSG_REGION);
         systemKeySet.add(PROPERTY_KEYS);
         systemKeySet.add(PROPERTY_TAGS);
         systemKeySet.add(PROPERTY_WAIT_STORE_MSG_OK);
@@ -78,5 +85,8 @@ public class MessageConst {
         systemKeySet.add(PROPERTY_MQ2_FLAG);
         systemKeySet.add(PROPERTY_RECONSUME_TIME);
         systemKeySet.add(PROPERTY_MESSAGE_UNIT_TEST_CODE);
+        systemKeySet.add(PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);
+        systemKeySet.add(PROPERTY_MAX_RECONSUME_TIMES);
+        systemKeySet.add(PROPERTY_CONSUME_START_TIMESTAMP);
     }
 }
