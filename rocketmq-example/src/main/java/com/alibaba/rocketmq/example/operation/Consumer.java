@@ -18,12 +18,7 @@ package com.alibaba.rocketmq.example.operation;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.PosixParser;
+import org.apache.commons.cli.*;
 
 import com.alibaba.rocketmq.client.consumer.DefaultMQPushConsumer;
 import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
@@ -60,7 +55,7 @@ public class Consumer {
 
         // ////////////////////////////////////////////////////
 
-        PosixParser parser = new PosixParser();
+        DefaultParser parser = new DefaultParser();
         HelpFormatter hf = new HelpFormatter();
         hf.setWidth(110);
         CommandLine commandLine = null;
@@ -70,8 +65,7 @@ public class Consumer {
                 hf.printHelp("producer", options, true);
                 return null;
             }
-        }
-        catch (ParseException e) {
+        } catch (ParseException e) {
             hf.printHelp("producer", options, true);
             return null;
         }
