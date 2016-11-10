@@ -506,7 +506,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         final long invokeID = random.nextLong();
         long beginTimestampFirst = System.currentTimeMillis();
         long beginTimestampPrev = beginTimestampFirst;
-        long endTimestamp = beginTimestampFirst;
+        long endTimestamp;
         TopicPublishInfo topicPublishInfo = this.tryToFindTopicPublishInfo(msg.getTopic());
         if (topicPublishInfo != null && topicPublishInfo.isOK()) {
             MessageQueue mq = null;
@@ -954,7 +954,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             }
 
             if (mq != null) {
-                return this.sendKernelImpl(msg, mq, communicationMode, sendCallback, null, timeout);
+                return this.sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout);
             } else {
                 throw new MQClientException("select message queue return null.", null);
             }

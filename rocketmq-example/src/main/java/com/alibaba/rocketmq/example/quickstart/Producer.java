@@ -31,11 +31,11 @@ import com.alibaba.rocketmq.common.protocol.ResponseCode;
 public class Producer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
-        producer.setNamesrvAddr("localhost:9876");
+        producer.setNamesrvAddr("172.30.30.125:9876");
         producer.setSendMsgTimeout(10000);
         producer.start();
 
-        for (int i = 0; i < 1024; i++) {
+        for (int i = 0; i < 1; i++) {
             try {
                 Message msg = new Message("T_QuickStart",// topic
                         "TagA",// tag
@@ -44,7 +44,7 @@ public class Producer {
                 msg.setUnitTestCode(ResponseCode.FLUSH_DISK_TIMEOUT);
 //                SendResult sendResult = producer.send(msg);
 //                System.out.println(sendResult);
-                producer.send(msg, new SelectMessageQueueByRegion(Region.FRANKFURT), null, new SendCallback() {
+                producer.send(msg, new SendCallback() {
                     @Override
                     public void onSuccess(SendResult sendResult) {
                         System.out.println(sendResult);

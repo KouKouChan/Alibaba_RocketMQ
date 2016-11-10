@@ -412,7 +412,7 @@ public class MQClientAPIImpl {
 
                         try {
                             sendCallback.onSuccess(sendResult);
-                        } catch (Throwable e) {
+                        } catch (Throwable ignore) {
                         }
 
                         producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), false);
@@ -527,14 +527,10 @@ public class MQClientAPIImpl {
                 }
 
             SendMessageResponseHeader responseHeader =
-                    (SendMessageResponseHeader) response
-                        .decodeCommandCustomHeader(SendMessageResponseHeader.class);
-
-            MessageQueue messageQueue =
-                    new MessageQueue(msg.getTopic(), brokerName, responseHeader.getQueueId());
-
-            return new SendResult(sendStatus, responseHeader.getMsgId(), messageQueue,
-                responseHeader.getQueueOffset(), projectGroupPrefix, responseHeader.getKeys());
+                    (SendMessageResponseHeader)response.decodeCommandCustomHeader(SendMessageResponseHeader.class);
+            MessageQueue messageQueue = new MessageQueue(msg.getTopic(), brokerName, responseHeader.getQueueId());
+            return new SendResult(sendStatus, responseHeader.getMsgId(), messageQueue, responseHeader.getQueueOffset(),
+                    projectGroupPrefix, responseHeader.getKeys());
         }
         default:
             break;
