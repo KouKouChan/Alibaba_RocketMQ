@@ -33,18 +33,19 @@ public class Producer {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
         producer.setNamesrvAddr("172.30.30.125:9876");
         producer.setSendMsgTimeout(10000);
+        producer.setSendLatencyFaultEnable(true);
         producer.start();
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 1024; i++) {
             try {
                 Message msg = new Message("T_QuickStart",// topic
                         "TagA",// tag
                         ("Hello RocketMQ " + i).getBytes()// body
                 );
-                msg.setUnitTestCode(ResponseCode.FLUSH_DISK_TIMEOUT);
+//                msg.setUnitTestCode(ResponseCode.FLUSH_DISK_TIMEOUT);
 //                SendResult sendResult = producer.send(msg);
 //                System.out.println(sendResult);
-                producer.send(msg, new SendCallback() {
+                producer.send(msg, new SelectMessageQueueByRegion(Region.ANY), null, new SendCallback() {
                     @Override
                     public void onSuccess(SendResult sendResult) {
                         System.out.println(sendResult);

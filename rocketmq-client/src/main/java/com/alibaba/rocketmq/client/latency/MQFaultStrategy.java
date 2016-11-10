@@ -72,17 +72,17 @@ public class MQFaultStrategy {
                     }
                 }
 
-                final String notBestBroker = latencyFaultTolerance.pickOneAtLeast();
-                int writeQueueNums = tpInfo.getQueueIdByBroker(notBestBroker);
+                final String suboptimalBroker = latencyFaultTolerance.pickOneAtLeast();
+                int writeQueueNums = tpInfo.getQueueIdByBroker(suboptimalBroker);
                 if (writeQueueNums > 0) {
                     final MessageQueue mq = tpInfo.selectOneMessageQueue();
-                    if (notBestBroker != null) {
-                        mq.setBrokerName(notBestBroker);
+                    if (suboptimalBroker != null) {
+                        mq.setBrokerName(suboptimalBroker);
                         mq.setQueueId(tpInfo.getSendWhichQueue().getAndIncrement() % writeQueueNums);
                     }
                     return mq;
                 } else {
-                    latencyFaultTolerance.remove(notBestBroker);
+                    latencyFaultTolerance.remove(suboptimalBroker);
                 }
             } catch (Exception ignore) {
             }
@@ -102,7 +102,9 @@ public class MQFaultStrategy {
 
     private long computeNotAvailableDuration(final long currentLatency) {
         for (int i = latencyMax.length - 1; i >= 0; i--) {
-            if (currentLatency >= latencyMax[i]) return this.notAvailableDuration[i];
+            if (currentLatency >= latencyMax[i]) {
+                return this.notAvailableDuration[i];
+            }
         }
 
         return 0;

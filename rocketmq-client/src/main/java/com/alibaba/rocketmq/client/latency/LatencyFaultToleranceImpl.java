@@ -104,20 +104,24 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         @Override
         public int compareTo(final FaultItem other) {
             if (this.isAvailable() != other.isAvailable()) {
-                if (this.isAvailable()) return -1;
+                if (this.isAvailable()) {
+                    return -1;
+                }
 
-                if (other.isAvailable()) return 1;
+                if (other.isAvailable()) {
+                    return 1;
+                }
             }
 
-            if (this.currentLatency < other.currentLatency)
+            if (this.currentLatency < other.currentLatency) {
                 return -1;
-            else if (this.currentLatency > other.currentLatency) {
+            } else if (this.currentLatency > other.currentLatency) {
                 return 1;
             }
 
-            if (this.startTimestamp < other.startTimestamp)
+            if (this.startTimestamp < other.startTimestamp) {
                 return -1;
-            else if (this.startTimestamp > other.startTimestamp) {
+            } else if (this.startTimestamp > other.startTimestamp) {
                 return 1;
             }
 
