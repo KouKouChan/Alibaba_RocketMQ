@@ -6,6 +6,7 @@ import com.alibaba.rocketmq.client.producer.SendResult;
 import com.alibaba.rocketmq.common.message.Message;
 import org.slf4j.Logger;
 
+@Deprecated
 public class SendMessageCallback implements SendCallback {
 
     private static final Logger LOGGER = ClientLogger.getLog();

@@ -1,6 +1,5 @@
 package com.alibaba.rocketmq.client.producer.buffered;
 
-import com.alibaba.rocketmq.client.exception.MQBrokerException;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
@@ -20,6 +19,7 @@ import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+@Deprecated
 public class BufferedMQProducer {
 
     private static final Logger LOGGER = ClientLogger.getLog();
