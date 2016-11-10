@@ -77,7 +77,7 @@ public class NettyRPCTest {
         for (int i = 0; i < 100; i++) {
             RemotingCommand request = RemotingCommand.createRequestCommand(0, null);
             request.setRemark(String.valueOf(i));
-            client.invokeOneWay("localhost:8888", request, 1000 * 3);
+            client.invokeOneway("localhost:8888", request, 1000 * 3);
         }
 
         client.shutdown();

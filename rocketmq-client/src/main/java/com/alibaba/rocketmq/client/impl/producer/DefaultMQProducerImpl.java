@@ -17,7 +17,6 @@ package com.alibaba.rocketmq.client.impl.producer;
 
 import com.alibaba.rocketmq.client.QueryResult;
 import com.alibaba.rocketmq.client.Validators;
-import com.alibaba.rocketmq.client.common.ClientErrorCode;
 import com.alibaba.rocketmq.client.exception.MQBrokerException;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.hook.CheckForbiddenContext;
@@ -375,7 +374,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     DefaultMQProducerImpl.this.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(
                             brokerAddr, thisHeader, remark, defaultMQProducer.getNetworkTimeout());
                 } catch (Exception e) {
-                    log.error("endTransactionOneWay exception", e);
+                    log.error("endTransactionOneway exception", e);
                 }
             }
         };
@@ -531,7 +530,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         switch (communicationMode) {
                             case ASYNC:
                                 return null;
-                            case ONE_WAY:
+                            case ONEWAY:
                                 return null;
                             case SYNC:
                                 if (sendResult.getSendStatus() != SendStatus.SEND_OK) {
@@ -770,7 +769,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                 context, //
                                 this);
                         break;
-                    case ONE_WAY:
+                    case ONEWAY:
                     case SYNC:
                         sendResult = this.mQClientFactory.getMQClientAPIImpl().sendMessage(//
                                 brokerAddr, // 1
@@ -846,11 +845,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
 
     /**
-     * DEFAULT ONE_WAY -------------------------------------------------------
+     * DEFAULT ONEWAY -------------------------------------------------------
      */
-    public void sendOneWay(Message msg) throws MQClientException, RemotingException, InterruptedException {
+    public void sendOneway(Message msg) throws MQClientException, RemotingException, InterruptedException {
         try {
-            this.sendDefaultImpl(msg, CommunicationMode.ONE_WAY, null, this.defaultMQProducer.getSendMsgTimeout());
+            this.sendDefaultImpl(msg, CommunicationMode.ONEWAY, null, this.defaultMQProducer.getSendMsgTimeout());
         } catch (MQBrokerException e) {
             throw new MQClientException("Unknown exception", e);
         }
@@ -905,16 +904,16 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
 
     /**
-     * KERNEL ONE_WAY -------------------------------------------------------
+     * KERNEL ONEWAY -------------------------------------------------------
      */
-    public void sendOneWay(Message msg, MessageQueue mq) throws MQClientException, RemotingException,
+    public void sendOneway(Message msg, MessageQueue mq) throws MQClientException, RemotingException,
             InterruptedException {
         // 有效性检查
         this.makeSureStateOK();
         Validators.checkMessage(msg, this.defaultMQProducer);
 
         try {
-            this.sendKernelImpl(msg, mq, CommunicationMode.ONE_WAY, null, null, this.defaultMQProducer.getSendMsgTimeout());
+            this.sendKernelImpl(msg, mq, CommunicationMode.ONEWAY, null, null, this.defaultMQProducer.getSendMsgTimeout());
         } catch (MQBrokerException e) {
             throw new MQClientException("Unknown exception", e);
         }
@@ -983,10 +982,10 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     /**
      * SELECT ONEWAY -------------------------------------------------------
      */
-    public void sendOneWay(Message msg, MessageQueueSelector selector, Object arg)
+    public void sendOneway(Message msg, MessageQueueSelector selector, Object arg)
             throws MQClientException, RemotingException, InterruptedException {
         try {
-            this.sendSelectImpl(msg, selector, arg, CommunicationMode.ONE_WAY, null, this.defaultMQProducer.getSendMsgTimeout());
+            this.sendSelectImpl(msg, selector, arg, CommunicationMode.ONEWAY, null, this.defaultMQProducer.getSendMsgTimeout());
         } catch (MQBrokerException e) {
             throw new MQClientException("Unknown exception", e);
         }

@@ -123,7 +123,7 @@ public class Broker2Client {
                 RemotingCommand.createRequestCommand(RequestCode.NOTIFY_CONSUMER_IDS_CHANGED, requestHeader);
 
         try {
-            this.brokerController.getRemotingServer().invokeOneWay(channel, request, 10);
+            this.brokerController.getRemotingServer().invokeOneway(channel, request, 10);
         } catch (Exception e) {
             log.error("notifyConsumerIdsChanged exception, " + consumerGroup, e);
         }
@@ -186,7 +186,7 @@ public class Broker2Client {
                 int version = channelInfoTable.get(channel).getVersion();
                 if (version >= MQVersion.Version.V3_0_7_SNAPSHOT.ordinal()) {
                     try {
-                        this.brokerController.getRemotingServer().invokeOneWay(channel, request, 5000);
+                        this.brokerController.getRemotingServer().invokeOneway(channel, request, 5000);
                         log.info("[reset-offset] reset offset success. topic={}, group={}, clientId={}",
                                 topic, group, channelInfoTable.get(channel).getClientId());
                     } catch (Exception e) {

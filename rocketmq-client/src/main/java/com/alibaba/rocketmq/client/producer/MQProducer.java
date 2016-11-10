@@ -104,7 +104,7 @@ public interface MQProducer extends MQAdmin {
      * @throws RemotingException
      * @throws InterruptedException
      */
-    void sendOneWay(final Message msg) throws MQClientException, RemotingException,
+    void sendOneway(final Message msg) throws MQClientException, RemotingException,
             InterruptedException;
 
 
@@ -163,7 +163,7 @@ public interface MQProducer extends MQAdmin {
      * @throws RemotingException
      * @throws InterruptedException
      */
-    void sendOneWay(final Message msg, final MessageQueue mq) throws MQClientException,
+    void sendOneway(final Message msg, final MessageQueue mq) throws MQClientException,
             RemotingException, InterruptedException;
 
 
@@ -236,7 +236,7 @@ public interface MQProducer extends MQAdmin {
      * @throws RemotingException
      * @throws InterruptedException
      */
-    void sendOneWay(final Message msg, final MessageQueueSelector selector, final Object arg)
+    void sendOneway(final Message msg, final MessageQueueSelector selector, final Object arg)
             throws MQClientException, RemotingException, InterruptedException;
 
 

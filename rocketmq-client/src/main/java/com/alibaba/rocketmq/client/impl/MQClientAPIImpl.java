@@ -335,8 +335,8 @@ public class MQClientAPIImpl {
         request.setBody(msg.getBody());
 
         switch (communicationMode) {
-            case ONE_WAY:
-                this.remotingClient.invokeOneWay(addr, request, timeoutMillis);
+            case ONEWAY:
+                this.remotingClient.invokeOneway(addr, request, timeoutMillis);
                 return null;
             case ASYNC:
                 final AtomicInteger times = new AtomicInteger();
@@ -566,7 +566,7 @@ public class MQClientAPIImpl {
                 RemotingCommand.createRequestCommand(RequestCode.PULL_MESSAGE, requestHeader);
 
         switch (communicationMode) {
-        case ONE_WAY:
+        case ONEWAY:
             assert false;
             return null;
         case ASYNC:
@@ -977,7 +977,7 @@ public class MQClientAPIImpl {
         RemotingCommand request =
                 RemotingCommand.createRequestCommand(RequestCode.UPDATE_CONSUMER_OFFSET, requestHeader);
 
-        this.remotingClient.invokeOneWay(addr, request, timeoutMillis);
+        this.remotingClient.invokeOneway(addr, request, timeoutMillis);
     }
 
 
@@ -1085,7 +1085,7 @@ public class MQClientAPIImpl {
                 RemotingCommand.createRequestCommand(RequestCode.END_TRANSACTION, requestHeader);
 
         request.setRemark(remark);
-        this.remotingClient.invokeOneWay(addr, request, timeoutMillis);
+        this.remotingClient.invokeOneway(addr, request, timeoutMillis);
     }
 
 
@@ -1245,7 +1245,7 @@ public class MQClientAPIImpl {
         request.setBody(requestBody.encode());
 
         if (oneway) {
-            this.remotingClient.invokeOneWay(addr, request, timeoutMillis);
+            this.remotingClient.invokeOneway(addr, request, timeoutMillis);
         }
         else {
             RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);

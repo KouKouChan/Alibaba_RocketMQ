@@ -82,7 +82,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
     public NettyRemotingServer(final NettyServerConfig nettyServerConfig,
             final ChannelEventListener channelEventListener) {
-        super(nettyServerConfig.getServerOneWaySemaphoreValue(), nettyServerConfig
+        super(nettyServerConfig.getServerOnewaySemaphoreValue(), nettyServerConfig
             .getServerAsyncSemaphoreValue());
         this.serverBootstrap = new ServerBootstrap();
         this.nettyServerConfig = nettyServerConfig;
@@ -268,10 +268,10 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
 
     @Override
-    public void invokeOneWay(Channel channel, RemotingCommand request, long timeoutMillis)
+    public void invokeOneway(Channel channel, RemotingCommand request, long timeoutMillis)
             throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException,
             RemotingSendRequestException {
-        this.invokeOneWayImpl(channel, request, timeoutMillis);
+        this.invokeOnewayImpl(channel, request, timeoutMillis);
     }
 
 

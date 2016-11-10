@@ -50,7 +50,7 @@ public interface RemotingClient extends RemotingService {
             RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException;
 
 
-    public void invokeOneWay(final String addr, final RemotingCommand request, final long timeoutMillis)
+    public void invokeOneway(final String addr, final RemotingCommand request, final long timeoutMillis)
             throws InterruptedException, RemotingConnectException, RemotingTooMuchRequestException,
             RemotingTimeoutException, RemotingSendRequestException;
 

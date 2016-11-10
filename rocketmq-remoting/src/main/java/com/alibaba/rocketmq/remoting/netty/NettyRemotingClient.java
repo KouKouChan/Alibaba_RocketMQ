@@ -213,7 +213,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
 
     public NettyRemotingClient(final NettyClientConfig nettyClientConfig,//
             final ChannelEventListener channelEventListener) {
-        super(nettyClientConfig.getClientOneWaySemaphoreValue(), nettyClientConfig
+        super(nettyClientConfig.getClientOnewaySemaphoreValue(), nettyClientConfig
             .getClientAsyncSemaphoreValue());
         this.nettyClientConfig = nettyClientConfig;
         this.channelEventListener = channelEventListener;
@@ -675,7 +675,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     }
 
     @Override
-    public void invokeOneWay(String addr, RemotingCommand request, long timeoutMillis)
+    public void invokeOneway(String addr, RemotingCommand request, long timeoutMillis)
             throws InterruptedException, RemotingConnectException, RemotingTooMuchRequestException,
             RemotingTimeoutException, RemotingSendRequestException {
         final Channel channel = this.getAndCreateChannel(addr);
@@ -684,10 +684,10 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 if (this.rpcHook != null) {
                     this.rpcHook.doBeforeRequest(addr, request);
                 }
-                this.invokeOneWayImpl(channel, request, timeoutMillis);
+                this.invokeOnewayImpl(channel, request, timeoutMillis);
             }
             catch (RemotingSendRequestException e) {
-                log.warn("invokeOneWay: send request exception, so close the channel[{}]", addr);
+                log.warn("invokeOneway: send request exception, so close the channel[{}]", addr);
                 this.closeChannel(addr, channel);
                 throw e;
             }

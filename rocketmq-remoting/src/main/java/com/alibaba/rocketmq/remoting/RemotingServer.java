@@ -65,7 +65,7 @@ public interface RemotingServer extends RemotingService {
             RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException;
 
 
-    public void invokeOneWay(final Channel channel, final RemotingCommand request, final long timeoutMillis)
+    public void invokeOneway(final Channel channel, final RemotingCommand request, final long timeoutMillis)
             throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException,
             RemotingSendRequestException;
 

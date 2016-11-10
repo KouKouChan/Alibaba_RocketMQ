@@ -25,7 +25,7 @@ public class NettyClientConfig {
     // 处理Server Response/Request
     private int clientWorkerThreads = 4;
     private int clientCallbackExecutorThreads = Runtime.getRuntime().availableProcessors();
-    private int clientOneWaySemaphoreValue = NettySystemConfig.ClientOnewaySemaphoreValue;
+    private int clientOnewaySemaphoreValue = NettySystemConfig.ClientOnewaySemaphoreValue;
     private int clientAsyncSemaphoreValue = NettySystemConfig.ClientAsyncSemaphoreValue;
     //
     private int connectTimeoutMillis = NettySystemConfig.NETTY_CONNECT_TIMEOUT;
@@ -56,13 +56,13 @@ public class NettyClientConfig {
     }
 
 
-    public int getClientOneWaySemaphoreValue() {
-        return clientOneWaySemaphoreValue;
+    public int getClientOnewaySemaphoreValue() {
+        return clientOnewaySemaphoreValue;
     }
 
 
-    public void setClientOneWaySemaphoreValue(int clientOneWaySemaphoreValue) {
-        this.clientOneWaySemaphoreValue = clientOneWaySemaphoreValue;
+    public void setClientOnewaySemaphoreValue(int clientOnewaySemaphoreValue) {
+        this.clientOnewaySemaphoreValue = clientOnewaySemaphoreValue;
     }
 
 

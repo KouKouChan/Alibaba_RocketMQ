@@ -51,8 +51,8 @@ public abstract class NettyRemotingAbstract {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.RemotingLogName);
 
-    // 信号量，OneWay情况会使用，防止本地Netty缓存请求过多
-    protected final Semaphore semaphoreOneWay;
+    // 信号量，one-way情况会使用，防止本地Netty缓存请求过多
+    protected final Semaphore semaphoreOneway;
 
     // 信号量，异步调用情况会使用，防止本地Netty缓存请求过多
     protected final Semaphore semaphoreAsync;
@@ -144,8 +144,8 @@ public abstract class NettyRemotingAbstract {
     }
 
 
-    public NettyRemotingAbstract(final int permitsOneWay, final int permitsAsync) {
-        this.semaphoreOneWay = new Semaphore(permitsOneWay, true);
+    public NettyRemotingAbstract(final int permitsOneway, final int permitsAsync) {
+        this.semaphoreOneway = new Semaphore(permitsOneway, true);
         this.semaphoreAsync = new Semaphore(permitsAsync, true);
     }
 
@@ -170,7 +170,7 @@ public abstract class NettyRemotingAbstract {
                             rpcHook.doAfterResponse(cmd, response);
                         }
 
-                        // OneWay形式忽略应答结果
+                        // One-way形式忽略应答结果
                         if (!cmd.isOnewayRPC()) {
                             if (response != null) {
                                 response.setOpaque(cmd.getOpaque());
@@ -454,15 +454,15 @@ public abstract class NettyRemotingAbstract {
     }
 
 
-    public void invokeOneWayImpl(final Channel channel, //
+    public void invokeOnewayImpl(final Channel channel, //
                                  final RemotingCommand request, //
                                  final long timeoutMillis) //
             throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException,
             RemotingSendRequestException {
         request.markOnewayRPC();
-        boolean acquired = this.semaphoreOneWay.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
+        boolean acquired = this.semaphoreOneway.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
         if (acquired) {
-            final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreOneWay);
+            final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreOneway);
             try {
                 channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
                     @Override
@@ -481,13 +481,13 @@ public abstract class NettyRemotingAbstract {
             }
         } else {
             if (timeoutMillis <= 0) {
-                throw new RemotingTooMuchRequestException("invokeOneWayImpl invoke too fast");
+                throw new RemotingTooMuchRequestException("invokeOnewayImpl invoke too fast");
             } else {
                 String info = String.format(
-                        "invokeOneWayImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreAsyncValue: %d", //
+                        "invokeOnewayImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreAsyncValue: %d", //
                         timeoutMillis,//
-                        this.semaphoreOneWay.getQueueLength(),//
-                        this.semaphoreOneWay.availablePermits()//
+                        this.semaphoreOneway.getQueueLength(),//
+                        this.semaphoreOneway.availablePermits()//
                 );
                 LOGGER.warn(info);
                 LOGGER.warn(request.toString());
