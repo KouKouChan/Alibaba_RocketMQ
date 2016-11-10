@@ -340,8 +340,8 @@ public class MQClientAPIImpl {
                 return null;
             case ASYNC:
                 final AtomicInteger times = new AtomicInteger();
-                this.sendMessageAsync(addr, brokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance,
-                        retryTimesWhenSendFailed, times, context, producer);
+                this.sendMessageAsync(addr, brokerName, msg, timeoutMillis, request, sendCallback, topicPublishInfo,
+                        instance, retryTimesWhenSendFailed, times, context, producer);
                 return null;
             case SYNC:
                 return this.sendMessageSync(addr, brokerName, msg, timeoutMillis, request);
@@ -450,7 +450,7 @@ public class MQClientAPIImpl {
                                  final SendCallback sendCallback, //
                                  final TopicPublishInfo topicPublishInfo, //
                                  final MQClientInstance instance, //
-                                 final int timesTotal, //
+                                 final int totalRetryTimes, //
                                  final AtomicInteger curTimes, //
                                  final Exception e, //
                                  final SendMessageContext context, //
@@ -458,29 +458,29 @@ public class MQClientAPIImpl {
                                  final DefaultMQProducerImpl producer // 12
     ) {
         int tmp = curTimes.incrementAndGet();
-        if (needRetry && tmp <= timesTotal) {
+        if (needRetry && tmp <= totalRetryTimes) {
             MessageQueue tmpmq = producer.selectOneMessageQueue(topicPublishInfo, brokerName);
             String addr = instance.findBrokerAddressInPublish(tmpmq.getBrokerName());
             log.info("async send msg by retry {} times. topic={}, brokerAddr={}, brokerName={}", tmp, msg.getTopic(), addr,
                     tmpmq.getBrokerName());
             try {
                 request.setOpaque(RemotingCommand.createNewRequestId());
-                sendMessageAsync(addr, tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance,
-                        timesTotal, curTimes, context, producer);
-            } catch (InterruptedException e1) {
-                onExceptionImpl(tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, e1,
-                        context, false, producer);
-            } catch (RemotingConnectException e1) {
+                sendMessageAsync(addr, tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback,
+                        topicPublishInfo, instance, totalRetryTimes, curTimes, context, producer);
+            } catch (InterruptedException exception) {
+                onExceptionImpl(tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo,
+                        instance, totalRetryTimes, curTimes, exception, context, false, producer);
+            } catch (RemotingConnectException exception) {
                 producer.updateFaultItem(brokerName, 3000, true);
-                onExceptionImpl(tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, e1,
-                        context, true, producer);
-            } catch (RemotingTooMuchRequestException e1) {
-                onExceptionImpl(tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, e1,
-                        context, false, producer);
-            } catch (RemotingException e1) {
+                onExceptionImpl(tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo,
+                        instance, totalRetryTimes, curTimes, exception, context, true, producer);
+            } catch (RemotingTooMuchRequestException exception) {
+                onExceptionImpl(tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo,
+                        instance, totalRetryTimes, curTimes, exception, context, false, producer);
+            } catch (RemotingException exception) {
                 producer.updateFaultItem(brokerName, 3000, true);
-                onExceptionImpl(tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo, instance, timesTotal, curTimes, e1,
-                        context, true, producer);
+                onExceptionImpl(tmpmq.getBrokerName(), msg, timeoutMillis, request, sendCallback, topicPublishInfo,
+                        instance, totalRetryTimes, curTimes, exception, context, true, producer);
             }
         } else {
             if (context != null) {
@@ -489,7 +489,7 @@ public class MQClientAPIImpl {
             }
             try {
                 sendCallback.onException(e);
-            } catch (Exception e2) {
+            } catch (Exception ignore) {
             }
         }
     }

@@ -22,6 +22,7 @@ import com.alibaba.rocketmq.client.producer.SendResult;
 import com.alibaba.rocketmq.client.producer.selector.Region;
 import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByRegion;
 import com.alibaba.rocketmq.common.message.Message;
+import com.alibaba.rocketmq.common.protocol.ResponseCode;
 
 
 /**
@@ -30,19 +31,17 @@ import com.alibaba.rocketmq.common.message.Message;
 public class Producer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
+        producer.setNamesrvAddr("localhost:9876");
         producer.setSendMsgTimeout(10000);
         producer.start();
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 1024; i++) {
             try {
                 Message msg = new Message("T_QuickStart",// topic
                         "TagA",// tag
                         ("Hello RocketMQ " + i).getBytes()// body
                 );
-                msg.putUserProperty("id", "aaa");
-
-                //Unique key may be used to query message using command line and web console.
-                msg.setKeys("Key-A");
+                msg.setUnitTestCode(ResponseCode.FLUSH_DISK_TIMEOUT);
 //                SendResult sendResult = producer.send(msg);
 //                System.out.println(sendResult);
                 producer.send(msg, new SelectMessageQueueByRegion(Region.FRANKFURT), null, new SendCallback() {

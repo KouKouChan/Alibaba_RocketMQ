@@ -937,7 +937,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                       MessageQueueSelector selector,//
                                       Object arg,//
                                       final CommunicationMode communicationMode,//
-                                      final SendCallback sendCallback, final long timeout//
+                                      final SendCallback sendCallback, //
+                                      final long timeout//
     ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         // 有效性检查
         this.makeSureStateOK();
