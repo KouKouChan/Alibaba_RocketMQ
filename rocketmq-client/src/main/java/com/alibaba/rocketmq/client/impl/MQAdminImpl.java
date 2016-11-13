@@ -27,14 +27,14 @@ import com.alibaba.rocketmq.common.TopicConfig;
 import com.alibaba.rocketmq.common.help.FAQUrl;
 import com.alibaba.rocketmq.common.message.*;
 import com.alibaba.rocketmq.common.protocol.ResponseCode;
+import com.alibaba.rocketmq.common.protocol.header.AddCommitLogStorePathRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.QueryMessageRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.QueryMessageResponseHeader;
 import com.alibaba.rocketmq.common.protocol.route.BrokerData;
 import com.alibaba.rocketmq.common.protocol.route.TopicRouteData;
 import com.alibaba.rocketmq.remoting.InvokeCallback;
 import com.alibaba.rocketmq.remoting.common.RemotingUtil;
-import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
-import com.alibaba.rocketmq.remoting.exception.RemotingException;
+import com.alibaba.rocketmq.remoting.exception.*;
 import com.alibaba.rocketmq.remoting.netty.ResponseFuture;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
@@ -419,5 +419,11 @@ public class MQAdminImpl {
         }
 
         throw new MQClientException(ResponseCode.TOPIC_NOT_EXIST, "The topic[" + topic + "] not matched route info");
+    }
+
+    public void addCommitLogStorePath(String brokerAddress, AddCommitLogStorePathRequestHeader requestHeader)
+            throws InterruptedException, MQBrokerException, RemotingTimeoutException, RemotingSendRequestException,
+            RemotingConnectException {
+        this.mQClientFactory.getMQClientAPIImpl().addCommitLogStorePath(brokerAddress, requestHeader);
     }
 }

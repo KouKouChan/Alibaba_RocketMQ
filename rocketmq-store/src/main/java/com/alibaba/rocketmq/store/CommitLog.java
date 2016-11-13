@@ -1158,4 +1158,8 @@ public class CommitLog {
 
         return diff;
     }
+
+    public void updateCommitLogStorePath() {
+        mapedFileQueue.setStorePath(defaultMessageStore.getMessageStoreConfig().getStorePathCommitLog());
+    }
 }

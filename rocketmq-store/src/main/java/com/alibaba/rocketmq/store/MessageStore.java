@@ -131,4 +131,6 @@ public interface MessageStore {
     boolean isOSPageCacheBusy();
 
     long lockTimeMills();
+
+    public void reloadConfiguration();
 }

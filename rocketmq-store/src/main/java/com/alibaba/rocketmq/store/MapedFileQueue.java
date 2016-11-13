@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -39,7 +40,7 @@ public class MapedFileQueue {
 
     private static final int DeleteFilesBatchMax = 10;
 
-    private final String storePath;
+    private String storePath;
 
     private final int mapedFileSize;
 
@@ -166,16 +167,32 @@ public class MapedFileQueue {
 
 
     public boolean load() {
-        File dir = new File(this.storePath);
-        File[] files = dir.listFiles();
-        if (files != null) {
+        File[] dirs;
+        if (!this.storePath.contains(",")) {
+            dirs = new File[]{new File(this.storePath)};
+        } else {
+            String[] storePaths = storePath.split(",");
+            dirs = new File[storePaths.length];
+            for (int i = 0; i < dirs.length; i++) {
+                dirs[i] = new File(storePaths[i]);
+            }
+        }
+
+        List<File> files = new ArrayList<File>();
+        for (File dir : dirs) {
+            File[] commitLogFiles = dir.listFiles();
+            if (null != commitLogFiles) {
+                files.addAll(Arrays.asList(commitLogFiles));
+            }
+        }
+
+        if (!files.isEmpty()) {
             // ascending order
-            Arrays.sort(files);
+            Collections.sort(files);
             for (File file : files) {
 
                 if (file.length() != this.mapedFileSize) {
-                    log.warn(file + "\t" + file.length()
-                            + " length not matched message store config value, ignore it");
+                    log.warn(file + "\t" + file.length() + " length not matched message store config value, ignore it");
                     return true;
                 }
 
@@ -232,16 +249,15 @@ public class MapedFileQueue {
         }
 
         if (createOffset != -1 && needCreate) {
-            String nextFilePath = this.storePath + File.separator + UtilAll.offset2FileName(createOffset);
-            String nextNextFilePath =
-                    this.storePath + File.separator
-                            + UtilAll.offset2FileName(createOffset + this.mapedFileSize);
+            String nextFilePath = UtilAll.selectPath(this.storePath) + File.separator
+                    + UtilAll.offset2FileName(createOffset);
+            String nextNextFilePath = UtilAll.selectPath(this.storePath) + File.separator
+                    + UtilAll.offset2FileName(createOffset + this.mapedFileSize);
             MapedFile mapedFile = null;
 
             if (this.allocateMapedFileService != null) {
-                mapedFile =
-                        this.allocateMapedFileService.putRequestAndReturnMapedFile(nextFilePath,
-                                nextNextFilePath, this.mapedFileSize);
+                mapedFile = this.allocateMapedFileService.putRequestAndReturnMapedFile(nextFilePath,
+                        nextNextFilePath, this.mapedFileSize);
             } else {
                 try {
                     mapedFile = new MapedFile(nextFilePath, this.mapedFileSize);
@@ -292,7 +308,7 @@ public class MapedFileQueue {
                     mapedFileLast.getWrotePostion();
             long diff = lastOffset - offset;
 
-            final int maxdiff = 1024 * 1024 * 1024 * 2;
+            final long maxdiff = 1024L * 1024 * 1024 * 2;
 
             if (diff > maxdiff) return false;
         }
@@ -620,5 +636,9 @@ public class MapedFileQueue {
 
     public int getMapedFileSize() {
         return mapedFileSize;
+    }
+
+    public void setStorePath(String storePath) {
+        this.storePath = storePath;
     }
 }

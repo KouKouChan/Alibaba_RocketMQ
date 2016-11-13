@@ -228,4 +228,8 @@ public abstract class AbstractPluginMessageStore implements MessageStore {
         next.setConfirmOffset(phyOffset);
     }
 
+    @Override
+    public void reloadConfiguration() {
+
+    }
 }

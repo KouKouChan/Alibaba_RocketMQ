@@ -1933,4 +1933,19 @@ public class MQClientAPIImpl {
         throw new MQBrokerException(response.getCode(), response.getRemark());
     }
 
+    public void addCommitLogStorePath(String brokerAddress, AddCommitLogStorePathRequestHeader requestHeader)
+            throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException,
+            RemotingConnectException, MQBrokerException {
+        RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.ADD_COMMIT_LOG_STORE_PATH, requestHeader);
+        RemotingCommand response = this.remotingClient.invokeSync(brokerAddress, request, 3000);
+        assert response != null;
+        switch (response.getCode()) {
+            case ResponseCode.SUCCESS:
+                return;
+            default:
+                break;
+        }
+
+        throw new MQBrokerException(response.getCode(), response.getRemark());
+    }
 }

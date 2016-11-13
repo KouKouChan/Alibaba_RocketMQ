@@ -1738,4 +1738,8 @@ public class DefaultMessageStore implements MessageStore {
             }
         }, 6, TimeUnit.SECONDS);
     }
+
+    public void reloadConfiguration() {
+        commitLog.updateCommitLogStorePath();
+    }
 }

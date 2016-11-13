@@ -279,4 +279,8 @@ public class MockMessageStore implements MessageStore {
         return 0;
     }
 
+    @Override
+    public void reloadConfiguration() {
+
+    }
 }

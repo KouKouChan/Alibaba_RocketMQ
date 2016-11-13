@@ -154,4 +154,6 @@ public class RequestCode {
 
     public static final int GET_BROKER_CONSUME_STATS = 317;
 
+    public static final int ADD_COMMIT_LOG_STORE_PATH = 400;
+
 }

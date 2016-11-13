@@ -454,4 +454,10 @@ public class DefaultMQAdminExt extends ClientConfig implements MQAdminExt {
     public void updateConsumeOffset(String brokerAddr, String consumeGroup, MessageQueue mq, long offset) throws RemotingException, InterruptedException, MQBrokerException {
         this.defaultMQAdminExtImpl.updateConsumeOffset(brokerAddr, consumeGroup, mq, offset);
     }
+
+    @Override
+    public void addCommitLogStorePath(String brokerAddress, String storePathCommitLog)
+            throws RemotingException, InterruptedException, MQBrokerException {
+        this.defaultMQAdminExtImpl.addCommitLogStorePath(brokerAddress, storePathCommitLog);
+    }
 }

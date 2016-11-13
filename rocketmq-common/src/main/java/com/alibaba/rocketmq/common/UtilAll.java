@@ -191,26 +191,36 @@ public class UtilAll {
     public static double getDiskPartitionSpaceUsedPercent(final String path) {
         if (null == path || path.isEmpty())
             return -1;
-
-        try {
-            File file = new File(path);
-            if (!file.exists()) {
-                boolean result = file.mkdirs();
-                if (!result) {
-                }
-            }
-
-            long totalSpace = file.getTotalSpace();
-            long freeSpace = file.getFreeSpace();
-            long usedSpace = totalSpace - freeSpace;
-            if (totalSpace > 0) {
-                return usedSpace / (double) totalSpace;
-            }
-        } catch (Exception e) {
-            return -1;
+        String[] paths = null;
+        if (path.contains(",")) {
+            paths = path.split(",");
+        } else {
+            paths = new String[] {path};
         }
 
-        return -1;
+        double ret = 1.0;
+        for (String storePath : paths) {
+            try {
+                File file = new File(storePath);
+                if (!file.exists()) {
+                    boolean result = file.mkdirs();
+                    if (!result) {
+                    }
+                }
+
+                long totalSpace = file.getTotalSpace();
+                long freeSpace = file.getFreeSpace();
+                long usedSpace = totalSpace - freeSpace;
+                if (totalSpace > 0) {
+                    double ratio = usedSpace / (double) totalSpace;
+                    ret = ratio < ret ? ratio : ret;
+                }
+            } catch (Exception e) {
+                return -1;
+            }
+        }
+
+        return ret;
     }
 
 
@@ -532,4 +542,38 @@ public class UtilAll {
         }catch (Exception e) {
             throw new RuntimeException("Can not get local ip", e);
         }
-}}
+    }
+
+    public static String selectPath(String pathCSV) {
+        if (!pathCSV.contains(",")) {
+            return pathCSV;
+        }
+
+        String[] paths = pathCSV.split(",");
+
+        if (paths.length == 1) {
+            return paths[0];
+        }
+
+        List<Pair<String, Long>> pathList = new ArrayList<Pair<String, Long>>();
+        for (String path : paths) {
+
+            if (null == path || path.trim().length() == 0) {
+                continue;
+            }
+
+            Pair<String, Long> pair = new Pair<String, Long>(path, new File(path).getFreeSpace());
+            pathList.add(pair);
+        }
+
+        Collections.sort(pathList, new Comparator<Pair<String, Long>>() {
+            @Override
+            public int compare(Pair<String, Long> lhs, Pair<String, Long> rhs) {
+                return lhs.getObject2() > rhs.getObject2() ? -1 : (lhs.getObject2().equals(rhs.getObject2()) ? lhs.getObject1().compareTo(rhs.getObject1()) : 1);
+            }
+        });
+
+        return pathList.get(0).getObject1();
+    }
+
+}

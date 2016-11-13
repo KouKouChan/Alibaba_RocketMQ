@@ -14,28 +14,27 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package com.alibaba.rocketmq.store;
+package com.alibaba.rocketmq.common.protocol.header;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
+import com.alibaba.rocketmq.remoting.CommandCustomHeader;
+import com.alibaba.rocketmq.remoting.annotation.CFNotNull;
+import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
 
+public class AddCommitLogStorePathRequestHeader implements CommandCustomHeader {
 
-/**
- * @author shijia.wxr
- *
- */
-public class StoreUtil {
-    public static final long TotalPhysicalMemorySize = getTotalPhysicalMemorySize();
+    @CFNotNull
+    private String commitLogPath;
 
+    @Override
+    public void checkFields() throws RemotingCommandException {
 
-    @SuppressWarnings("restriction")
-    public static long getTotalPhysicalMemorySize() {
-        long physicalTotal = 1024L * 1024 * 1024 * 24;
-        OperatingSystemMXBean osmxb = ManagementFactory.getOperatingSystemMXBean();
-        if (osmxb instanceof com.sun.management.OperatingSystemMXBean) {
-            physicalTotal = ((com.sun.management.OperatingSystemMXBean) osmxb).getTotalPhysicalMemorySize();
-        }
+    }
 
-        return physicalTotal;
+    public String getCommitLogPath() {
+        return commitLogPath;
+    }
+
+    public void setCommitLogPath(String commitLogPath) {
+        this.commitLogPath = commitLogPath;
     }
 }

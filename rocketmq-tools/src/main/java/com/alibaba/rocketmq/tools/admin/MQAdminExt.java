@@ -227,4 +227,7 @@ public interface MQAdminExt extends MQAdmin {
 
 
     void updateConsumeOffset(String brokerAddr, String consumeGroup, MessageQueue mq, long offset) throws RemotingException, InterruptedException, MQBrokerException;
+
+    void addCommitLogStorePath(String brokerAddress, String storePathCommitLog)
+            throws RemotingException, InterruptedException, MQBrokerException;
 }

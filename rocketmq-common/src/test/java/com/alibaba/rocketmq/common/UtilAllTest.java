@@ -17,6 +17,7 @@
 
 package com.alibaba.rocketmq.common;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.URL;
@@ -26,6 +27,18 @@ import static org.junit.Assert.assertTrue;
 
 
 public class UtilAllTest {
+
+    @Test
+    public void testSelectPath() {
+        String storePath = "/";
+        Assert.assertEquals(storePath, UtilAll.selectPath(storePath));
+    }
+
+    @Test
+    public void testSelectPathFromMultiple() {
+        String storePath = "/Users/lizhanhui/store/commitlog,/Users/lizhanhui/a";
+        Assert.assertEquals("/Users/lizhanhui/a", UtilAll.selectPath(storePath));
+    }
 
     @Test
     public void test_currentStackTrace() {

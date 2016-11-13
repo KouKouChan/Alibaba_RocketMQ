@@ -55,6 +55,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -182,11 +183,57 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
 
             case RequestCode.GET_BROKER_CONSUME_STATS:
                 return fetchAllConsumeStatsInBroker(ctx, request);
+
+            case RequestCode.ADD_COMMIT_LOG_STORE_PATH:
+                return addCommitLogStorePath(ctx, request);
+
             default:
                 break;
         }
 
         return null;
+    }
+
+    private RemotingCommand addCommitLogStorePath(ChannelHandlerContext ctx, RemotingCommand request) throws RemotingCommandException {
+        final RemotingCommand response = RemotingCommand.createResponseCommand(null);
+        final AddCommitLogStorePathRequestHeader requestHeader = (AddCommitLogStorePathRequestHeader)
+                request.decodeCommandCustomHeader(AddCommitLogStorePathRequestHeader.class);
+        log.info("updateAndCreateTopic called by {}", RemotingHelper.parseChannelRemoteAddr(ctx.channel()));
+        String existingCommitLogPath = brokerController.getMessageStoreConfig().getStorePathCommitLog();
+        if (existingCommitLogPath.contains(requestHeader.getCommitLogPath())) {
+            String errorMessage = "Store path being added is in use";
+            log.warn(errorMessage);
+
+            response.setCode(ResponseCode.SYSTEM_ERROR);
+            response.setRemark(errorMessage);
+            return response;
+        }
+
+        File dir = new File(requestHeader.getCommitLogPath());
+        boolean ok = true;
+        if (dir.exists()) {
+            ok = ok && dir.isDirectory();
+            ok = ok && dir.canWrite();
+            ok = ok && dir.canRead();
+        } else {
+            ok = ok && dir.mkdirs();
+        }
+
+        if (!ok) {
+            String errorMessage = "Directory denoted by specified commit log path is not OK, check permission please";
+            log.warn(errorMessage);
+
+            response.setCode(ResponseCode.SYSTEM_ERROR);
+            response.setRemark(errorMessage);
+            return response;
+        }
+
+        existingCommitLogPath = existingCommitLogPath + "," + requestHeader.getCommitLogPath();
+        brokerController.getMessageStoreConfig().setStorePathCommitLog(existingCommitLogPath);
+        brokerController.getMessageStore().reloadConfiguration();
+
+        response.setCode(ResponseCode.SUCCESS);
+        return response;
     }
 
     @Override

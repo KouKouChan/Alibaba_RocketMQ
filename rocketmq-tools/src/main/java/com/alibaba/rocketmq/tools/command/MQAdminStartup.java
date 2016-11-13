@@ -170,6 +170,8 @@ public class MQAdminStartup {
         initCommand(new CheckMsgSendRTCommand());
         initCommand(new CLusterSendMsgRTCommand());
 
+        initCommand(new AddCommitLogStorePathSubCommand());
+
     }
 
     private static void initLogback() throws JoranException {
