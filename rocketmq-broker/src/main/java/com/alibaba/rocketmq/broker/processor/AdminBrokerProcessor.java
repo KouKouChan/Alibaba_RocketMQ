@@ -231,6 +231,7 @@ public class AdminBrokerProcessor implements NettyRequestProcessor {
         existingCommitLogPath = existingCommitLogPath + "," + requestHeader.getCommitLogPath();
         brokerController.getMessageStoreConfig().setStorePathCommitLog(existingCommitLogPath);
         brokerController.getMessageStore().reloadConfiguration();
+        brokerController.flushAllConfig();
 
         response.setCode(ResponseCode.SUCCESS);
         return response;
