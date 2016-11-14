@@ -179,7 +179,7 @@ public class StatsAllSubCommand implements SubCommand {
 
 
     public static void main(String[] args) {
-        System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, "172.30.30.233:9876");
+        System.setProperty("rocketmq.namesrv.domain", "172.30.30.233");
         MQAdminStartup.main(new String[] { new StatsAllSubCommand().commandName() });
     }
 }

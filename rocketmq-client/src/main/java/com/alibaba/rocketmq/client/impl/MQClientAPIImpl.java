@@ -2481,15 +2481,14 @@ public class MQClientAPIImpl {
         throw new MQClientException(response.getCode(), response.getRemark());
     }
 
-    public BrokerStatsData ViewBrokerStatsData(String brokerAddr, String statsName, String statsKey,
+    public BrokerStatsData viewBrokerStatsData(String brokerAddr, String statsName, String statsKey,
                                                long timeoutMillis) throws MQClientException, RemotingConnectException,
             RemotingSendRequestException, RemotingTimeoutException, InterruptedException {
         ViewBrokerStatsDataRequestHeader requestHeader = new ViewBrokerStatsDataRequestHeader();
         requestHeader.setStatsName(statsName);
         requestHeader.setStatsKey(statsKey);
 
-        RemotingCommand request =
-                RemotingCommand.createRequestCommand(RequestCode.VIEW_BROKER_STATS_DATA, requestHeader);
+        RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.VIEW_BROKER_STATS_DATA, requestHeader);
 
         RemotingCommand response = this.remotingClient.invokeSync(brokerAddr, request, timeoutMillis);
         assert response != null;

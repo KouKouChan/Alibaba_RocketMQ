@@ -50,6 +50,7 @@ import com.alibaba.rocketmq.remoting.exception.RemotingConnectException;
 import com.alibaba.rocketmq.remoting.exception.RemotingException;
 import com.alibaba.rocketmq.remoting.exception.RemotingSendRequestException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
+import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import com.alibaba.rocketmq.tools.admin.api.MessageTrack;
 import com.alibaba.rocketmq.tools.admin.api.TrackType;
 import org.slf4j.Logger;
@@ -1069,7 +1070,8 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
     public BrokerStatsData viewBrokerStatsData(String brokerAddr, String statsName, String statsKey)
             throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
             MQClientException, InterruptedException {
-        return this.mqClientInstance.getMQClientAPIImpl().ViewBrokerStatsData(brokerAddr, statsName, statsKey, 3000);
+        return this.mqClientInstance.getMQClientAPIImpl().viewBrokerStatsData(brokerAddr, statsName, statsKey,
+                NettySystemConfig.NETTY_IO_TIMEOUT);
     }
 
     @Override
