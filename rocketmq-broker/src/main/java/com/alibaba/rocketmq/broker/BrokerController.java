@@ -725,7 +725,7 @@ public class BrokerController {
     }
 
 
-    private void flushAllConfig() {
+    public void flushAllConfig() {
         String allConfig = this.encodeAllConfig();
         try {
             MixAll.string2File(allConfig, BrokerPathConfigHelper.getBrokerConfigPath());
