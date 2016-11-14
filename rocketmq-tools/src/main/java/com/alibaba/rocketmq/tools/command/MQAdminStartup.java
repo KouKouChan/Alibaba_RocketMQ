@@ -35,6 +35,7 @@ import com.alibaba.rocketmq.tools.command.message.*;
 import com.alibaba.rocketmq.tools.command.namesrv.*;
 import com.alibaba.rocketmq.tools.command.offset.CloneGroupOffsetCommand;
 import com.alibaba.rocketmq.tools.command.offset.ResetOffsetByTimeCommand;
+import com.alibaba.rocketmq.tools.command.stats.StatsAllSubCommand;
 import com.alibaba.rocketmq.tools.command.topic.*;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -96,6 +97,7 @@ public class MQAdminStartup {
         subCommandList.add(new CheckMsgSubCommand());
 
         subCommandList.add(new AddCommitLogStorePathSubCommand());
+        subCommandList.add(new StatsAllSubCommand());
     }
 
 
