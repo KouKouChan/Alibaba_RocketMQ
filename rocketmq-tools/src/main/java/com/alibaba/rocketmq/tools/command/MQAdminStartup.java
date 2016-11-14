@@ -23,6 +23,7 @@ import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
+import com.alibaba.rocketmq.tools.command.broker.AddCommitLogStorePathSubCommand;
 import com.alibaba.rocketmq.tools.command.broker.BrokerStatusSubCommand;
 import com.alibaba.rocketmq.tools.command.broker.CleanExpiredCQSubCommand;
 import com.alibaba.rocketmq.tools.command.broker.UpdateBrokerConfigSubCommand;
@@ -93,6 +94,8 @@ public class MQAdminStartup {
 
         subCommandList.add(new StartMonitoringSubCommand());
         subCommandList.add(new CheckMsgSubCommand());
+
+        subCommandList.add(new AddCommitLogStorePathSubCommand());
     }
 
 

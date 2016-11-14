@@ -1154,4 +1154,8 @@ public class CommitLog {
 
         LOGGER.info("removeQueueFromTopicQueueTable OK Topic: {} QueueId: {}", topic, queueId);
     }
+
+    public void updateCommitLogStorePath() {
+        mappedFileQueue.setStorePath(defaultMessageStore.getMessageStoreConfig().getStorePathCommitLog());
+    }
 }

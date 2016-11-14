@@ -709,4 +709,7 @@ public interface MQAdminExt extends MQAdmin {
                                                final String statsKey)
             throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException,
             InterruptedException;
+
+    void addCommitLogStorePath(String brokerAddress, String storePathCommitLog)
+            throws RemotingException, InterruptedException, MQBrokerException;
 }

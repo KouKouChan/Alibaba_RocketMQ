@@ -1924,4 +1924,8 @@ public class DefaultMessageStore implements MessageStore {
     public BrokerStatsManager getBrokerStatsManager() {
         return brokerStatsManager;
     }
+
+    public void reloadConfiguration() {
+        commitLog.updateCommitLogStorePath();
+    }
 }

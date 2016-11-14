@@ -169,4 +169,6 @@ public class RequestCode {
 
     // 查看Broker上的各种统计信息
     public static final int VIEW_BROKER_STATS_DATA = 315;
+
+    public static final int ADD_COMMIT_LOG_STORE_PATH = 400;
 }

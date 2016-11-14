@@ -36,6 +36,7 @@ import com.alibaba.rocketmq.common.message.MessageQueue;
 import com.alibaba.rocketmq.common.namesrv.NamesrvUtil;
 import com.alibaba.rocketmq.common.protocol.ResponseCode;
 import com.alibaba.rocketmq.common.protocol.body.*;
+import com.alibaba.rocketmq.common.protocol.header.AddCommitLogStorePathRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.UpdateConsumerOffsetRequestHeader;
 import com.alibaba.rocketmq.common.protocol.heartbeat.SubscriptionData;
 import com.alibaba.rocketmq.common.protocol.route.BrokerData;
@@ -1069,5 +1070,14 @@ public class DefaultMQAdminExtImpl implements MQAdminExt, MQAdminExtInner {
             throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException,
             MQClientException, InterruptedException {
         return this.mqClientInstance.getMQClientAPIImpl().ViewBrokerStatsData(brokerAddr, statsName, statsKey, 3000);
+    }
+
+    @Override
+    public void addCommitLogStorePath(String brokerAddress, String storePathCommitLog)
+            throws RemotingException, InterruptedException, MQBrokerException {
+        AddCommitLogStorePathRequestHeader requestHeader = new AddCommitLogStorePathRequestHeader();
+        requestHeader.setCommitLogPath(storePathCommitLog);
+        this.mqClientInstance.getMQAdminImpl().addCommitLogStorePath(brokerAddress, requestHeader);
+
     }
 }

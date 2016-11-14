@@ -627,4 +627,10 @@ public class DefaultMQAdminExt extends ClientConfig implements MQAdminExt {
             throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, MQClientException, InterruptedException {
         return this.defaultMQAdminExtImpl.viewBrokerStatsData(brokerAddr, statsName, statsKey);
     }
+
+    @Override
+    public void addCommitLogStorePath(String brokerAddress, String storePathCommitLog)
+            throws RemotingException, InterruptedException, MQBrokerException {
+        this.defaultMQAdminExtImpl.addCommitLogStorePath(brokerAddress, storePathCommitLog);
+    }
 }

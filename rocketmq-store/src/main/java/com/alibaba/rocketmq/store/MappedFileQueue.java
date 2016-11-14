@@ -25,6 +25,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -45,7 +46,7 @@ public class MappedFileQueue {
     // 每次触发删除文件，最多删除多少个文件
     private static final int DeleteFilesBatchMax = 10;
     // 文件存储位置
-    private final String storePath;
+    private String storePath;
     // 每个文件的大小
     private final int mappedFileSize;
     // 各个文件
@@ -152,36 +153,49 @@ public class MappedFileQueue {
         }
     }
 
-
     public boolean load() {
-        File dir = new File(this.storePath);
-
-        File[] files = dir.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                Matcher matcher = MAPPED_FILE_NAME_PATTERN.matcher(name);
-                return matcher.matches();
+        File[] dirs;
+        if (!this.storePath.contains(",")) {
+            dirs = new File[]{new File(this.storePath)};
+        } else {
+            String[] storePaths = storePath.split(",");
+            dirs = new File[storePaths.length];
+            for (int i = 0; i < dirs.length; i++) {
+                dirs[i] = new File(storePaths[i]);
             }
-        });
+        }
 
-        if (files != null) {
+        List<File> files = new ArrayList<File>();
+        for (File dir : dirs) {
+            File[] commitLogFiles = dir.listFiles(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    Matcher matcher = MAPPED_FILE_NAME_PATTERN.matcher(name);
+                    return matcher.matches();
+                }
+            });
+            if (null != commitLogFiles) {
+                files.addAll(Arrays.asList(commitLogFiles));
+            }
+        }
+
+        if (!files.isEmpty()) {
             // ascending order
-            Arrays.sort(files);
+            Collections.sort(files);
             for (File file : files) {
                 // 校验文件大小是否匹配
                 if (file.length() != this.mappedFileSize) {
-                    log.warn(file + "\t" + file.length()
-                            + " length not matched message store config value, ignore it");
+                    log.warn(file + "\t" + file.length() + " length not matched message store config value, ignore it");
                     return true;
                 }
 
                 // 恢复队列
                 try {
-                    MappedFile mappedFile = new MappedFile(file.getPath(), mappedFileSize);
+                    MappedFile mapedFile = new MappedFile(file.getPath(), mappedFileSize);
 
-                    mappedFile.setWrotePosition(this.mappedFileSize);
-                    mappedFile.setCommittedPosition(this.mappedFileSize);
-                    this.mappedFiles.add(mappedFile);
+                    mapedFile.setWrotePosition(this.mappedFileSize);
+                    mapedFile.setCommittedPosition(this.mappedFileSize);
+                    this.mappedFiles.add(mapedFile);
                     log.info("load " + file.getPath() + " OK");
                 } catch (IOException e) {
                     log.error("load file " + file + " error", e);
@@ -242,16 +256,15 @@ public class MappedFileQueue {
         }
 
         if (createOffset != -1) {
-            String nextFilePath = this.storePath + File.separator + UtilAll.offset2FileName(createOffset);
-            String nextNextFilePath =
-                    this.storePath + File.separator
-                            + UtilAll.offset2FileName(createOffset + this.mappedFileSize);
+            String nextFilePath = UtilAll.selectPath(this.storePath) + File.separator +
+                    UtilAll.offset2FileName(createOffset);
+            String nextNextFilePath = UtilAll.selectPath(this.storePath) + File.separator +
+                    UtilAll.offset2FileName(createOffset + this.mappedFileSize);
             MappedFile mappedFile = null;
 
             if (this.allocateMappedFileService != null) {
-                mappedFile =
-                        this.allocateMappedFileService.putRequestAndReturnMappedFile(nextFilePath,
-                                nextNextFilePath, this.mappedFileSize);
+                mappedFile = this.allocateMappedFileService.putRequestAndReturnMappedFile(nextFilePath,
+                        nextNextFilePath, this.mappedFileSize);
             } else {
                 try {
                     mappedFile = new MappedFile(nextFilePath, this.mappedFileSize);
@@ -653,5 +666,9 @@ public class MappedFileQueue {
 
     public int getMappedFileSize() {
         return mappedFileSize;
+    }
+
+    public void setStorePath(String storePath) {
+        this.storePath = storePath;
     }
 }
