@@ -256,10 +256,9 @@ public class MappedFileQueue {
         }
 
         if (createOffset != -1) {
-            String nextFilePath = UtilAll.selectPath(this.storePath) + File.separator +
-                    UtilAll.offset2FileName(createOffset);
-            String nextNextFilePath = UtilAll.selectPath(this.storePath) + File.separator +
-                    UtilAll.offset2FileName(createOffset + this.mappedFileSize);
+            String commitLogStorePath = UtilAll.selectPath(this.storePath);
+            String nextFilePath = commitLogStorePath + File.separator + UtilAll.offset2FileName(createOffset);
+            String nextNextFilePath = commitLogStorePath + File.separator + UtilAll.offset2FileName(createOffset + this.mappedFileSize);
             MappedFile mappedFile = null;
 
             if (this.allocateMappedFileService != null) {
