@@ -33,7 +33,8 @@ public class NettyServerConfig implements Cloneable {
 
     private int serverSocketSndBufSize = NettySystemConfig.socketSndbufSize;
     private int serverSocketRcvBufSize = NettySystemConfig.socketRcvbufSize;
-    private boolean serverPooledByteBufAllocatorEnable = true;
+    private boolean serverPooledByteBufAllocatorEnable = NettySystemConfig.NettyPooledByteBufAllocatorEnable;
+    private boolean serverSocketWithSSL = NettySystemConfig.SSL;
 
     /**
      * make make install
@@ -152,6 +153,14 @@ public class NettyServerConfig implements Cloneable {
 
     public void setUseEpollNativeSelector(boolean useEpollNativeSelector) {
         this.useEpollNativeSelector = useEpollNativeSelector;
+    }
+
+    public boolean isServerSocketWithSSL() {
+        return serverSocketWithSSL;
+    }
+
+    public void setServerSocketWithSSL(boolean serverSocketWithSSL) {
+        this.serverSocketWithSSL = serverSocketWithSSL;
     }
 
     @Override

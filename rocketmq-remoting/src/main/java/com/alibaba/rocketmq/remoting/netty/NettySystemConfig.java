@@ -28,9 +28,15 @@ public class NettySystemConfig {
             "com.rocketmq.remoting.clientAsyncSemaphoreValue";
     public static final String SystemPropertyClientOnewaySemaphoreValue = //
             "com.rocketmq.remoting.clientOnewaySemaphoreValue";
+
+    /**
+     * Key to specify whether SSL should be enabled in transmission.
+     */
+    public static final String SYSTEM_PROPERTY_SOCKET_SSL = //
+            "com.rocketmq.remoting.socket.ssl";
+
     public static final boolean NettyPooledByteBufAllocatorEnable = //
-            Boolean
-                    .parseBoolean(System.getProperty(SystemPropertyNettyPooledByteBufAllocatorEnable, "false"));
+            Boolean.parseBoolean(System.getProperty(SystemPropertyNettyPooledByteBufAllocatorEnable, "true"));
     public static int socketSndbufSize = //
             Integer.parseInt(System.getProperty(SystemPropertySocketSndbufSize, "65535"));
     public static int socketRcvbufSize = //
@@ -39,4 +45,9 @@ public class NettySystemConfig {
             Integer.parseInt(System.getProperty(SystemPropertyClientAsyncSemaphoreValue, "65535"));
     public static final int ClientOnewaySemaphoreValue = //
             Integer.parseInt(System.getProperty(SystemPropertyClientOnewaySemaphoreValue, "65535"));
+
+    /**
+     * Indicate if SSL is enabled or not.
+     */
+    public static final boolean SSL = Boolean.parseBoolean(System.getProperty(SYSTEM_PROPERTY_SOCKET_SSL, "false"));
 }

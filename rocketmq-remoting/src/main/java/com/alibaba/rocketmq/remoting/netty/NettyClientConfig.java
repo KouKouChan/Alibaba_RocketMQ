@@ -41,6 +41,7 @@ public class NettyClientConfig {
     private int clientSocketRcvBufSize = NettySystemConfig.socketRcvbufSize;
     private boolean clientPooledByteBufAllocatorEnable = false;
     private boolean clientCloseSocketIfTimeout = false;
+    private boolean clientSocketWithSSL = NettySystemConfig.SSL;
 
     public boolean isClientCloseSocketIfTimeout() {
         return clientCloseSocketIfTimeout;
@@ -147,5 +148,13 @@ public class NettyClientConfig {
 
     public void setClientPooledByteBufAllocatorEnable(boolean clientPooledByteBufAllocatorEnable) {
         this.clientPooledByteBufAllocatorEnable = clientPooledByteBufAllocatorEnable;
+    }
+
+    public boolean isClientSocketWithSSL() {
+        return clientSocketWithSSL;
+    }
+
+    public void setClientSocketWithSSL(boolean clientSocketWithSSL) {
+        this.clientSocketWithSSL = clientSocketWithSSL;
     }
 }

@@ -33,6 +33,9 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -40,6 +43,7 @@ import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLException;
 import java.net.SocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
@@ -109,6 +113,14 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 return new Thread(r, String.format("NettyClientSelector_%d", this.threadIndex.incrementAndGet()));
             }
         });
+
+        if (nettyClientConfig.isClientSocketWithSSL()) {
+            try {
+                sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+            } catch (SSLException e) {
+                log.error("Failed to build SslContext for client", e);
+            }
+        }
     }
 
     private static int initValueIndex() {
@@ -147,7 +159,11 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(//
+                        ChannelPipeline pipeline = ch.pipeline();
+                        if (null != sslContext) {
+                            pipeline.addLast(defaultEventExecutorGroup, sslContext.newHandler(ch.alloc()));
+                        }
+                        pipeline.addLast(//
                                 defaultEventExecutorGroup, //
                                 new NettyEncoder(), //
                                 new NettyDecoder(), //

@@ -34,6 +34,8 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -41,7 +43,9 @@ import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
+import java.security.cert.CertificateException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
@@ -135,6 +139,17 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 }
             });
         }
+
+        if (nettyServerConfig.isServerSocketWithSSL()) {
+            try {
+                SelfSignedCertificate ssc = new SelfSignedCertificate();
+                sslContext = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+            } catch (CertificateException e) {
+                log.error("Failed to create SslContext instance", e);
+            } catch (SSLException e) {
+                log.error("Failed to create SslContext instance", e);
+            }
+        }
     }
 
 
@@ -172,8 +187,12 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                         .childHandler(new ChannelInitializer<SocketChannel>() {
                             @Override
                             public void initChannel(SocketChannel ch) throws Exception {
-                                ch.pipeline().addLast(
-                                        //
+                                ChannelPipeline pipeline = ch.pipeline();
+                                if (null != sslContext) {
+                                    pipeline.addLast(defaultEventExecutorGroup, sslContext.newHandler(ch.alloc()));
+                                    pipeline.addLast(defaultEventExecutorGroup, new FileRegionEncoder());
+                                }
+                                pipeline.addLast(
                                         defaultEventExecutorGroup, //
                                         new NettyEncoder(), //
                                         new NettyDecoder(), //
