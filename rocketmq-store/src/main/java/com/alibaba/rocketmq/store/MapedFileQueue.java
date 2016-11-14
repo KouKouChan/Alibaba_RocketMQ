@@ -249,9 +249,9 @@ public class MapedFileQueue {
         }
 
         if (createOffset != -1 && needCreate) {
-            String nextFilePath = UtilAll.selectPath(this.storePath) + File.separator
-                    + UtilAll.offset2FileName(createOffset);
-            String nextNextFilePath = UtilAll.selectPath(this.storePath) + File.separator
+            String selectedStorePath = UtilAll.selectPath(this.storePath);
+            String nextFilePath = selectedStorePath + File.separator + UtilAll.offset2FileName(createOffset);
+            String nextNextFilePath = selectedStorePath + File.separator
                     + UtilAll.offset2FileName(createOffset + this.mapedFileSize);
             MapedFile mapedFile = null;
 
