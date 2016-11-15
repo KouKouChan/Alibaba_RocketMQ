@@ -23,10 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
@@ -181,7 +178,13 @@ public class MappedFileQueue {
 
         if (!files.isEmpty()) {
             // ascending order
-            Collections.sort(files);
+            Collections.sort(files, new Comparator<File>() {
+                @Override
+                public int compare(File lhs, File rhs) {
+                    return lhs.getName().compareTo(rhs.getName());
+                }
+            });
+
             for (File file : files) {
                 // 校验文件大小是否匹配
                 if (file.length() != this.mappedFileSize) {
