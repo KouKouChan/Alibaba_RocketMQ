@@ -17,12 +17,10 @@ package com.alibaba.rocketmq.example.quickstart;
 
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
-import com.alibaba.rocketmq.client.producer.SendCallback;
 import com.alibaba.rocketmq.client.producer.SendResult;
-import com.alibaba.rocketmq.client.producer.selector.Region;
-import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByRegion;
 import com.alibaba.rocketmq.common.message.Message;
-import com.alibaba.rocketmq.common.protocol.ResponseCode;
+
+import java.util.Arrays;
 
 
 /**
@@ -31,31 +29,30 @@ import com.alibaba.rocketmq.common.protocol.ResponseCode;
 public class Producer {
     public static void main(String[] args) throws MQClientException, InterruptedException {
         DefaultMQProducer producer = new DefaultMQProducer("PG_QuickStart");
-        producer.setNamesrvAddr("172.30.30.125:9876");
         producer.setSendMsgTimeout(10000);
         producer.setSendLatencyFaultEnable(true);
         producer.start();
-
-        for (int i = 0; i < 1024; i++) {
+        byte[] data = new byte[1024];
+        Arrays.fill(data, (byte)'x');
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
             try {
                 Message msg = new Message("T_QuickStart",// topic
                         "TagA",// tag
-                        ("Hello RocketMQ " + i).getBytes()// body
+                        data
                 );
-//                msg.setUnitTestCode(ResponseCode.FLUSH_DISK_TIMEOUT);
-//                SendResult sendResult = producer.send(msg);
-//                System.out.println(sendResult);
-                producer.send(msg, new SelectMessageQueueByRegion(Region.ANY), null, new SendCallback() {
-                    @Override
-                    public void onSuccess(SendResult sendResult) {
-                        System.out.println(sendResult);
-                    }
-
-                    @Override
-                    public void onException(Throwable e) {
-                        e.printStackTrace();
-                    }
-                });
+                SendResult sendResult = producer.send(msg);
+                System.out.println(sendResult);
+//                producer.send(msg, new SelectMessageQueueByRegion(Region.ANY), null, new SendCallback() {
+//                    @Override
+//                    public void onSuccess(SendResult sendResult) {
+//                        System.out.println(sendResult);
+//                    }
+//
+//                    @Override
+//                    public void onException(Throwable e) {
+//                        e.printStackTrace();
+//                    }
+//                });
             } catch (Exception e) {
                 e.printStackTrace();
                 Thread.sleep(1000);
