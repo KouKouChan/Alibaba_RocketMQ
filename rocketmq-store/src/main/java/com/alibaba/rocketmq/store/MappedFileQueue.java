@@ -234,6 +234,19 @@ public class MappedFileQueue {
         return this.getLastMappedFile(0);
     }
 
+    private String resolveMappedFilePath(final String selectedMappedFileStorePath, final long startOffset) {
+        // The file might have been created previously.
+        String[] paths = this.storePath.split(",");
+        for (String path : paths) {
+            String filePath = path + File.separator + UtilAll.offset2FileName(startOffset);
+            File file = new File(filePath);
+            if (file.exists()){
+                return filePath;
+            }
+        }
+
+        return selectedMappedFileStorePath + File.separator + UtilAll.offset2FileName(startOffset);
+    }
 
     /**
      * 获取最后一个MappedFile对象，如果一个都没有，则新创建一个，如果最后一个写满了，则新创建一个
@@ -259,9 +272,9 @@ public class MappedFileQueue {
         }
 
         if (createOffset != -1) {
-            String commitLogStorePath = UtilAll.selectPath(this.storePath);
-            String nextFilePath = commitLogStorePath + File.separator + UtilAll.offset2FileName(createOffset);
-            String nextNextFilePath = commitLogStorePath + File.separator + UtilAll.offset2FileName(createOffset + this.mappedFileSize);
+            String selectedMappedFileStorePath = UtilAll.selectPath(this.storePath);
+            String nextFilePath = resolveMappedFilePath(selectedMappedFileStorePath, createOffset);
+            String nextNextFilePath = resolveMappedFilePath(selectedMappedFileStorePath, createOffset + this.mappedFileSize);
             MappedFile mappedFile = null;
 
             if (this.allocateMappedFileService != null) {
