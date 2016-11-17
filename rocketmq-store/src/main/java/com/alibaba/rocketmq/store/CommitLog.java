@@ -94,7 +94,7 @@ public class CommitLog {
 
     public boolean load() {
         boolean result = this.mappedFileQueue.load();
-        LOGGER.info("load commit LOGGER " + (result ? "OK" : "Failed"));
+        LOGGER.info("load commit log " + (result ? "OK" : "Failed"));
         return result;
     }
 
