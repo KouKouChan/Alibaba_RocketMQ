@@ -500,6 +500,11 @@ public class MappedFile extends ReferenceResource {
         LOGGER.info("munlock {} {} {} ret = {} time consuming = {}", address, this.fileName, this.fileSize, ret, System.currentTimeMillis() - beginTime);
     }
 
+    /**
+     * This method brings about overwhelming overhead. DO NOT USE.
+     * @param type
+     * @param pages
+     */
     public void warmMappedFile(FlushDiskType type, int pages) {
         long beginTime = System.currentTimeMillis();
         ByteBuffer byteBuffer = this.mappedByteBuffer.slice();
