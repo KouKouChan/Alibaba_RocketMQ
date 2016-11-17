@@ -117,7 +117,7 @@ public class DefaultMessageStore implements MessageStore {
                                final BrokerStatsManager brokerStatsManager) throws IOException {
         this.messageStoreConfig = messageStoreConfig;
         this.brokerStatsManager = brokerStatsManager;
-        this.allocateMappedFileService = new AllocateMappedFileService();
+        this.allocateMappedFileService = new AllocateMappedFileService(this);
         this.commitLog = new CommitLog(this);
         this.consumeQueueTable = new ConcurrentHashMap<String/* topic */, ConcurrentHashMap<Integer/* queueId */, ConsumeQueue>>(32);
 
@@ -1927,5 +1927,14 @@ public class DefaultMessageStore implements MessageStore {
 
     public void reloadConfiguration() {
         commitLog.updateCommitLogStorePath();
+    }
+
+    public void unlockMappedFile(final MappedFile mappedFile){
+        this.scheduledExecutorService.schedule(new Runnable() {
+            @Override
+            public void run() {
+                mappedFile.munlock();
+            }
+        }, 6, TimeUnit.SECONDS);
     }
 }

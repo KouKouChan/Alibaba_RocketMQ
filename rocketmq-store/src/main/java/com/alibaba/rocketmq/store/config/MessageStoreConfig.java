@@ -75,6 +75,10 @@ public class MessageStoreConfig {
     private boolean checkCRCOnRecover = true;
     // 刷CommitLog，至少刷几个PAGE
     private int flushCommitLogLeastPages = 4;
+
+    // Flush page size when the disk in warming state
+    private int flushLeastPagesWhenWarmMapedFile = 1024 / 4 * 16;
+
     // 刷ConsumeQueue，至少刷几个PAGE
     private int flushConsumeQueueLeastPages = 2;
     // 刷CommitLog，彻底刷盘间隔时间
@@ -129,6 +133,8 @@ public class MessageStoreConfig {
     // 磁盘空间超过90%警戒水位，自动开始删除文件
     @ImportantField
     private boolean cleanFileForciblyEnable = true;
+
+    private boolean warmMapedFileEnable = false;
 
 
     public int getMappedFileSizeCommitLog() {
@@ -594,5 +600,23 @@ public class MessageStoreConfig {
 
     public void setStorePathRootDir(String storePathRootDir) {
         this.storePathRootDir = storePathRootDir;
+    }
+
+    public boolean isWarmMappedFileEnable() {
+        return warmMapedFileEnable;
+    }
+
+
+    public void setWarmMappedFileEnable(boolean warmMapedFileEnable) {
+        this.warmMapedFileEnable = warmMapedFileEnable;
+    }
+
+    public int getFlushLeastPagesWhenWarmMapedFile() {
+        return flushLeastPagesWhenWarmMapedFile;
+    }
+
+
+    public void setFlushLeastPagesWhenWarmMapedFile(int flushLeastPagesWhenWarmMapedFile) {
+        this.flushLeastPagesWhenWarmMapedFile = flushLeastPagesWhenWarmMapedFile;
     }
 }

@@ -520,6 +520,7 @@ public class CommitLog {
 
         // 写文件要加锁
         long eclipseTimeInLock = 0;
+        MappedFile mappedFileToUnlock = null;
         synchronized (this) {
             long beginLockTimestamp = this.defaultMessageStore.getSystemClock().now();
 
@@ -540,6 +541,7 @@ public class CommitLog {
                     break;
                 // 走到文件末尾
                 case END_OF_FILE:
+                    mappedFileToUnlock = mappedFile;
                     // 创建新文件，重新写消息
                     mappedFile = this.mappedFileQueue.getLastMappedFile();
                     if (null == mappedFile) {
@@ -583,6 +585,10 @@ public class CommitLog {
         if (eclipseTimeInLock > 1000) {
             // XXX: warn and notify me
             LOGGER.warn("putMessage in lock eclipse time(ms) " + eclipseTimeInLock);
+        }
+
+        if (null != mappedFileToUnlock) {
+            this.defaultMessageStore.unlockMappedFile(mappedFileToUnlock);
         }
 
         // 返回结果

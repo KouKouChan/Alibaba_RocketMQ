@@ -17,8 +17,13 @@ package com.alibaba.rocketmq.store;
 
 import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.common.constant.LoggerName;
+import com.alibaba.rocketmq.store.config.FlushDiskType;
+import com.alibaba.rocketmq.store.util.LibC;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -470,5 +475,67 @@ public class MappedFile extends ReferenceResource {
 
     public void setFirstCreateInQueue(boolean firstCreateInQueue) {
         this.firstCreateInQueue = firstCreateInQueue;
+    }
+
+    public void mlock() {
+        final long beginTime = System.currentTimeMillis();
+        final long address = ((DirectBuffer) (this.mappedByteBuffer)).address();
+        Pointer pointer = new Pointer(address);
+        {
+            int ret = LibC.INSTANCE.mlock(pointer, new NativeLong(this.fileSize));
+            LOGGER.info("mlock {} {} {} ret = {} time consuming = {}", address, this.fileName, this.fileSize, ret, System.currentTimeMillis() - beginTime);
+        }
+
+        {
+            int ret = LibC.INSTANCE.madvise(pointer, new NativeLong(this.fileSize), LibC.MADV_WILLNEED);
+            LOGGER.info("madvise {} {} {} ret = {} time consuming = {}", address, this.fileName, this.fileSize, ret, System.currentTimeMillis() - beginTime);
+        }
+    }
+
+    public void munlock() {
+        final long beginTime = System.currentTimeMillis();
+        final long address = ((DirectBuffer) (this.mappedByteBuffer)).address();
+        Pointer pointer = new Pointer(address);
+        int ret = LibC.INSTANCE.munlock(pointer, new NativeLong(this.fileSize));
+        LOGGER.info("munlock {} {} {} ret = {} time consuming = {}", address, this.fileName, this.fileSize, ret, System.currentTimeMillis() - beginTime);
+    }
+
+    public void warmMappedFile(FlushDiskType type, int pages) {
+        long beginTime = System.currentTimeMillis();
+        ByteBuffer byteBuffer = this.mappedByteBuffer.slice();
+        int flush = 0;
+        long time = System.currentTimeMillis();
+        for (int i = 0, j = 0; i < this.fileSize; i += MappedFile.OS_PAGE_SIZE, j++) {
+            byteBuffer.put(i, (byte) 0);
+            // force flush when flush disk type is sync
+            if (type == FlushDiskType.SYNC_FLUSH) {
+                if ((i / OS_PAGE_SIZE) - (flush / OS_PAGE_SIZE) >= pages) {
+                    flush = i;
+                    mappedByteBuffer.force();
+                }
+            }
+
+            // prevent gc
+            if (j % 1000 == 0) {
+                LOGGER.info("j={}, costTime={}", j, System.currentTimeMillis() - time);
+                time = System.currentTimeMillis();
+                try {
+                    Thread.sleep(0);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        // force flush when prepare load finished
+        if (type == FlushDiskType.SYNC_FLUSH) {
+            LOGGER.info("mapped file warm up done, force to disk, mappedFile={}, costTime={}",
+                    this.getFileName(), System.currentTimeMillis() - beginTime);
+            mappedByteBuffer.force();
+        }
+        LOGGER.info("mapped file warm up done. mappedFile={}, costTime={}", this.getFileName(),
+                System.currentTimeMillis() - beginTime);
+
+        this.mlock();
     }
 }

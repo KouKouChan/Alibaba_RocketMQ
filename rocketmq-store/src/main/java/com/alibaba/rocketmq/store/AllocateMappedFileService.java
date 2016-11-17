@@ -40,7 +40,11 @@ public class AllocateMappedFileService extends ServiceThread {
     private ConcurrentHashMap<String, AllocateRequest> requestTable = new ConcurrentHashMap<String, AllocateRequest>();
     private PriorityBlockingQueue<AllocateRequest> requestQueue = new PriorityBlockingQueue<AllocateRequest>();
     private volatile boolean hasException = false;
+    private final DefaultMessageStore messageStore;
 
+    public AllocateMappedFileService(DefaultMessageStore messageStore) {
+        this.messageStore = messageStore;
+    }
 
     public MappedFile putRequestAndReturnMappedFile(String nextFilePath, String nextNextFilePath, int fileSize) {
         AllocateRequest nextReq = new AllocateRequest(nextFilePath, fileSize);
@@ -76,8 +80,7 @@ public class AllocateMappedFileService extends ServiceThread {
                 }
                 this.requestTable.remove(nextFilePath);
                 return result.getMappedFile();
-            }
-            else {
+            } else {
                 log.error("find preallocate mmap failed, this never happen");
             }
         }
@@ -149,26 +152,33 @@ public class AllocateMappedFileService extends ServiceThread {
                             + " " + req.getFilePath() + " " + req.getFileSize());
                 }
 
+                // pre write mappedFile
+                if (mappedFile.getFileSize() >= this.messageStore.getMessageStoreConfig().getMappedFileSizeCommitLog() //
+                        && this.messageStore.getMessageStoreConfig().isWarmMappedFileEnable()) {
+                    mappedFile.warmMappedFile(this.messageStore.getMessageStoreConfig().getFlushDiskType(),
+                            this.messageStore.getMessageStoreConfig().getFlushLeastPagesWhenWarmMapedFile());
+                }
+
                 req.setMappedFile(mappedFile);
                 this.hasException = false;
             }
+
         } catch (InterruptedException e) {
             if (!stopped) {
                 log.warn(this.getServiceName() + " service has exception.");
             } else {
                 log.warn(getServiceName() + " service is interrupted as it's being shut down");
-        }
+            }
 
             this.hasException = true;
             return false;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.warn(this.getServiceName() + " service has exception. ", e);
             this.hasException = true;
-        }
-        finally {
-            if (req != null)
+        } finally {
+            if (req != null) {
                 req.getCountDownLatch().countDown();
+            }
         }
         return true;
     }
