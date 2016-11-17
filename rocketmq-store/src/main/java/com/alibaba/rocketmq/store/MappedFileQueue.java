@@ -193,6 +193,7 @@ public class MappedFileQueue {
                     log.error("Mapped file queue is tampered.");
 
                     // Debug info
+                    log.warn("Commit log store paths are: {}", storePath);
                     log.warn("Files in order are:");
                     for (int i = 0; i < files.size(); i++) {
                         log.warn(files.get(i).getAbsolutePath());
