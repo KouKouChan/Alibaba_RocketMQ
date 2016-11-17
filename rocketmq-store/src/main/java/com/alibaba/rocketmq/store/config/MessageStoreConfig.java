@@ -77,7 +77,7 @@ public class MessageStoreConfig {
     private int flushCommitLogLeastPages = 4;
 
     // Flush page size when the disk in warming state
-    private int flushLeastPagesWhenWarmMapedFile = 1024 / 4 * 16;
+    private int flushLeastPagesWhenWarmMappedFile = 1024 / 4 * 16;
 
     // 刷ConsumeQueue，至少刷几个PAGE
     private int flushConsumeQueueLeastPages = 2;
@@ -134,7 +134,7 @@ public class MessageStoreConfig {
     @ImportantField
     private boolean cleanFileForciblyEnable = true;
 
-    private boolean warmMapedFileEnable = false;
+    private boolean warmMappedFileEnable = false;
 
 
     public int getMappedFileSizeCommitLog() {
@@ -603,20 +603,20 @@ public class MessageStoreConfig {
     }
 
     public boolean isWarmMappedFileEnable() {
-        return warmMapedFileEnable;
+        return warmMappedFileEnable;
     }
 
 
-    public void setWarmMappedFileEnable(boolean warmMapedFileEnable) {
-        this.warmMapedFileEnable = warmMapedFileEnable;
+    public void setWarmMappedFileEnable(boolean warmMappedFileEnable) {
+        this.warmMappedFileEnable = warmMappedFileEnable;
     }
 
-    public int getFlushLeastPagesWhenWarmMapedFile() {
-        return flushLeastPagesWhenWarmMapedFile;
+    public int getFlushLeastPagesWhenWarmMappedFile() {
+        return flushLeastPagesWhenWarmMappedFile;
     }
 
 
-    public void setFlushLeastPagesWhenWarmMapedFile(int flushLeastPagesWhenWarmMapedFile) {
-        this.flushLeastPagesWhenWarmMapedFile = flushLeastPagesWhenWarmMapedFile;
+    public void setFlushLeastPagesWhenWarmMappedFile(int flushLeastPagesWhenWarmMappedFile) {
+        this.flushLeastPagesWhenWarmMappedFile = flushLeastPagesWhenWarmMappedFile;
     }
 }

@@ -58,8 +58,8 @@ public interface LibC extends Library {
      * the specified address range are guaranteed to be resident in RAM when the call returns successfully; the pages
      * are guaranteed to stay in RAM until later unlocked.
      *
-     * @param addr
-     * @param len
+     * @param addr Memory address to lock.
+     * @param len Count of memory pages.
      * @return On success this system call returns 0. On error, -1 is returned, errno is set appropriately, and no
      * changes are made to any locks in the address space of the process.
      */
@@ -68,8 +68,8 @@ public interface LibC extends Library {
     /**
      * unlocks pages in the address range starting at addr and continuing for len bytes. After this call, all pages
      * that contain a part of the specified memory range can be moved to external swap space again by the kernel.
-     * @param addr
-     * @param len
+     * @param addr Memory address to unlock.
+     * @param len Count of pages.
      * @return On success this system call returns 0. On error, -1 is returned, errno is set appropriately, and no
      * changes are made to any locks in the address space of the process.
      */
