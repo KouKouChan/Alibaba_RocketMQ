@@ -191,6 +191,14 @@ public class MappedFileQueue {
                 currentOffset = Long.parseLong(file.getName());
                 if (currentOffset != 0 && currentOffset - prevOffset != mappedFileSize) {
                     log.error("Mapped file queue is tampered.");
+
+                    // Debug info
+                    log.warn("Files in order are:");
+                    for (int i = 0; i < files.size(); i++) {
+                        log.warn(files.get(i).getAbsolutePath());
+                    }
+                    // End of debug
+
                     return false;
                 } else {
                     prevOffset = currentOffset;
