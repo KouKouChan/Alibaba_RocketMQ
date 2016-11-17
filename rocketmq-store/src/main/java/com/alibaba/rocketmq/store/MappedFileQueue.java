@@ -185,7 +185,17 @@ public class MappedFileQueue {
                 }
             });
 
+            long prevOffset = 0;
+            long currentOffset;
             for (File file : files) {
+                currentOffset = Long.parseLong(file.getName());
+                if (currentOffset != 0 && currentOffset - prevOffset != mappedFileSize) {
+                    log.error("Mapped file queue is tampered.");
+                    return false;
+                } else {
+                    prevOffset = currentOffset;
+                }
+
                 // 校验文件大小是否匹配
                 if (file.length() != this.mappedFileSize) {
                     log.warn(file + "\t" + file.length() + " length not matched message store config value, ignore it");
