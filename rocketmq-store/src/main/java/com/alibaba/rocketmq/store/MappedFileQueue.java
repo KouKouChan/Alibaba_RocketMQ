@@ -187,16 +187,21 @@ public class MappedFileQueue {
 
             long prevOffset = 0;
             long currentOffset;
+            boolean first = true;
             for (File file : files) {
                 currentOffset = Long.parseLong(file.getName());
-                if (currentOffset != 0 && currentOffset - prevOffset != mappedFileSize) {
-                    log.error("Mapped file queue is tampered.");
+                if (first) {
+                    first = false;
+                    prevOffset = currentOffset;
+                } else if (currentOffset - prevOffset != mappedFileSize) {
+                    log.error("Mapped file queue is tampered. Previous offset: {}; current offset: {}",
+                            prevOffset, currentOffset);
 
                     // Debug info
                     log.warn("Commit log store paths are: {}", storePath);
                     log.warn("Files in order are:");
-                    for (int i = 0; i < files.size(); i++) {
-                        log.warn(files.get(i).getAbsolutePath());
+                    for (File f : files) {
+                        log.warn(f.getAbsolutePath());
                     }
                     // End of debug
 
@@ -213,11 +218,10 @@ public class MappedFileQueue {
 
                 // 恢复队列
                 try {
-                    MappedFile mapedFile = new MappedFile(file.getPath(), mappedFileSize);
-
-                    mapedFile.setWrotePosition(this.mappedFileSize);
-                    mapedFile.setCommittedPosition(this.mappedFileSize);
-                    this.mappedFiles.add(mapedFile);
+                    MappedFile mappedFile = new MappedFile(file.getPath(), mappedFileSize);
+                    mappedFile.setWrotePosition(this.mappedFileSize);
+                    mappedFile.setCommittedPosition(this.mappedFileSize);
+                    this.mappedFiles.add(mappedFile);
                     log.info("load " + file.getPath() + " OK");
                 } catch (IOException e) {
                     log.error("load file " + file + " error", e);
