@@ -17,8 +17,12 @@ package com.alibaba.rocketmq.example.quickstart;
 
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
+import com.alibaba.rocketmq.client.producer.SendCallback;
 import com.alibaba.rocketmq.client.producer.SendResult;
+import com.alibaba.rocketmq.client.producer.selector.Region;
+import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByRegion;
 import com.alibaba.rocketmq.common.message.Message;
+import com.google.common.util.concurrent.RateLimiter;
 
 import java.util.Arrays;
 
@@ -34,25 +38,31 @@ public class Producer {
         producer.start();
         byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'x');
+        float limit = 5000;
+        if (args.length > 0) {
+            limit = Float.parseFloat(args[0]);
+        }
+        Message msg = new Message("T_QuickStart",// topic
+                "TagA",// tag
+                data
+        );
+        RateLimiter rateLimiter = RateLimiter.create(limit);
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
+            rateLimiter.acquire();
             try {
-                Message msg = new Message("T_QuickStart",// topic
-                        "TagA",// tag
-                        data
-                );
-                SendResult sendResult = producer.send(msg);
-                System.out.println(sendResult);
-//                producer.send(msg, new SelectMessageQueueByRegion(Region.ANY), null, new SendCallback() {
-//                    @Override
-//                    public void onSuccess(SendResult sendResult) {
-//                        System.out.println(sendResult);
-//                    }
-//
-//                    @Override
-//                    public void onException(Throwable e) {
-//                        e.printStackTrace();
-//                    }
-//                });
+//                SendResult sendResult = producer.send(msg);
+//                System.out.println(sendResult);
+                producer.send(msg, new SelectMessageQueueByRegion(Region.ANY), null, new SendCallback() {
+                    @Override
+                    public void onSuccess(SendResult sendResult) {
+                        System.out.println(sendResult);
+                    }
+
+                    @Override
+                    public void onException(Throwable e) {
+                        e.printStackTrace();
+                    }
+                });
             } catch (Exception e) {
                 e.printStackTrace();
                 Thread.sleep(1000);
