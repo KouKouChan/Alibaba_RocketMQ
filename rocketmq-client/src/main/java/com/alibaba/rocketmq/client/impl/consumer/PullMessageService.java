@@ -38,8 +38,6 @@ public class PullMessageService extends ServiceThread {
                     return new Thread(r, "PullMessageServiceScheduledThread");
                 }
             });
-    ;
-
 
     public PullMessageService(MQClientInstance mQClientFactory) {
         this.mQClientFactory = mQClientFactory;
@@ -86,7 +84,7 @@ public class PullMessageService extends ServiceThread {
     public void run() {
         log.info(this.getServiceName() + " service started");
 
-        while (!this.isStoped()) {
+        while (!this.isStopped()) {
             try {
                 PullRequest pullRequest = this.pullRequestQueue.take();
                 if (pullRequest != null) {

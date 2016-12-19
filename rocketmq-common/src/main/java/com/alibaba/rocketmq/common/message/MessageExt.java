@@ -64,7 +64,7 @@ public class MessageExt extends Message {
     }
 
     public static TopicFilterType parseTopicFilterType(final int sysFlag) {
-        if ((sysFlag & MessageSysFlag.MultiTagsFlag) == MessageSysFlag.MultiTagsFlag) {
+        if ((sysFlag & MessageSysFlag.MULTI_TAGS_FLAG) == MessageSysFlag.MULTI_TAGS_FLAG) {
             return TopicFilterType.MULTI_TAG;
         }
 
@@ -74,16 +74,30 @@ public class MessageExt extends Message {
     public ByteBuffer getBornHostBytes() {
         return socketAddress2ByteBuffer(this.bornHost);
     }
-    public static ByteBuffer socketAddress2ByteBuffer(SocketAddress socketAddress) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
+
+    public ByteBuffer getBornHostBytes(ByteBuffer byteBuffer) {
+        return socketAddress2ByteBuffer(this.bornHost, byteBuffer);
+    }
+
+    private static ByteBuffer socketAddress2ByteBuffer(final SocketAddress socketAddress, final ByteBuffer byteBuffer) {
         InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
-        byteBuffer.put(inetSocketAddress.getAddress().getAddress());
+        byteBuffer.put(inetSocketAddress.getAddress().getAddress(), 0, 4);
         byteBuffer.putInt(inetSocketAddress.getPort());
         byteBuffer.flip();
         return byteBuffer;
     }
+
+    public static ByteBuffer socketAddress2ByteBuffer(SocketAddress socketAddress) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
+        return socketAddress2ByteBuffer(socketAddress, byteBuffer);
+    }
+
     public ByteBuffer getStoreHostBytes() {
         return socketAddress2ByteBuffer(this.storeHost);
+    }
+
+    public ByteBuffer getStoreHostBytes(ByteBuffer byteBuffer) {
+        return socketAddress2ByteBuffer(this.storeHost, byteBuffer);
     }
 
     public int getQueueId() {

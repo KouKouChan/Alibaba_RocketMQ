@@ -5,14 +5,14 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.alibaba.rocketmq.common;
 
@@ -52,10 +52,11 @@ public class BrokerConfig {
     private boolean autoCreateSubscriptionGroup = true;
     private String messageStorePlugIn = "";
 
-    private int sendMessageThreadPoolNums = 16 + Runtime.getRuntime().availableProcessors() * 4;
+    private int sendMessageThreadPoolNums = 1; //16 + Runtime.getRuntime().availableProcessors() * 4;
     private int pullMessageThreadPoolNums = 16 + Runtime.getRuntime().availableProcessors() * 2;
     private int adminBrokerThreadPoolNums = 16;
-    private int clientManageThreadPoolNums = 16;
+    private int clientManageThreadPoolNums = 32;
+    private int consumerManageThreadPoolNums = 32;
 
     private int flushConsumerOffsetInterval = 1000 * 5;
 
@@ -66,7 +67,9 @@ public class BrokerConfig {
     @ImportantField
     private boolean fetchNamesrvAddrByAddressServer = false;
     private int sendThreadPoolQueueCapacity = 10000;
-    private int pullThreadPoolQueueCapacity = 10000;
+    private int pullThreadPoolQueueCapacity = 100000;
+    private int clientManagerThreadPoolQueueCapacity = 1000000;
+    private int consumerManagerThreadPoolQueueCapacity = 1000000;
 
     private int filterServerNums = 0;
 
@@ -87,7 +90,7 @@ public class BrokerConfig {
     private int maxDelayTime = 40;
 
 
-    private String regionId = "DefaultRegion";
+    private String regionId = MixAll.DEFAULT_TRACE_REGION_ID;
     private int registerBrokerTimeoutMills = 6000;
 
     private boolean slaveReadEnable = false;
@@ -98,6 +101,16 @@ public class BrokerConfig {
     private long waitTimeMillsInSendQueue = 200;
 
     private long startAcceptSendRequestTimeStamp = 0L;
+
+    private boolean traceOn = true;
+
+    public boolean isTraceOn() {
+        return traceOn;
+    }
+
+    public void setTraceOn(final boolean traceOn) {
+        this.traceOn = traceOn;
+    }
 
     public long getStartAcceptSendRequestTimeStamp() {
         return startAcceptSendRequestTimeStamp;
@@ -270,11 +283,9 @@ public class BrokerConfig {
         this.brokerIP2 = brokerIP2;
     }
 
-
     public int getSendMessageThreadPoolNums() {
         return sendMessageThreadPoolNums;
     }
-
 
     public void setSendMessageThreadPoolNums(int sendMessageThreadPoolNums) {
         this.sendMessageThreadPoolNums = sendMessageThreadPoolNums;
@@ -501,5 +512,29 @@ public class BrokerConfig {
 
     public void setMaxDelayTime(final int maxDelayTime) {
         this.maxDelayTime = maxDelayTime;
+    }
+
+    public int getClientManagerThreadPoolQueueCapacity() {
+        return clientManagerThreadPoolQueueCapacity;
+    }
+
+    public void setClientManagerThreadPoolQueueCapacity(int clientManagerThreadPoolQueueCapacity) {
+        this.clientManagerThreadPoolQueueCapacity = clientManagerThreadPoolQueueCapacity;
+    }
+
+    public int getConsumerManagerThreadPoolQueueCapacity() {
+        return consumerManagerThreadPoolQueueCapacity;
+    }
+
+    public void setConsumerManagerThreadPoolQueueCapacity(int consumerManagerThreadPoolQueueCapacity) {
+        this.consumerManagerThreadPoolQueueCapacity = consumerManagerThreadPoolQueueCapacity;
+    }
+
+    public int getConsumerManageThreadPoolNums() {
+        return consumerManageThreadPoolNums;
+    }
+
+    public void setConsumerManageThreadPoolNums(int consumerManageThreadPoolNums) {
+        this.consumerManageThreadPoolNums = consumerManageThreadPoolNums;
     }
 }

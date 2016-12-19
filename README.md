@@ -11,7 +11,7 @@ It offers a variety of features as follows:
 * Reliable FIFO and strict sequential messaging in the same queue
 * Long pull queue model,also support push consumption style
 * Million message accumulation ability in single queue
-* Over a variety of messaging protocols.such as JMS,MQTT[![Cloud Charge] (https://img.shields.io/badge/cloud-charge-red.svg)](https://www.aliyun.com/product/ons/?spm=5176.7960203.237031.135.67OdNO) etc.
+* Over a variety of messaging protocols.such as JMS,MQTT,HTTP etc.
 * Distributed high available deploy architecture, meets at least once message delivery semantics
 * Docker images for isolated testing and cloud Isolated clusters
 * Feature-rich administrative dashboard for configuration,metrics and monitoring [![Cloud Charge](https://img.shields.io/badge/cloud-charge-red.svg)](https://www.aliyun.com/product/ons/?spm=5176.7960203.237031.135.67OdNO)
@@ -42,11 +42,10 @@ It offers a variety of features as follows:
 * [Integrate with Alibaba Canal](https://github.com/alibaba/canal)
 * [RocketMQ Community Projects](https://github.com/rocketmq)
 
-
 ----------
 
 ## Contributing
-We are always very happy to have contributions, whether for trivial cleanups,big new features or other material rewards. more details see [here](https://github.com/alibaba/RocketMQ/wiki/how-to-be) 
+We are always very happy to have contributions, whether for trivial cleanups,big new features or other material rewards. more details see [here](https://github.com/alibaba/RocketMQ/wiki/How-to-donate) 
  
 ----------
 ## License

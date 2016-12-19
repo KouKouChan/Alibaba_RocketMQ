@@ -6,13 +6,13 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.alibaba.rocketmq.client.impl.factory;
 
@@ -62,7 +62,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author shijia.wxr
  */
 public class MQClientInstance {
-    private final static long LockTimeoutMillis = 3000;
+    private final static long LOCK_TIMEOUT_MILLIS = 3000;
     private final Logger log = ClientLogger.getLog();
     private final ClientConfig clientConfig;
     private final int instanceIndex;
@@ -93,6 +93,7 @@ public class MQClientInstance {
     private final AtomicLong storeTimesTotal = new AtomicLong(0);
     private ServiceState serviceState = ServiceState.CREATE_JUST;
     private DatagramSocket datagramSocket;
+    private Random random = new Random();
 
 
     public MQClientInstance(ClientConfig clientConfig, int instanceIndex, String clientId) {
@@ -130,7 +131,7 @@ public class MQClientInstance {
                 this.instanceIndex, //
                 this.clientId, //
                 this.clientConfig, //
-                MQVersion.getVersionDesc(MQVersion.CurrentVersion), RemotingCommand.getSerializeTypeConfigInThisServer());
+                MQVersion.getVersionDesc(MQVersion.CURRENT_VERSION), RemotingCommand.getSerializeTypeConfigInThisServer());
     }
 
     public void start() throws MQClientException {
@@ -281,7 +282,7 @@ public class MQClientInstance {
      */
     private void cleanOfflineBroker() {
         try {
-            if (this.lockNamesrv.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS))
+            if (this.lockNamesrv.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
                 try {
                     ConcurrentHashMap<String, HashMap<Long, String>> updatedTable = new ConcurrentHashMap<String, HashMap<Long, String>>();
 
@@ -457,7 +458,7 @@ public class MQClientInstance {
 
     public boolean updateTopicRouteInfoFromNameServer(final String topic, boolean isDefault, DefaultMQProducer defaultMQProducer) {
         try {
-            if (this.lockNamesrv.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS)) {
+            if (this.lockNamesrv.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
                 try {
                     TopicRouteData topicRouteData;
                     if (isDefault && defaultMQProducer != null) {
@@ -530,7 +531,7 @@ public class MQClientInstance {
                     this.lockNamesrv.unlock();
                 }
             } else {
-                log.warn("updateTopicRouteInfoFromNameServer tryLock timeout {}ms", LockTimeoutMillis);
+                log.warn("updateTopicRouteInfoFromNameServer tryLock timeout {}ms", LOCK_TIMEOUT_MILLIS);
             }
         } catch (InterruptedException e) {
             log.warn("updateTopicRouteInfoFromNameServer Exception", e);
@@ -546,7 +547,7 @@ public class MQClientInstance {
         heartbeatData.setClientID(this.clientId);
 
         // Consumer
-        for(Map.Entry<String,MQConsumerInner> entry: this.consumerTable.entrySet()){
+        for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();
             if (impl != null) {
                 ConsumerData consumerData = new ConsumerData();
@@ -796,7 +797,7 @@ public class MQClientInstance {
 
     private void unregisterClientWithLock(final String producerGroup, final String consumerGroup) {
         try {
-            if (this.lockHeartbeat.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS)) {
+            if (this.lockHeartbeat.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
                 try {
                     this.unregisterClient(producerGroup, consumerGroup);
                 } catch (Exception e) {
@@ -887,7 +888,7 @@ public class MQClientInstance {
             if (impl != null) {
                 try {
                     impl.doRebalance();
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.error("doRebalance exception", e);
                 }
             }
@@ -955,13 +956,13 @@ public class MQClientInstance {
         HashMap<Long/* brokerId */, String/* address */> map = this.brokerAddrTable.get(brokerName);
         if (map != null && !map.isEmpty()) {
             brokerAddr = map.get(brokerId);
-            slave = (brokerId != MixAll.MASTER_ID);
-            found = (brokerAddr != null);
+            slave = brokerId != MixAll.MASTER_ID;
+            found = brokerAddr != null;
 
             if (!found && !onlyThisBroker) {
                 Entry<Long, String> entry = map.entrySet().iterator().next();
                 brokerAddr = entry.getValue();
-                slave = (entry.getKey() != MixAll.MASTER_ID);
+                slave = entry.getKey() != MixAll.MASTER_ID;
                 found = true;
             }
         }
@@ -996,7 +997,8 @@ public class MQClientInstance {
         if (topicRouteData != null) {
             List<BrokerData> brokers = topicRouteData.getBrokerDatas();
             if (!brokers.isEmpty()) {
-                BrokerData bd = brokers.get(0);
+                int index = random.nextInt(brokers.size());
+                BrokerData bd = brokers.get(index % brokers.size());
                 return bd.selectBrokerAddr();
             }
         }
@@ -1014,35 +1016,36 @@ public class MQClientInstance {
                 log.info("[reset-offset] consumer dose not exist. group={}", group);
                 return;
             }
-
             consumer.suspend();
 
             ConcurrentHashMap<MessageQueue, ProcessQueue> processQueueTable = consumer.getRebalanceImpl().getProcessQueueTable();
-
-            for(Map.Entry<MessageQueue,ProcessQueue> entry : processQueueTable.entrySet()){
+            for (Map.Entry<MessageQueue, ProcessQueue> entry : processQueueTable.entrySet()) {
                 MessageQueue mq = entry.getKey();
-                if(topic.equals(mq.getTopic())){
+                if (topic.equals(mq.getTopic()) && offsetTable.containsKey(mq)) {
                     ProcessQueue pq = entry.getValue();
                     pq.setDropped(true);
                     pq.clear();
                 }
             }
 
-
             try {
-                TimeUnit.SECONDS.sleep(30);
+                TimeUnit.SECONDS.sleep(10);
             } catch (InterruptedException e) {
                 //
             }
 
-            processQueueTable = consumer.getRebalanceImpl().getProcessQueueTable();
-
-            for (Map.Entry<MessageQueue, ProcessQueue> entry : processQueueTable.entrySet()) {
-                MessageQueue mq = entry.getKey();
-                if (topic.equals(mq.getTopic())) {
-                    consumer.updateConsumeOffset(mq, offsetTable.get(mq));
-                    consumer.getRebalanceImpl().removeUnnecessaryMessageQueue(mq, entry.getValue());
-                    processQueueTable.remove(mq);
+            Iterator<MessageQueue> iterator = processQueueTable.keySet().iterator();
+            while (iterator.hasNext()) {
+                MessageQueue mq = iterator.next();
+                Long offset = offsetTable.get(mq);
+                if (topic.equals(mq.getTopic()) && offset != null) {
+                    try {
+                        consumer.updateConsumeOffset(mq, offset);
+                        consumer.getRebalanceImpl().removeUnnecessaryMessageQueue(mq, processQueueTable.get(mq));
+                        iterator.remove();
+                    } catch (Exception e) {
+                        log.warn("reset offset failed. group={}, {}", group, mq, e);
+                    }
                 }
             }
         } finally {
@@ -1128,7 +1131,7 @@ public class MQClientInstance {
         consumerRunningInfo.getProperties().put(ConsumerRunningInfo.PROP_NAMESERVER_ADDR, nsAddr);
         consumerRunningInfo.getProperties().put(ConsumerRunningInfo.PROP_CONSUME_TYPE, mqConsumerInner.consumeType().name());
         consumerRunningInfo.getProperties().put(ConsumerRunningInfo.PROP_CLIENT_VERSION,
-                MQVersion.getVersionDesc(MQVersion.CurrentVersion));
+                MQVersion.getVersionDesc(MQVersion.CURRENT_VERSION));
 
         return consumerRunningInfo;
     }

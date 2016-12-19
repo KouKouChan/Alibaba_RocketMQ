@@ -20,19 +20,24 @@ import com.alibaba.rocketmq.common.constant.LoggerName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author shijia.wxr
+ * @author xinyuzhou.zxy
  */
 public abstract class ServiceThread implements Runnable {
-    private static final Logger stlog = LoggerFactory.getLogger(LoggerName.CommonLoggerName);
-    private static final long JoinTime = 90 * 1000;
+    private static final Logger STLOG = LoggerFactory.getLogger(LoggerName.COMMON_LOGGER_NAME);
+    private static final long JOIN_TIME = 90 * 1000;
 
     protected final Thread thread;
 
-    protected volatile boolean hasNotified = false;
+    protected volatile AtomicBoolean hasNotified = new AtomicBoolean(false);
 
-    protected volatile boolean stoped = false;
+    protected volatile boolean stopped = false;
+
+    protected final CountDownLatch waitPoint = new CountDownLatch(1);
 
 
     public ServiceThread() {
@@ -53,13 +58,11 @@ public abstract class ServiceThread implements Runnable {
     }
 
     public void shutdown(final boolean interrupt) {
-        this.stoped = true;
-        stlog.info("shutdown thread " + this.getServiceName() + " interrupt " + interrupt);
-        synchronized (this) {
-            if (!this.hasNotified) {
-                this.hasNotified = true;
-                this.notify();
-            }
+        this.stopped = true;
+        STLOG.info("shutdown thread " + this.getServiceName() + " interrupt " + interrupt);
+
+        if (hasNotified.compareAndSet(false, true)) {
+            waitPoint.countDown(); // notify
         }
 
         try {
@@ -72,7 +75,7 @@ public abstract class ServiceThread implements Runnable {
                 this.thread.join(this.getJointime());
             }
             long eclipseTime = System.currentTimeMillis() - beginTime;
-            stlog.info("join thread " + this.getServiceName() + " eclipse time(ms) " + eclipseTime + " "
+            STLOG.info("join thread " + this.getServiceName() + " eclipse time(ms) " + eclipseTime + " "
                     + this.getJointime());
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -80,7 +83,7 @@ public abstract class ServiceThread implements Runnable {
     }
 
     public long getJointime() {
-        return JoinTime;
+        return JOIN_TIME;
     }
 
     public void stop() {
@@ -88,13 +91,11 @@ public abstract class ServiceThread implements Runnable {
     }
 
     public void stop(final boolean interrupt) {
-        this.stoped = true;
-        stlog.info("stop thread " + this.getServiceName() + " interrupt " + interrupt);
-        synchronized (this) {
-            if (!this.hasNotified) {
-                this.hasNotified = true;
-                this.notify();
-            }
+        this.stopped = true;
+        STLOG.info("stop thread " + this.getServiceName() + " interrupt " + interrupt);
+
+        if (hasNotified.compareAndSet(false, true)) {
+            waitPoint.countDown(); // notify
         }
 
         if (interrupt) {
@@ -103,42 +104,39 @@ public abstract class ServiceThread implements Runnable {
     }
 
     public void makeStop() {
-        this.stoped = true;
-        stlog.info("makestop thread " + this.getServiceName());
+        this.stopped = true;
+        STLOG.info("makestop thread " + this.getServiceName());
     }
 
     public void wakeup() {
-        synchronized (this) {
-            if (!this.hasNotified) {
-                this.hasNotified = true;
-                this.notify();
-            }
+        if (hasNotified.compareAndSet(false, true)) {
+            waitPoint.countDown(); // notify
         }
     }
 
     protected void waitForRunning(long interval) {
-        synchronized (this) {
-            if (this.hasNotified) {
-                this.hasNotified = false;
-                this.onWaitEnd();
-                return;
-            }
+        if (hasNotified.compareAndSet(true, false)) {
+            this.onWaitEnd();
+            return;
+        }
 
-            try {
-                this.wait(interval);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                this.hasNotified = false;
-                this.onWaitEnd();
-            }
+        //entry to wait
+        waitPoint.reset();
+
+        try {
+            waitPoint.await(interval, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            hasNotified.set(false);
+            this.onWaitEnd();
         }
     }
 
     protected void onWaitEnd() {
     }
 
-    public boolean isStoped() {
-        return stoped;
+    public boolean isStopped() {
+        return stopped;
     }
 }

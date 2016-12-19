@@ -6,13 +6,13 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.alibaba.rocketmq.tools.command.stats;
@@ -21,6 +21,7 @@ import com.alibaba.rocketmq.client.exception.MQBrokerException;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.UtilAll;
+import com.alibaba.rocketmq.common.admin.ConsumeStats;
 import com.alibaba.rocketmq.common.protocol.body.BrokerStatsData;
 import com.alibaba.rocketmq.common.protocol.body.GroupList;
 import com.alibaba.rocketmq.common.protocol.body.TopicList;
@@ -30,7 +31,6 @@ import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.remoting.exception.RemotingException;
 import com.alibaba.rocketmq.store.stats.BrokerStatsManager;
 import com.alibaba.rocketmq.tools.admin.DefaultMQAdminExt;
-import com.alibaba.rocketmq.tools.command.MQAdminStartup;
 import com.alibaba.rocketmq.tools.command.SubCommand;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -38,12 +38,6 @@ import org.apache.commons.cli.Options;
 
 
 public class StatsAllSubCommand implements SubCommand {
-
-    public static void main(String[] args) {
-        System.setProperty(MixAll.NAMESRV_ADDR_PROPERTY, "10.101.87.102:9876");
-        MQAdminStartup.main(new String[]{new StatsAllSubCommand().commandName()});
-    }
-
     @Override
     public String commandName() {
         return "statsAll";
@@ -57,6 +51,10 @@ public class StatsAllSubCommand implements SubCommand {
     @Override
     public Options buildCommandlineOptions(Options options) {
         Option opt = new Option("a", "activeTopic", false, "print active topic only");
+        opt.setRequired(false);
+        options.addOption(opt);
+
+        opt = new Option("t", "topic", true, "print select topic only");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -74,19 +72,25 @@ public class StatsAllSubCommand implements SubCommand {
 
             TopicList topicList = defaultMQAdminExt.fetchAllTopicList();
 
-            System.out.printf("%-32s  %-32s %11s %11s %14s %14s%n",//
-                    "#Topic",//
-                    "#Consumer Group",//
-                    "#InTPS",//
-                    "#OutTPS",//
-                    "#InMsg24Hour",//
-                    "#OutMsg24Hour"//
+            System.out.printf("%-32s  %-32s %12s %11s %11s %14s %14s%n",
+                    "#Topic",
+                    "#Consumer Group",
+                    "#Accumulation",
+                    "#InTPS",
+                    "#OutTPS",
+                    "#InMsg24Hour",
+                    "#OutMsg24Hour"
             );
 
             boolean activeTopic = commandLine.hasOption('a');
+            String selectTopic = commandLine.getOptionValue('t');
 
             for (String topic : topicList.getTopicList()) {
                 if (topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX) || topic.startsWith(MixAll.DLQ_GROUP_TOPIC_PREFIX)) {
+                    continue;
+                }
+
+                if (selectTopic != null && selectTopic != "" && !topic.equals(selectTopic)) {
                     continue;
                 }
 
@@ -144,31 +148,43 @@ public class StatsAllSubCommand implements SubCommand {
                     }
                 }
 
-                if (!activeTopic || (inMsgCntToday > 0) || //
+                long accumulate = 0;
+                try {
+                    ConsumeStats consumeStats = admin.examineConsumeStats(group, topic);
+                    if (consumeStats != null) {
+                        accumulate = consumeStats.computeTotalDiff();
+                        if (accumulate < 0) {
+                            accumulate = 0;
+                        }
+                    }
+                } catch (Exception e) {
+                }
+
+                if (!activeTopic || (inMsgCntToday > 0) ||
                         (outMsgCntToday > 0)) {
 
-                    System.out.printf("%-32s  %-32s %11.2f %11.2f %14d %14d%n",//
-                            UtilAll.frontStringAtLeast(topic, 32),//
-                            UtilAll.frontStringAtLeast(group, 32),//
-                            inTPS,//
-                            outTPS,//
-                            inMsgCntToday,//
-                            outMsgCntToday//
+                    System.out.printf("%-32s  %-32s %12d %11.2f %11.2f %14d %14d%n",
+                            UtilAll.frontStringAtLeast(topic, 32),
+                            UtilAll.frontStringAtLeast(group, 32),
+                            accumulate,
+                            inTPS,
+                            outTPS,
+                            inMsgCntToday,
+                            outMsgCntToday
                     );
                 }
             }
-        }
-
-        else {
+        } else {
             if (!activeTopic || (inMsgCntToday > 0)) {
 
-                System.out.printf("%-32s  %-32s %11.2f %11s %14d %14s%n",//
-                        UtilAll.frontStringAtLeast(topic, 32),//
-                        "",//
-                        inTPS,//
-                        "",//
-                        inMsgCntToday,//
-                        "NO_CONSUMER"//
+                System.out.printf("%-32s  %-32s %12d %11.2f %11s %14d %14s%n",
+                        UtilAll.frontStringAtLeast(topic, 32),
+                        "",
+                        0,
+                        inTPS,
+                        "",
+                        inMsgCntToday,
+                        "NO_CONSUMER"
                 );
             }
         }

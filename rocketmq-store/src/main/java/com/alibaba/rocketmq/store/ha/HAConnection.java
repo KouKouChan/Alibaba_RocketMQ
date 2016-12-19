@@ -19,7 +19,7 @@ package com.alibaba.rocketmq.store.ha;
 import com.alibaba.rocketmq.common.ServiceThread;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.remoting.common.RemotingUtil;
-import com.alibaba.rocketmq.store.SelectMapedBufferResult;
+import com.alibaba.rocketmq.store.SelectMappedBufferResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ import java.nio.channels.SocketChannel;
  * @author shijia.wxr
  */
 public class HAConnection {
-    private static final Logger log = LoggerFactory.getLogger(LoggerName.StoreLoggerName);
+    private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final HAService haService;
     private final SocketChannel socketChannel;
     private final String clientAddr;
@@ -94,10 +94,10 @@ public class HAConnection {
      * @author shijia.wxr
      */
     class ReadSocketService extends ServiceThread {
-        private static final int ReadMaxBufferSize = 1024 * 1024;
+        private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024;
         private final Selector selector;
         private final SocketChannel socketChannel;
-        private final ByteBuffer byteBufferRead = ByteBuffer.allocate(ReadMaxBufferSize);
+        private final ByteBuffer byteBufferRead = ByteBuffer.allocate(READ_MAX_BUFFER_SIZE);
         private int processPostion = 0;
         private volatile long lastReadTimestamp = System.currentTimeMillis();
 
@@ -114,7 +114,7 @@ public class HAConnection {
         public void run() {
             HAConnection.log.info(this.getServiceName() + " service started");
 
-            while (!this.isStoped()) {
+            while (!this.isStopped()) {
                 try {
                     this.selector.select(1000);
                     boolean ok = this.processReadEvent();
@@ -221,10 +221,10 @@ public class HAConnection {
         private final Selector selector;
         private final SocketChannel socketChannel;
 
-        private final int HEADER_SIZE = 8 + 4;
-        private final ByteBuffer byteBufferHeader = ByteBuffer.allocate(HEADER_SIZE);
+        private final int headerSize = 8 + 4;
+        private final ByteBuffer byteBufferHeader = ByteBuffer.allocate(headerSize);
         private long nextTransferFromWhere = -1;
-        private SelectMapedBufferResult selectMapedBufferResult;
+        private SelectMappedBufferResult selectMappedBufferResult;
         private boolean lastWriteOver = true;
         private long lastWriteTimestamp = System.currentTimeMillis();
 
@@ -241,7 +241,7 @@ public class HAConnection {
         public void run() {
             HAConnection.log.info(this.getServiceName() + " service started");
 
-            while (!this.isStoped()) {
+            while (!this.isStopped()) {
                 try {
                     this.selector.select(1000);
 
@@ -283,7 +283,7 @@ public class HAConnection {
 
                             // Build Header
                             this.byteBufferHeader.position(0);
-                            this.byteBufferHeader.limit(HEADER_SIZE);
+                            this.byteBufferHeader.limit(headerSize);
                             this.byteBufferHeader.putLong(this.nextTransferFromWhere);
                             this.byteBufferHeader.putInt(0);
                             this.byteBufferHeader.flip();
@@ -300,7 +300,7 @@ public class HAConnection {
                             continue;
                     }
 
-                    SelectMapedBufferResult selectResult =
+                    SelectMappedBufferResult selectResult =
                             HAConnection.this.haService.getDefaultMessageStore().getCommitLogData(this.nextTransferFromWhere);
                     if (selectResult != null) {
                         int size = selectResult.getSize();
@@ -312,11 +312,11 @@ public class HAConnection {
                         this.nextTransferFromWhere += size;
 
                         selectResult.getByteBuffer().limit(size);
-                        this.selectMapedBufferResult = selectResult;
+                        this.selectMappedBufferResult = selectResult;
 
                         // Build Header
                         this.byteBufferHeader.position(0);
-                        this.byteBufferHeader.limit(HEADER_SIZE);
+                        this.byteBufferHeader.limit(headerSize);
                         this.byteBufferHeader.putLong(thisOffset);
                         this.byteBufferHeader.putInt(size);
                         this.byteBufferHeader.flip();
@@ -334,8 +334,8 @@ public class HAConnection {
             }
 
 
-            if (this.selectMapedBufferResult != null) {
-                this.selectMapedBufferResult.release();
+            if (this.selectMappedBufferResult != null) {
+                this.selectMappedBufferResult.release();
             }
 
             this.makeStop();
@@ -381,7 +381,7 @@ public class HAConnection {
                 }
             }
 
-            if (null == this.selectMapedBufferResult) {
+            if (null == this.selectMappedBufferResult) {
                 return !this.byteBufferHeader.hasRemaining();
             }
 
@@ -389,8 +389,8 @@ public class HAConnection {
 
             // Write Body
             if (!this.byteBufferHeader.hasRemaining()) {
-                while (this.selectMapedBufferResult.getByteBuffer().hasRemaining()) {
-                    int writeSize = this.socketChannel.write(this.selectMapedBufferResult.getByteBuffer());
+                while (this.selectMappedBufferResult.getByteBuffer().hasRemaining()) {
+                    int writeSize = this.socketChannel.write(this.selectMappedBufferResult.getByteBuffer());
                     if (writeSize > 0) {
                         writeSizeZeroTimes = 0;
                         this.lastWriteTimestamp = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now();
@@ -404,11 +404,11 @@ public class HAConnection {
                 }
             }
 
-            boolean result = !this.byteBufferHeader.hasRemaining() && !this.selectMapedBufferResult.getByteBuffer().hasRemaining();
+            boolean result = !this.byteBufferHeader.hasRemaining() && !this.selectMappedBufferResult.getByteBuffer().hasRemaining();
 
-            if (!this.selectMapedBufferResult.getByteBuffer().hasRemaining()) {
-                this.selectMapedBufferResult.release();
-                this.selectMapedBufferResult = null;
+            if (!this.selectMappedBufferResult.getByteBuffer().hasRemaining()) {
+                this.selectMappedBufferResult.release();
+                this.selectMappedBufferResult = null;
             }
 
             return result;

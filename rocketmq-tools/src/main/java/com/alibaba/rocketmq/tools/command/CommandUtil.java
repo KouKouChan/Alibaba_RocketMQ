@@ -6,13 +6,13 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.alibaba.rocketmq.tools.command;
 
@@ -32,6 +32,46 @@ import java.util.*;
  * @author shijia.wxr
  */
 public class CommandUtil {
+
+    public static Map<String/*master addr*/, List<String>/*slave addr*/> fetchMasterAndSlaveDistinguish(
+            final MQAdminExt adminExt, final String clusterName)
+            throws InterruptedException, RemotingConnectException,
+            RemotingTimeoutException, RemotingSendRequestException,
+            MQBrokerException {
+        Map<String, List<String>> masterAndSlaveMap = new HashMap<String, List<String>>(4);
+
+        ClusterInfo clusterInfoSerializeWrapper = adminExt.examineBrokerClusterInfo();
+        Set<String> brokerNameSet = clusterInfoSerializeWrapper.getClusterAddrTable().get(clusterName);
+
+        if (brokerNameSet == null) {
+            System.out
+                    .printf("[error] Make sure the specified clusterName exists or the nameserver which connected is correct.");
+            return masterAndSlaveMap;
+        }
+
+        for (String brokerName : brokerNameSet) {
+            BrokerData brokerData = clusterInfoSerializeWrapper.getBrokerAddrTable().get(brokerName);
+
+            if (brokerData == null || brokerData.getBrokerAddrs() == null) {
+                continue;
+            }
+
+            String masterAddr = brokerData.getBrokerAddrs().get(MixAll.MASTER_ID);
+            masterAndSlaveMap.put(masterAddr, new ArrayList<String>());
+
+            for (Long id : brokerData.getBrokerAddrs().keySet()) {
+                if (brokerData.getBrokerAddrs().get(id) == null
+                        || id.longValue() == MixAll.MASTER_ID) {
+                    continue;
+                }
+
+                masterAndSlaveMap.get(masterAddr).add(brokerData.getBrokerAddrs().get(id));
+            }
+        }
+
+        return masterAndSlaveMap;
+    }
+
     public static Set<String> fetchMasterAddrByClusterName(final MQAdminExt adminExt, final String clusterName)
             throws InterruptedException, RemotingConnectException, RemotingTimeoutException,
             RemotingSendRequestException, MQBrokerException {
@@ -50,6 +90,31 @@ public class CommandUtil {
                     if (addr != null) {
                         masterSet.add(addr);
                     }
+                }
+            }
+        } else {
+            System.out
+                    .printf("[error] Make sure the specified clusterName exists or the nameserver which connected is correct.");
+        }
+
+        return masterSet;
+    }
+
+    public static Set<String> fetchMasterAndSlaveAddrByClusterName(final MQAdminExt adminExt, final String clusterName)
+            throws InterruptedException, RemotingConnectException, RemotingTimeoutException,
+            RemotingSendRequestException, MQBrokerException {
+        Set<String> masterSet = new HashSet<String>();
+
+        ClusterInfo clusterInfoSerializeWrapper = adminExt.examineBrokerClusterInfo();
+
+        Set<String> brokerNameSet = clusterInfoSerializeWrapper.getClusterAddrTable().get(clusterName);
+
+        if (brokerNameSet != null) {
+            for (String brokerName : brokerNameSet) {
+                BrokerData brokerData = clusterInfoSerializeWrapper.getBrokerAddrTable().get(brokerName);
+                if (brokerData != null) {
+                    final Collection<String> addrs = brokerData.getBrokerAddrs().values();
+                    masterSet.addAll(addrs);
                 }
             }
         } else {

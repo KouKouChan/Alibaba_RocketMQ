@@ -6,13 +6,13 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.alibaba.rocketmq.tools.command.consumer;
 
@@ -88,6 +88,10 @@ public class UpdateSubGroupSubCommand implements SubCommand {
         opt.setRequired(false);
         options.addOption(opt);
 
+        opt = new Option("a", "notifyConsumerIdsChanged", true, "notify consumerId changed");
+        opt.setRequired(false);
+        options.addOption(opt);
+
         return options;
     }
 
@@ -147,6 +151,12 @@ public class UpdateSubGroupSubCommand implements SubCommand {
                         .getOptionValue('w').trim()));
             }
 
+            // notifyConsumerIdsChanged
+            if (commandLine.hasOption('a')) {
+                subscriptionGroupConfig.setNotifyConsumerIdsChangedEnable(Boolean.parseBoolean(commandLine
+                        .getOptionValue('a').trim()));
+            }
+
             if (commandLine.hasOption('b')) {
                 String addr = commandLine.getOptionValue('b').trim();
 
@@ -154,14 +164,13 @@ public class UpdateSubGroupSubCommand implements SubCommand {
 
                 defaultMQAdminExt.createAndUpdateSubscriptionGroupConfig(addr, subscriptionGroupConfig);
                 System.out.printf("create subscription group to %s success.%n", addr);
-                System.out.println(subscriptionGroupConfig);
+                System.out.printf("%s", subscriptionGroupConfig);
                 return;
 
             } else if (commandLine.hasOption('c')) {
                 String clusterName = commandLine.getOptionValue('c').trim();
 
                 defaultMQAdminExt.start();
-
                 Set<String> masterSet =
                         CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String addr : masterSet) {
@@ -173,7 +182,7 @@ public class UpdateSubGroupSubCommand implements SubCommand {
                         Thread.sleep(1000 * 1);
                     }
                 }
-                System.out.println(subscriptionGroupConfig);
+                System.out.printf("%s", subscriptionGroupConfig);
                 return;
             }
 

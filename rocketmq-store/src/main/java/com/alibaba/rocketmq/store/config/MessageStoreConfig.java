@@ -38,11 +38,21 @@ public class MessageStoreConfig {
 
     // CommitLog file size,default is 1G
     private int mapedFileSizeCommitLog = 1024 * 1024 * 1024;
-    // ConsumeQueue file size, default is 30W
-    private int mapedFileSizeConsumeQueue = 300000 * ConsumeQueue.CQStoreUnitSize;
+    // ConsumeQueue file size,default is 30W
+    private int mapedFileSizeConsumeQueue = 300000 * ConsumeQueue.CQ_STORE_UNIT_SIZE;
+
     // CommitLog flush interval
+    // flush data to disk
     @ImportantField
-    private int flushIntervalCommitLog = 1000;
+    private int flushIntervalCommitLog = 500;
+
+    // Only used if TransientStorePool enabled
+    // flush data to FileChannel
+    @ImportantField
+    private int commitIntervalCommitLog = 200;
+
+    private boolean useReentrantLockWhenPutMessage = false;
+
     // Whether schedule flush,default is real-time
     @ImportantField
     private boolean flushCommitLogTimed = false;
@@ -65,19 +75,22 @@ public class MessageStoreConfig {
     private int fileReservedTime = 72;
     // Flow control for ConsumeQueue
     private int putMsgIndexHightWater = 600000;
-    // The maximum size of a single log file，default is 512K
+    // The maximum size of a single log file,default is 512K
     private int maxMessageSize = 1024 * 1024 * 4;
     // Whether check the CRC32 of the records consumed.
     // This ensures no on-the-wire or on-disk corruption to the messages occurred.
-    // This check adds some overhead, so it may be disabled in cases seeking extreme performance.
+    // This check adds some overhead,so it may be disabled in cases seeking extreme performance.
     private boolean checkCRCOnRecover = true;
     // How many pages are to be flushed when flush CommitLog
     private int flushCommitLogLeastPages = 4;
+    // How many pages are to be committed when commit data to file
+    private int commitCommitLogLeastPages = 4;
     // Flush page size when the disk in warming state
     private int flushLeastPagesWhenWarmMapedFile = 1024 / 4 * 16;
     // How many pages are to be flushed when flush ConsumeQueue
     private int flushConsumeQueueLeastPages = 2;
     private int flushCommitLogThoroughInterval = 1000 * 10;
+    private int commitCommitLogThoroughInterval = 200;
     private int flushConsumeQueueThoroughInterval = 1000 * 60;
     @ImportantField
     private int maxTransferBytesOnMessageInMemory = 1024 * 256;
@@ -119,6 +132,11 @@ public class MessageStoreConfig {
     private boolean diskFallRecorded = true;
     private long osPageCacheBusyTimeOutMills = 1000;
     private int defaultQueryMaxNum = 32;
+
+    @ImportantField
+    private boolean transientStorePoolEnable = false;
+    private int transientStorePoolSize = 5;
+    private boolean fastFailIfNoBufferInStorePool = false;
     
     public boolean isDebugLockEnable() {
         return debugLockEnable;
@@ -174,8 +192,8 @@ public class MessageStoreConfig {
 
     public int getMapedFileSizeConsumeQueue() {
 
-        int factor = (int) Math.ceil(this.mapedFileSizeConsumeQueue / (ConsumeQueue.CQStoreUnitSize * 1.0));
-        return (int) (factor * ConsumeQueue.CQStoreUnitSize);
+        int factor = (int) Math.ceil(this.mapedFileSizeConsumeQueue / (ConsumeQueue.CQ_STORE_UNIT_SIZE * 1.0));
+        return (int) (factor * ConsumeQueue.CQ_STORE_UNIT_SIZE);
     }
 
 
@@ -645,6 +663,65 @@ public class MessageStoreConfig {
     public void setDefaultQueryMaxNum(int defaultQueryMaxNum) {
         this.defaultQueryMaxNum = defaultQueryMaxNum;
     }
-    
-    
+
+    /**
+     * Enable transient commitLog store poll only if transientStorePoolEnable is true and the FlushDiskType is ASYNC_FLUSH
+     * @return <tt>true</tt> or <tt>false</tt>
+     */
+    public boolean isTransientStorePoolEnable() {
+        return transientStorePoolEnable && FlushDiskType.ASYNC_FLUSH == getFlushDiskType()
+                && BrokerRole.SLAVE != getBrokerRole();
+    }
+
+    public void setTransientStorePoolEnable(final boolean transientStorePoolEnable) {
+        this.transientStorePoolEnable = transientStorePoolEnable;
+    }
+
+    public int getTransientStorePoolSize() {
+        return transientStorePoolSize;
+    }
+
+    public void setTransientStorePoolSize(final int transientStorePoolSize) {
+        this.transientStorePoolSize = transientStorePoolSize;
+    }
+
+    public int getCommitIntervalCommitLog() {
+        return commitIntervalCommitLog;
+    }
+
+    public void setCommitIntervalCommitLog(final int commitIntervalCommitLog) {
+        this.commitIntervalCommitLog = commitIntervalCommitLog;
+    }
+
+    public boolean isFastFailIfNoBufferInStorePool() {
+        return fastFailIfNoBufferInStorePool;
+    }
+
+    public void setFastFailIfNoBufferInStorePool(final boolean fastFailIfNoBufferInStorePool) {
+        this.fastFailIfNoBufferInStorePool = fastFailIfNoBufferInStorePool;
+    }
+
+    public boolean isUseReentrantLockWhenPutMessage() {
+        return useReentrantLockWhenPutMessage;
+    }
+
+    public void setUseReentrantLockWhenPutMessage(final boolean useReentrantLockWhenPutMessage) {
+        this.useReentrantLockWhenPutMessage = useReentrantLockWhenPutMessage;
+    }
+
+    public int getCommitCommitLogLeastPages() {
+        return commitCommitLogLeastPages;
+    }
+
+    public void setCommitCommitLogLeastPages(final int commitCommitLogLeastPages) {
+        this.commitCommitLogLeastPages = commitCommitLogLeastPages;
+    }
+
+    public int getCommitCommitLogThoroughInterval() {
+        return commitCommitLogThoroughInterval;
+    }
+
+    public void setCommitCommitLogThoroughInterval(final int commitCommitLogThoroughInterval) {
+        this.commitCommitLogThoroughInterval = commitCommitLogThoroughInterval;
+    }
 }

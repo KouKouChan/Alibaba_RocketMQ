@@ -149,9 +149,9 @@ public abstract class RebalanceImpl {
                 }
 
                 boolean lockOK = lockedMq.contains(mq);
-                log.info("the message queue lock {}, {} {}", //
-                        (lockOK ? "OK" : "Failed"), //
-                        this.consumerGroup, //
+                log.info("the message queue lock {}, {} {}",
+                        lockOK ? "OK" : "Failed",
+                        this.consumerGroup,
                         mq);
                 return lockOK;
             } catch (Exception e) {
@@ -219,7 +219,7 @@ public abstract class RebalanceImpl {
                 final String topic = entry.getKey();
                 try {
                     this.rebalanceByTopic(topic, isOrder);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
                         log.warn("rebalanceByTopic Exception", e);
                     }

@@ -16,6 +16,7 @@
  */
 package com.alibaba.rocketmq.namesrv;
 
+import com.alibaba.rocketmq.common.Configuration;
 import com.alibaba.rocketmq.common.ThreadFactoryImpl;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.namesrv.NamesrvConfig;
@@ -40,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * @author shijia.wxr
  */
 public class NamesrvController {
-    private static final Logger log = LoggerFactory.getLogger(LoggerName.NamesrvLoggerName);
+    private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
     private final NamesrvConfig namesrvConfig;
 
@@ -57,6 +58,8 @@ public class NamesrvController {
 
     private ExecutorService remotingExecutor;
 
+    private Configuration configuration;
+
 
     public NamesrvController(NamesrvConfig namesrvConfig, NettyServerConfig nettyServerConfig) {
         this.namesrvConfig = namesrvConfig;
@@ -64,13 +67,17 @@ public class NamesrvController {
         this.kvConfigManager = new KVConfigManager(this);
         this.routeInfoManager = new RouteInfoManager();
         this.brokerHousekeepingService = new BrokerHousekeepingService(this);
+        this.configuration = new Configuration(
+                log,
+                this.namesrvConfig, this.nettyServerConfig
+        );
+        this.configuration.setStorePathFromConfig(this.namesrvConfig, "configStorePath");
     }
 
 
     public boolean initialize() {
 
         this.kvConfigManager.load();
-
 
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
 
@@ -152,5 +159,9 @@ public class NamesrvController {
 
     public void setRemotingServer(RemotingServer remotingServer) {
         this.remotingServer = remotingServer;
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
     }
 }

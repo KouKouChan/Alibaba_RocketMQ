@@ -18,6 +18,7 @@ package com.alibaba.rocketmq.namesrv.processor;
 
 import com.alibaba.rocketmq.common.MQVersion;
 import com.alibaba.rocketmq.common.MQVersion.Version;
+import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.common.help.FAQUrl;
 import com.alibaba.rocketmq.common.namesrv.NamesrvUtil;
@@ -38,6 +39,8 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -45,7 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author shijia.wxr
  */
 public class DefaultRequestProcessor implements NettyRequestProcessor {
-    private static final Logger log = LoggerFactory.getLogger(LoggerName.NamesrvLoggerName);
+    private static final Logger log = LoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
     protected final NamesrvController namesrvController;
 
@@ -58,9 +61,9 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws RemotingCommandException {
         if (log.isDebugEnabled()) {
-            log.debug("receive request, {} {} {}",//
-                    request.getCode(), //
-                    RemotingHelper.parseChannelRemoteAddr(ctx.channel()), //
+            log.debug("receive request, {} {} {}",
+                    request.getCode(),
+                    RemotingHelper.parseChannelRemoteAddr(ctx.channel()),
                     request);
         }
 
@@ -103,6 +106,10 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
                 return this.getHasUnitSubTopicList(ctx, request);
             case RequestCode.GET_HAS_UNIT_SUB_UNUNIT_TOPIC_LIST:
                 return this.getHasUnitSubUnUnitTopicList(ctx, request);
+            case RequestCode.UPDATE_NAMESRV_CONFIG:
+                return this.updateConfig(ctx, request);
+            case RequestCode.GET_NAMESRV_CONFIG:
+                return this.getConfig(ctx, request);
             default:
                 break;
         }
@@ -119,10 +126,10 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         final PutKVConfigRequestHeader requestHeader =
                 (PutKVConfigRequestHeader) request.decodeCommandCustomHeader(PutKVConfigRequestHeader.class);
 
-        this.namesrvController.getKvConfigManager().putKVConfig(//
-                requestHeader.getNamespace(),//
-                requestHeader.getKey(),//
-                requestHeader.getValue()//
+        this.namesrvController.getKvConfigManager().putKVConfig(
+                requestHeader.getNamespace(),
+                requestHeader.getKey(),
+                requestHeader.getValue()
         );
 
         response.setCode(ResponseCode.SUCCESS);
@@ -136,9 +143,9 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         final GetKVConfigRequestHeader requestHeader =
                 (GetKVConfigRequestHeader) request.decodeCommandCustomHeader(GetKVConfigRequestHeader.class);
 
-        String value = this.namesrvController.getKvConfigManager().getKVConfig(//
-                requestHeader.getNamespace(),//
-                requestHeader.getKey()//
+        String value = this.namesrvController.getKvConfigManager().getKVConfig(
+                requestHeader.getNamespace(),
+                requestHeader.getKey()
         );
 
         if (value != null) {
@@ -158,9 +165,9 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         final DeleteKVConfigRequestHeader requestHeader =
                 (DeleteKVConfigRequestHeader) request.decodeCommandCustomHeader(DeleteKVConfigRequestHeader.class);
 
-        this.namesrvController.getKvConfigManager().deleteKVConfig(//
-                requestHeader.getNamespace(),//
-                requestHeader.getKey()//
+        this.namesrvController.getKvConfigManager().deleteKVConfig(
+                requestHeader.getNamespace(),
+                requestHeader.getKey()
         );
 
         response.setCode(ResponseCode.SUCCESS);
@@ -184,16 +191,15 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
             registerBrokerBody.getTopicConfigSerializeWrapper().getDataVersion().setTimestatmp(0);
         }
 
-        RegisterBrokerResult result = this.namesrvController.getRouteInfoManager().registerBroker(//
-                requestHeader.getClusterName(), // 1
-                requestHeader.getBrokerAddr(), // 2
-                requestHeader.getBrokerName(), // 3
-                requestHeader.getBrokerId(), // 4
-                requestHeader.getHaServerAddr(),// 5
-                registerBrokerBody.getTopicConfigSerializeWrapper(), // 6
-                registerBrokerBody.getFilterServerList(),//
-                ctx.channel()// 7
-        );
+        RegisterBrokerResult result = this.namesrvController.getRouteInfoManager().registerBroker(
+                requestHeader.getClusterName(),
+                requestHeader.getBrokerAddr(),
+                requestHeader.getBrokerName(),
+                requestHeader.getBrokerId(),
+                requestHeader.getHaServerAddr(),
+                registerBrokerBody.getTopicConfigSerializeWrapper(),
+                registerBrokerBody.getFilterServerList(),
+                ctx.channel());
 
         responseHeader.setHaServerAddr(result.getHaServerAddr());
         responseHeader.setMasterAddr(result.getMasterAddr());
@@ -213,7 +219,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         final RegisterBrokerRequestHeader requestHeader =
                 (RegisterBrokerRequestHeader) request.decodeCommandCustomHeader(RegisterBrokerRequestHeader.class);
 
-        TopicConfigSerializeWrapper topicConfigWrapper = null;
+        TopicConfigSerializeWrapper topicConfigWrapper;
         if (request.getBody() != null) {
             topicConfigWrapper = TopicConfigSerializeWrapper.decode(request.getBody(), TopicConfigSerializeWrapper.class);
         } else {
@@ -222,15 +228,15 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
             topicConfigWrapper.getDataVersion().setTimestatmp(0);
         }
 
-        RegisterBrokerResult result = this.namesrvController.getRouteInfoManager().registerBroker(//
-                requestHeader.getClusterName(), // 1
-                requestHeader.getBrokerAddr(), // 2
-                requestHeader.getBrokerName(), // 3
-                requestHeader.getBrokerId(), // 4
-                requestHeader.getHaServerAddr(),// 5
-                topicConfigWrapper, // 6
-                null,//
-                ctx.channel()// 7
+        RegisterBrokerResult result = this.namesrvController.getRouteInfoManager().registerBroker(
+                requestHeader.getClusterName(),
+                requestHeader.getBrokerAddr(),
+                requestHeader.getBrokerName(),
+                requestHeader.getBrokerId(),
+                requestHeader.getHaServerAddr(),
+                topicConfigWrapper,
+                null,
+                ctx.channel()
         );
 
         responseHeader.setHaServerAddr(result.getHaServerAddr());
@@ -249,10 +255,10 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         final UnRegisterBrokerRequestHeader requestHeader =
                 (UnRegisterBrokerRequestHeader) request.decodeCommandCustomHeader(UnRegisterBrokerRequestHeader.class);
 
-        this.namesrvController.getRouteInfoManager().unregisterBroker(//
-                requestHeader.getClusterName(), // 1
-                requestHeader.getBrokerAddr(), // 2
-                requestHeader.getBrokerName(), // 3
+        this.namesrvController.getRouteInfoManager().unregisterBroker(
+                requestHeader.getClusterName(),
+                requestHeader.getBrokerAddr(),
+                requestHeader.getBrokerName(),
                 requestHeader.getBrokerId());
 
         response.setCode(ResponseCode.SUCCESS);
@@ -307,9 +313,9 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
 
         int wipeTopicCnt = this.namesrvController.getRouteInfoManager().wipeWritePermOfBrokerByLock(requestHeader.getBrokerName());
 
-        log.info("wipe write perm of broker[{}], client: {}, {}", //
-                requestHeader.getBrokerName(), //
-                RemotingHelper.parseChannelRemoteAddr(ctx.channel()), //
+        log.info("wipe write perm of broker[{}], client: {}, {}",
+                requestHeader.getBrokerName(),
+                RemotingHelper.parseChannelRemoteAddr(ctx.channel()),
                 wipeTopicCnt);
 
         responseHeader.setWipeTopicCount(wipeTopicCnt);
@@ -346,7 +352,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         final GetKVListByNamespaceRequestHeader requestHeader =
                 (GetKVListByNamespaceRequestHeader) request.decodeCommandCustomHeader(GetKVListByNamespaceRequestHeader.class);
 
-        byte[] jsonValue = this.namesrvController.getKvConfigManager().getKVListByNamespace(//
+        byte[] jsonValue = this.namesrvController.getKvConfigManager().getKVListByNamespace(
                 requestHeader.getNamespace());
         if (null != jsonValue) {
             response.setBody(jsonValue);
@@ -421,4 +427,65 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
         response.setRemark(null);
         return response;
     }
+
+    private RemotingCommand updateConfig(ChannelHandlerContext ctx, RemotingCommand request) {
+        log.info("updateConfig called by {}", RemotingHelper.parseChannelRemoteAddr(ctx.channel()));
+
+        final RemotingCommand response = RemotingCommand.createResponseCommand(null);
+
+        byte[] body = request.getBody();
+        if (body != null) {
+            String bodyStr;
+            try {
+                bodyStr = new String(body, MixAll.DEFAULT_CHARSET);
+            } catch (UnsupportedEncodingException e) {
+                log.error("updateConfig byte array to string error: ", e);
+                response.setCode(ResponseCode.SYSTEM_ERROR);
+                response.setRemark("UnsupportedEncodingException " + e);
+                return response;
+            }
+
+            if (bodyStr == null) {
+                log.error("updateConfig get null body!");
+                response.setCode(ResponseCode.SYSTEM_ERROR);
+                response.setRemark("string2Properties error");
+                return response;
+            }
+
+            Properties properties = MixAll.string2Properties(bodyStr);
+            if (properties == null) {
+                log.error("updateConfig MixAll.string2Properties error {}", bodyStr);
+                response.setCode(ResponseCode.SYSTEM_ERROR);
+                response.setRemark("string2Properties error");
+                return response;
+            }
+
+            this.namesrvController.getConfiguration().update(properties);
+        }
+
+        response.setCode(ResponseCode.SUCCESS);
+        response.setRemark(null);
+        return response;
+    }
+
+    private RemotingCommand getConfig(ChannelHandlerContext ctx, RemotingCommand request) {
+        final RemotingCommand response = RemotingCommand.createResponseCommand(null);
+
+        String content = this.namesrvController.getConfiguration().getAllConfigsFormatString();
+        if (content != null && content.length() > 0) {
+            try {
+                response.setBody(content.getBytes(MixAll.DEFAULT_CHARSET));
+            } catch (UnsupportedEncodingException e) {
+                log.error("getConfig error, ", e);
+                response.setCode(ResponseCode.SYSTEM_ERROR);
+                response.setRemark("UnsupportedEncodingException " + e);
+                return response;
+            }
+        }
+
+        response.setCode(ResponseCode.SUCCESS);
+        response.setRemark(null);
+        return response;
+    }
+
 }
