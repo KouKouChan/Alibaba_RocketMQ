@@ -67,7 +67,9 @@ public class SslHelper {
             ClassLoader classLoader = SslHelper.class.getClassLoader();
             switch (role) {
                 case SERVER:
-                    String cipherText = System.getProperty("RocketMQServerPassword", DEFAULT_SERVER_PASSWORD);
+                    String cipherText = System.getenv("ROCKETMQ_TLS_SERVER_CIPHER");
+                    cipherText = System.getProperty("RocketMQServerPassword",
+                        null == cipherText ? DEFAULT_SERVER_PASSWORD : cipherText);
                     char[] clearText = decrypt(SECRET, cipherText);
                     InputStream serverKeyStoreInputStream = null;
                     ByteArrayOutputStream byteArrayOutputStream = null;
@@ -103,7 +105,9 @@ public class SslHelper {
                     break;
 
                 case CLIENT:
-                    cipherText = System.getProperty("RocketMQClientPassword", DEFAULT_CLIENT_PASSWORD);
+                    cipherText = System.getenv("ROCKETMQ_TLS_CLIENT_CIPHER");
+                    cipherText = System.getProperty("RocketMQClientPassword",
+                        null == cipherText ? DEFAULT_CLIENT_PASSWORD : cipherText);
                     clearText = decrypt(SECRET, cipherText);
 
                     InputStream clientKeyStoreInputStream = null;
