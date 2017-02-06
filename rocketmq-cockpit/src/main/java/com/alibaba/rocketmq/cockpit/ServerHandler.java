@@ -7,13 +7,20 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.timeout.IdleStateHandler;
 
 public class ServerHandler extends ChannelInitializer<SocketChannel> {
+
+    private final NameServerListController nameServerListController;
+
+    public ServerHandler(NameServerListController nameServerListController) {
+        this.nameServerListController = nameServerListController;
+    }
+
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline channelPipeline = ch.pipeline();
         channelPipeline
                 .addLast(new IdleStateHandler(30, 30, 60))
                 .addLast(new HttpServerCodec())
-                .addLast(new NameServerHandler())
+                .addLast(new NameServerHandler(nameServerListController))
                 .addLast(new DenyAllHandler());
     }
 }

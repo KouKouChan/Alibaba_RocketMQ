@@ -1,9 +1,7 @@
 package com.alibaba.rocketmq.cockpit;
 
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
-import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.util.ReferenceCountUtil;
@@ -16,10 +14,16 @@ public class NameServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
 
     private static final String END_POINT = "/rocketmq/nsaddr";
 
+    private final NameServerListController nameServerListController;
+
+    public NameServerHandler(NameServerListController nameServerListController) {
+        this.nameServerListController = nameServerListController;
+    }
+
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, HttpRequest request) throws Exception {
         if (END_POINT.equals(request.getUri())) {
-            final ByteBuf content = getNameServerAddressList();
+            final ByteBuf content = nameServerListController.getNameServerAddressList();
             FullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_0, HttpResponseStatus.OK, content);
             httpResponse.headers().add("Connection", "close");
             httpResponse.headers().add("Content-Type", "text/plain");
@@ -35,11 +39,5 @@ public class NameServerHandler extends SimpleChannelInboundHandler<HttpRequest> 
         } else {
             ctx.fireChannelRead(request);
         }
-    }
-
-    public ByteBuf getNameServerAddressList() {
-        String publicIP = RemotingUtil.getLocalAddress(true);
-        String address = publicIP + ":9876";
-        return Unpooled.wrappedBuffer(address.getBytes());
     }
 }

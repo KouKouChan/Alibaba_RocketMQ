@@ -21,6 +21,8 @@ public class Server {
     private EventLoopGroup workerEventLoopGroup;
     private int port;
 
+    private final NameServerListController nameServerListController;
+
     public Server(int port) {
         bossEventLoopGroup = new NioEventLoopGroup(1);
         workerEventLoopGroup = new NioEventLoopGroup();
@@ -29,10 +31,11 @@ public class Server {
         } else {
             this.port = 80;
         }
+
+        nameServerListController = new NameServerListController("/dianyi/conf");
     }
 
     public void launch() {
-
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(bossEventLoopGroup, workerEventLoopGroup)
@@ -43,7 +46,7 @@ public class Server {
                     .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(1024 * 64, 1024 * 256, 1024 * 1024))
                     .childOption(ChannelOption.SO_SNDBUF, 1024 * 512)
-                    .childHandler(new ServerHandler());
+                    .childHandler(new ServerHandler(nameServerListController));
             ChannelFuture channelFuture = bootstrap.bind(port).sync();
             LOGGER.info("Server started, listening {}", port);
             channelFuture.channel().closeFuture().sync();
