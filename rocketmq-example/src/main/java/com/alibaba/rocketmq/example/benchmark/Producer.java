@@ -37,10 +37,11 @@ public class Producer {
         final int threadCount = args.length >= 1 ? Integer.parseInt(args[0]) : 64;
         final int messageSize = args.length >= 2 ? Integer.parseInt(args[1]) : 128;
         final boolean keyEnable = args.length >= 3 && Boolean.parseBoolean(args[2]);
+        final String topic = args.length >= 4 ? args[3] : "BenchmarkTest";
 
         System.out.printf("threadCount %d messageSize %d keyEnable %s\n", threadCount, messageSize, keyEnable);
 
-        final Message msg = buildMessage(messageSize);
+        final Message msg = buildMessage(topic, messageSize);
 
         final ExecutorService sendThreadPool = Executors.newFixedThreadPool(threadCount);
 
@@ -163,9 +164,9 @@ public class Producer {
     }
 
 
-    private static Message buildMessage(final int messageSize) {
+    private static Message buildMessage(final String topic, final int messageSize) {
         Message msg = new Message();
-        msg.setTopic("BenchmarkTest");
+        msg.setTopic(topic);
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < messageSize; i += 10) {
