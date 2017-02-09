@@ -36,6 +36,7 @@ public class Consumer {
         }
 
         DefaultMQPullConsumer pullConsumer = new DefaultMQPullConsumer(args[0]);
+        pullConsumer.start();
         Set<MessageQueue> messageQueueSet = pullConsumer.fetchSubscribeMessageQueues(MixAll.RETRY_GROUP_TOPIC_PREFIX + args[0]);
         for (MessageQueue messageQueue : messageQueueSet) {
             long min = pullConsumer.minOffset(messageQueue);
