@@ -22,13 +22,17 @@ import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.common.admin.ConsumeStats;
 import com.alibaba.rocketmq.common.admin.OffsetWrapper;
 import com.alibaba.rocketmq.common.message.MessageQueue;
+import com.alibaba.rocketmq.common.protocol.body.Connection;
 import com.alibaba.rocketmq.common.protocol.body.ConsumerConnection;
+import com.alibaba.rocketmq.common.protocol.body.ConsumerRunningInfo;
 import com.alibaba.rocketmq.common.protocol.body.TopicList;
 import com.alibaba.rocketmq.common.protocol.heartbeat.ConsumeType;
 import com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel;
 import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.tools.admin.DefaultMQAdminExt;
 import com.alibaba.rocketmq.tools.command.SubCommand;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -70,6 +74,24 @@ public class ConsumerProgressSubCommand implements SubCommand {
         return options;
     }
 
+    private Map<MessageQueue, String> getMessageQueueAllocationResult(DefaultMQAdminExt defaultMQAdminExt,
+        String groupName) {
+        Map<MessageQueue, String> results = new HashMap<>();
+        try {
+            ConsumerConnection consumerConnection = defaultMQAdminExt.examineConsumerConnectionInfo(groupName);
+            for (Connection connection : consumerConnection.getConnectionSet()) {
+                String clientId = connection.getClientId();
+                ConsumerRunningInfo consumerRunningInfo = defaultMQAdminExt.getConsumerRunningInfo(groupName, clientId,
+                    false);
+                for (MessageQueue messageQueue : consumerRunningInfo.getMqTable().keySet()) {
+                    results.put(messageQueue, connection.getClientAddr().split(":")[0]);
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        return results;
+    }
+
 
     @Override
     public void execute(CommandLine commandLine, Options options, RPCHook rpcHook) {
@@ -89,12 +111,14 @@ public class ConsumerProgressSubCommand implements SubCommand {
                 mqList.addAll(consumeStats.getOffsetTable().keySet());
                 Collections.sort(mqList);
 
-                System.out.printf("%-32s  %-32s  %-4s  %-20s  %-20s  %s\n",//
+                Map<MessageQueue, String> messageQueueAllocationResult = getMessageQueueAllocationResult(defaultMQAdminExt, consumerGroup);
+                System.out.printf("%-32s  %-32s  %-4s  %-20s  %-20s  %-20s  %s\n",//
                     "#Topic",//
                     "#Broker Name",//
                     "#QID",//
                     "#Broker Offset",//
                     "#Consumer Offset",//
+                    "#Client IP",
                     "#Diff" //
                 );
 
@@ -106,12 +130,13 @@ public class ConsumerProgressSubCommand implements SubCommand {
                     long diff = offsetWrapper.getBrokerOffset() - offsetWrapper.getConsumerOffset();
                     diffTotal += diff;
 
-                    System.out.printf("%-32s  %-32s  %-4d  %-20d  %-20d  %d\n",//
+                    System.out.printf("%-32s  %-32s  %-4d  %-20d  %-20d  %-20s  %d\n",//
                         UtilAll.frontStringAtLeast(mq.getTopic(), 32),//
                         UtilAll.frontStringAtLeast(mq.getBrokerName(), 32),//
                         mq.getQueueId(),//
                         offsetWrapper.getBrokerOffset(),//
                         offsetWrapper.getConsumerOffset(),//
+                        messageQueueAllocationResult.containsKey(mq) ? messageQueueAllocationResult.get(mq) : "NA",
                         diff //
                         );
                 }
