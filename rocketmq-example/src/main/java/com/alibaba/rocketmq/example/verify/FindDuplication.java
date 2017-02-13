@@ -68,5 +68,7 @@ public class FindDuplication {
                 System.out.println(next.getKey() + ": " + next.getValue());
             }
         }
+
+        producer.shutdown();
     }
 }
