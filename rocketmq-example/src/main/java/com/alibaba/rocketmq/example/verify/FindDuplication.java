@@ -52,13 +52,17 @@ public class FindDuplication {
 
         Map<String, List<String>> keyIds = new HashMap<>();
         for (String msgId : msgIds) {
+            System.out.println("Query msg by ID: " + msgId);
             MessageExt message = producer.viewMessage(msgId);
             if (null != message) {
+                System.out.println("Found");
                 if (keyIds.containsKey(message.getKeys())) {
                     keyIds.get(message.getKeys()).add(msgId);
                 } else {
                     keyIds.put(message.getKeys(), Arrays.asList(msgId));
                 }
+            } else {
+                System.out.println("Not Found");
             }
         }
 
