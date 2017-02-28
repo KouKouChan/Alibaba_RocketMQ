@@ -17,6 +17,7 @@ package com.alibaba.rocketmq.broker.processor;
 
 import io.netty.channel.ChannelHandlerContext;
 
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ import com.alibaba.rocketmq.store.PutMessageResult;
  */
 public class EndTransactionProcessor implements NettyRequestProcessor {
 
-    private static final Logger log = LoggerFactory.getLogger(LoggerName.BrokerLoggerName);
+    private static final Logger logTransaction = LoggerFactory.getLogger(LoggerName.TransactionLoggerName);
 
     private final BrokerController brokerController;
 
@@ -84,8 +85,6 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
 
         return msgInner;
     }
-
-    private static final Logger logTransaction = LoggerFactory.getLogger(LoggerName.TransactionLoggerName);
 
 
     @Override
@@ -198,6 +197,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
             msgInner.setQueueOffset(requestHeader.getTranStateTableOffset());
             msgInner.setPreparedTransactionOffset(requestHeader.getCommitLogOffset());
             msgInner.setStoreTimestamp(msgExt.getStoreTimestamp());
+
             if (MessageSysFlag.TransactionRollbackType == requestHeader.getCommitOrRollback()) {
                 msgInner.setBody(null);
             }
@@ -211,6 +211,8 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
                 case FLUSH_DISK_TIMEOUT:
                 case FLUSH_SLAVE_TIMEOUT:
                 case SLAVE_NOT_AVAILABLE:
+                    // remove transaction record.
+                    this.brokerController.getTransactionStore().remove(Collections.singletonList(msgExt.getCommitLogOffset()));
                     response.setCode(ResponseCode.SUCCESS);
                     response.setRemark(null);
                     break;

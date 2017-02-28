@@ -2,9 +2,10 @@ package com.alibaba.rocketmq.broker.transaction.jdbc;
 
 public class JDBCTransactionStoreConfig {
     private String jdbcDriverClass = "com.mysql.jdbc.Driver";
-    private String jdbcURL = "jdbc:mysql://xxx.xxx.xxx.xxx:1000/xxx?useUnicode=true&characterEncoding=UTF-8";
-    private String jdbcUser = "xxx";
-    private String jdbcPassword = "xxx";
+    private String jdbcURL = "jdbc:mysql://localhost:3306/rocketmq?useUnicode=true&characterEncoding=UTF-8";
+    private String jdbcUser = "root";
+    private String jdbcPassword = "password";
+    private String brokerName = "Default";
 
 
     public String getJdbcDriverClass() {
@@ -44,5 +45,13 @@ public class JDBCTransactionStoreConfig {
 
     public void setJdbcPassword(String jdbcPassword) {
         this.jdbcPassword = jdbcPassword;
+    }
+
+    public String getBrokerName() {
+        return brokerName;
+    }
+
+    public void setBrokerName(String brokerName) {
+        this.brokerName = brokerName;
     }
 }

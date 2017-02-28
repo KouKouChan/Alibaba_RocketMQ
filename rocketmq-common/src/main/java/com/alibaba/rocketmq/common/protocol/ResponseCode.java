@@ -82,4 +82,6 @@ public class ResponseCode extends RemotingSysResponseCode {
 
     // Slave broker lags behind master seriously.
     public static final int SLAVE_LAG_BEHIND = 300;
+
+    public static final int TRANSACTION_STORE_UNAVAILABLE = 301;
 }

@@ -11,24 +11,7 @@ import com.alibaba.rocketmq.broker.transaction.TransactionStore;
 
 
 public class JDBCTransactionStoreTest {
-
     @Test
-    public void test_derby_open() {
-        JDBCTransactionStoreConfig config = new JDBCTransactionStoreConfig();
-        config.setJdbcDriverClass("org.apache.derby.jdbc.EmbeddedDriver");
-        config.setJdbcURL("jdbc:derby:xxx;create=true");
-        config.setJdbcUser("xxx");
-        config.setJdbcPassword("xxx");
-        TransactionStore store = new JDBCTransactionStore(config);
-
-        boolean open = store.open();
-        System.out.println(open);
-        Assert.assertTrue(open);
-        store.close();
-    }
-
-
-    // @Test
     public void test_mysql_open() {
         JDBCTransactionStoreConfig config = new JDBCTransactionStoreConfig();
 
@@ -41,9 +24,10 @@ public class JDBCTransactionStoreTest {
     }
 
 
-    // @Test
+    @Test
     public void test_mysql_put() {
         JDBCTransactionStoreConfig config = new JDBCTransactionStoreConfig();
+        config.setBrokerName("Default");
 
         TransactionStore store = new JDBCTransactionStore(config);
 
@@ -70,7 +54,7 @@ public class JDBCTransactionStoreTest {
     }
 
 
-    // @Test
+    @Test
     public void test_mysql_remove() {
         JDBCTransactionStoreConfig config = new JDBCTransactionStoreConfig();
 
@@ -89,6 +73,20 @@ public class JDBCTransactionStoreTest {
 
         store.remove(pks);
 
+        store.close();
+    }
+
+    @Test
+    public void testTraverse() {
+        JDBCTransactionStoreConfig config = new JDBCTransactionStoreConfig();
+        TransactionStore store = new JDBCTransactionStore(config);
+        store.open();
+        List<TransactionRecord> list = store.traverse(0, 5);
+        Assert.assertNotNull(list);
+        Assert.assertTrue(list.size() <= 5);
+        for (TransactionRecord record : list) {
+            System.out.println(record);
+        }
         store.close();
     }
 }

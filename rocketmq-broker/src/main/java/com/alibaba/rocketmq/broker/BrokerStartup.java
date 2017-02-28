@@ -17,6 +17,7 @@ package com.alibaba.rocketmq.broker;
 
 import com.alibaba.rocketmq.broker.mqtrace.ConsumeMessageBrokerTraceHook;
 import com.alibaba.rocketmq.broker.mqtrace.SendMessageBrokerTraceHook;
+import com.alibaba.rocketmq.broker.transaction.jdbc.JDBCTransactionStoreConfig;
 import com.alibaba.rocketmq.common.BrokerConfig;
 import com.alibaba.rocketmq.common.MQVersion;
 import com.alibaba.rocketmq.common.MixAll;
@@ -102,6 +103,7 @@ public class BrokerStartup {
             final NettyClientConfig nettyClientConfig = new NettyClientConfig();
             nettyServerConfig.setListenPort(10911);
             final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
+            final JDBCTransactionStoreConfig transactionStoreConfig = new JDBCTransactionStoreConfig();
 
             // 如果是slave，修改默认值
             if (BrokerRole.SLAVE == messageStoreConfig.getBrokerRole()) {
@@ -137,7 +139,7 @@ public class BrokerStartup {
                     MixAll.properties2Object(properties, nettyServerConfig);
                     MixAll.properties2Object(properties, nettyClientConfig);
                     MixAll.properties2Object(properties, messageStoreConfig);
-
+                    MixAll.properties2Object(properties, transactionStoreConfig);
                     BrokerPathConfigHelper.setBrokerConfigPath(file);
 
                     System.out.println("load config properties file OK, " + file);
@@ -145,6 +147,7 @@ public class BrokerStartup {
             }
 
             MixAll.properties2Object(ServerUtil.commandLine2Properties(commandLine), brokerConfig);
+            transactionStoreConfig.setBrokerName(brokerConfig.getBrokerName());
 
             if (null == brokerConfig.getRocketmqHome()) {
                 System.out.println("Please set the " + MixAll.ROCKETMQ_HOME_ENV
@@ -203,7 +206,8 @@ public class BrokerStartup {
                 brokerConfig, //
                 nettyServerConfig, //
                 nettyClientConfig, //
-                messageStoreConfig);
+                messageStoreConfig,
+                transactionStoreConfig);
             boolean initResult = controller.initialize();
             if (!initResult) {
                 controller.shutdown();

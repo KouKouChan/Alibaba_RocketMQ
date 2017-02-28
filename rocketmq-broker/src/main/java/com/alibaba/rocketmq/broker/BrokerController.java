@@ -21,6 +21,7 @@ import com.alibaba.rocketmq.broker.client.ConsumerManager;
 import com.alibaba.rocketmq.broker.client.DefaultConsumerIdsChangeListener;
 import com.alibaba.rocketmq.broker.client.ProducerManager;
 import com.alibaba.rocketmq.broker.client.net.Broker2Client;
+import com.alibaba.rocketmq.broker.client.net.CheckStateService;
 import com.alibaba.rocketmq.broker.client.rebalance.RebalanceLockManager;
 import com.alibaba.rocketmq.broker.filtersrv.FilterServerManager;
 import com.alibaba.rocketmq.broker.longpolling.PullRequestHoldService;
@@ -37,6 +38,9 @@ import com.alibaba.rocketmq.broker.processor.SendMessageProcessor;
 import com.alibaba.rocketmq.broker.slave.SlaveSynchronize;
 import com.alibaba.rocketmq.broker.subscription.SubscriptionGroupManager;
 import com.alibaba.rocketmq.broker.topic.TopicConfigManager;
+import com.alibaba.rocketmq.broker.transaction.TransactionStore;
+import com.alibaba.rocketmq.broker.transaction.jdbc.JDBCTransactionStore;
+import com.alibaba.rocketmq.broker.transaction.jdbc.JDBCTransactionStoreConfig;
 import com.alibaba.rocketmq.common.BrokerConfig;
 import com.alibaba.rocketmq.common.DataVersion;
 import com.alibaba.rocketmq.common.MixAll;
@@ -178,12 +182,14 @@ public class BrokerController {
 
     private final BrokerStatsManager brokerStatsManager;
 
+    private final TransactionStore transactionStore;
 
     public BrokerController(//
             final BrokerConfig brokerConfig, //
             final NettyServerConfig nettyServerConfig, //
             final NettyClientConfig nettyClientConfig, //
-            final MessageStoreConfig messageStoreConfig //
+            final MessageStoreConfig messageStoreConfig, //
+            final JDBCTransactionStoreConfig transactionStoreConfig
     ) {
         this.brokerConfig = brokerConfig;
         this.nettyServerConfig = nettyServerConfig;
@@ -216,6 +222,12 @@ public class BrokerController {
                 new LinkedBlockingQueue<Runnable>(this.brokerConfig.getPullThreadPoolQueueCapacity());
 
         this.brokerStatsManager = new BrokerStatsManager(this.brokerConfig.getBrokerClusterName());
+
+        if (messageStoreConfig.getBrokerRole() != BrokerRole.SLAVE) {
+            transactionStore = new JDBCTransactionStore(transactionStoreConfig);
+        } else {
+            transactionStore = null;
+        }
     }
 
 
@@ -243,6 +255,11 @@ public class BrokerController {
 
         // 加载本地消息数据
         result = result && this.messageStore.load();
+
+        // Establish connection to MySQL server.
+        if (BrokerRole.SLAVE != messageStoreConfig.getBrokerRole()) {
+            result = result && this.transactionStore.open();
+        }
 
         if (result) {
             // 初始化通信层
@@ -378,6 +395,8 @@ public class BrokerController {
                         }
                     }
                 }, 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
+
+                this.scheduledExecutorService.scheduleWithFixedDelay(new CheckStateService(this), 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
             }
         }
 
@@ -522,6 +541,9 @@ public class BrokerController {
         return subscriptionGroupManager;
     }
 
+    public TransactionStore getTransactionStore() {
+        return transactionStore;
+    }
 
     public void shutdown() {
         if (this.brokerStatsManager != null) {

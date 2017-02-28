@@ -12,11 +12,12 @@ import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
  * @author shijia.wxr<vintage.wang@gmail.com>
  */
 public class CheckTransactionStateRequestHeader implements CommandCustomHeader {
+
     @CFNotNull
     private Long tranStateTableOffset;
+
     @CFNotNull
     private Long commitLogOffset;
-
 
     @Override
     public void checkFields() throws RemotingCommandException {

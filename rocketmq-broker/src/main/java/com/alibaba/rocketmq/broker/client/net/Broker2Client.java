@@ -73,14 +73,12 @@ public class Broker2Client {
                                               final CheckTransactionStateRequestHeader requestHeader,//
                                               final SelectMappedBufferResult selectMappedBufferResult//
     ) {
-        RemotingCommand request =
-                RemotingCommand.createRequestCommand(RequestCode.CHECK_TRANSACTION_STATE, requestHeader);
+        RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.CHECK_TRANSACTION_STATE, requestHeader);
         request.markOnewayRPC();
 
         try {
-            FileRegion fileRegion =
-                    new OneMessageTransfer(request.encodeHeader(selectMappedBufferResult.getSize()),
-                            selectMappedBufferResult);
+            FileRegion fileRegion = new OneMessageTransfer(request.encodeHeader(selectMappedBufferResult.getSize()),
+                selectMappedBufferResult);
             channel.writeAndFlush(fileRegion).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {

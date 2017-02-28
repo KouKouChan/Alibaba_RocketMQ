@@ -20,6 +20,7 @@ import com.alibaba.rocketmq.broker.mqtrace.ConsumeMessageContext;
 import com.alibaba.rocketmq.broker.mqtrace.ConsumeMessageHook;
 import com.alibaba.rocketmq.broker.mqtrace.SendMessageContext;
 import com.alibaba.rocketmq.broker.mqtrace.SendMessageHook;
+import com.alibaba.rocketmq.broker.transaction.TransactionRecord;
 import com.alibaba.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.TopicConfig;
@@ -49,6 +50,8 @@ import com.alibaba.rocketmq.store.MessageExtBrokerInner;
 import com.alibaba.rocketmq.store.PutMessageResult;
 import com.alibaba.rocketmq.store.config.StorePathConfigHelper;
 import io.netty.channel.ChannelHandlerContext;
+import java.util.Arrays;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -470,6 +473,19 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                 case PUT_OK:
                     sendOK = true;
                     response.setCode(ResponseCode.SUCCESS);
+
+                    final int tranType = MessageSysFlag.getTransactionValue(msgInner.getSysFlag());
+                    if (tranType == MessageSysFlag.TransactionPreparedType) {
+                        TransactionRecord transactionRecord = new TransactionRecord();
+                        transactionRecord.setOffset(putMessageResult.getAppendMessageResult().getWroteOffset());
+                        transactionRecord.setProducerGroup(msgInner.getProperty(MessageConst.PROPERTY_PRODUCER_GROUP));
+                        sendOK = brokerController.getTransactionStore().put(Collections.singletonList(transactionRecord));
+                        if (!sendOK) {
+                            response.setCode(ResponseCode.TRANSACTION_STORE_UNAVAILABLE);
+                            response.setRemark("Failed to persist transaction record");
+                        }
+                    }
+
                     break;
                 case FLUSH_DISK_TIMEOUT:
                     response.setCode(ResponseCode.FLUSH_DISK_TIMEOUT);

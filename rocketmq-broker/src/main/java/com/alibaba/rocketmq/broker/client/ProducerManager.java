@@ -196,4 +196,29 @@ public class ProducerManager {
             log.error("", e);
         }
     }
+
+    public ClientChannelInfo pickProducerChannelRandomly(String producerGroup) {
+        HashMap<Channel, ClientChannelInfo> map = new HashMap<Channel, ClientChannelInfo>();
+
+        try {
+            if (this.groupChannelLock.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS)) {
+                try {
+                    Map<Channel, ClientChannelInfo> matchedMap = groupChannelTable.get(producerGroup);
+                    if (null != matchedMap) {
+                        map.putAll(matchedMap);
+                    }
+                } finally {
+                    groupChannelLock.unlock();
+                }
+            }
+        } catch (InterruptedException e) {
+            log.error("", e);
+        }
+
+        if (map.isEmpty()) {
+            return null;
+        }
+
+        return map.values().iterator().next();
+    }
 }

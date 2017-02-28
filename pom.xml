@@ -349,16 +349,13 @@
 				<artifactId>fastjson</artifactId>
 				<version>1.2.20</version>
 			</dependency>
+
 			<dependency>
 				<groupId>mysql</groupId>
 				<artifactId>mysql-connector-java</artifactId>
 				<version>5.1.31</version>
 			</dependency>
-			<dependency>
-				<groupId>org.apache.derby</groupId>
-				<artifactId>derby</artifactId>
-				<version>10.10.2.0</version>
-			</dependency>
+
 			<dependency>
 				<groupId>jboss</groupId>
 				<artifactId>javassist</artifactId>

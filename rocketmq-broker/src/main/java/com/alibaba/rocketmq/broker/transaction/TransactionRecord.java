@@ -1,10 +1,11 @@
 package com.alibaba.rocketmq.broker.transaction;
 
 public class TransactionRecord {
+
     // Commit Log Offset
     private long offset;
-    private String producerGroup;
 
+    private String producerGroup;
 
     public long getOffset() {
         return offset;
@@ -23,5 +24,13 @@ public class TransactionRecord {
 
     public void setProducerGroup(String producerGroup) {
         this.producerGroup = producerGroup;
+    }
+
+    @Override
+    public String toString() {
+        return "TransactionRecord{" +
+            "offset=" + offset +
+            ", producerGroup='" + producerGroup + '\'' +
+            '}';
     }
 }

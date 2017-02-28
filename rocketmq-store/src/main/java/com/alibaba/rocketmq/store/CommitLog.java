@@ -505,7 +505,7 @@ public class CommitLog {
                 tagsCode = this.defaultMessageStore.getScheduleMessageService().computeDeliverTimestamp(
                         msg.getDelayTimeLevel(), msg.getStoreTimestamp());
 
-                /**
+                /*
                  * 备份真实的topic，queueId
                  */
                 MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());
@@ -571,7 +571,7 @@ public class CommitLog {
                     msg.getStoreTimestamp(),// 6
                     result.getLogicOffset(),// 7
                     msg.getKeys(),// 8
-                    /**
+                    /*
                      * 事务部分
                      */
                     msg.getSysFlag(),// 9
@@ -990,7 +990,7 @@ public class CommitLog {
 
         public AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank,
                                             final Object msg) {
-            /**
+            /*
              * 生成消息ID STORETIMESTAMP + STOREHOSTADDRESS + OFFSET <br>
              */
             MessageExtBrokerInner msgInner = (MessageExtBrokerInner) msg;
@@ -998,7 +998,7 @@ public class CommitLog {
             long wroteOffset = fileFromOffset + byteBuffer.position();
             String msgId = MessageDecoder.createMessageId(this.msgIdMemory, msgInner.getStoreHostBytes(), wroteOffset);
 
-            /**
+            /*
              * 记录ConsumeQueue信息
              */
             String key = msgInner.getTopic() + "-" + msgInner.getQueueId();
@@ -1008,7 +1008,7 @@ public class CommitLog {
                 CommitLog.this.topicQueueTable.put(key, queueOffset);
             }
 
-            /**
+            /*
              * 事务消息需要特殊处理
              */
             final int tranType = MessageSysFlag.getTransactionValue(msgInner.getSysFlag());
@@ -1024,7 +1024,7 @@ public class CommitLog {
                     break;
             }
 
-            /**
+            /*
              * 序列化消息
              */
             final byte[] propertiesData =
