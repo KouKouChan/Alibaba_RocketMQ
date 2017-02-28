@@ -223,7 +223,7 @@ public class BrokerController {
 
         this.brokerStatsManager = new BrokerStatsManager(this.brokerConfig.getBrokerClusterName());
 
-        if (messageStoreConfig.getBrokerRole() != BrokerRole.SLAVE) {
+        if (messageStoreConfig.getBrokerRole() != BrokerRole.SLAVE && !brokerConfig.isRejectTransactionMessage()) {
             transactionStore = new JDBCTransactionStore(transactionStoreConfig);
         } else {
             transactionStore = null;
@@ -396,7 +396,9 @@ public class BrokerController {
                     }
                 }, 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
 
-                this.scheduledExecutorService.scheduleWithFixedDelay(new CheckStateService(this), 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
+                if (!brokerConfig.isRejectTransactionMessage()) {
+                    this.scheduledExecutorService.scheduleWithFixedDelay(new CheckStateService(this), 1000 * 10, 1000 * 60, TimeUnit.MILLISECONDS);
+                }
             }
         }
 

@@ -205,7 +205,13 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
                 case FLUSH_SLAVE_TIMEOUT:
                 case SLAVE_NOT_AVAILABLE:
                     // remove transaction record.
-                    this.brokerController.getTransactionStore().remove(Collections.singletonList(msgExt.getCommitLogOffset()));
+                    if (!this.brokerController.getBrokerConfig().isRejectTransactionMessage()
+                        && null != this.brokerController.getTransactionStore()) {
+                        this.brokerController.getTransactionStore().remove(Collections.singletonList(msgExt.getCommitLogOffset()));
+                    } else {
+                        logTransaction.error("Unexpected transaction message operation");
+                    }
+
                     response.setCode(ResponseCode.SUCCESS);
                     response.setRemark(null);
                     break;

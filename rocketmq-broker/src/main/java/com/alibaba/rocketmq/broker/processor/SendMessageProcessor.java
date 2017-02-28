@@ -475,7 +475,9 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                     response.setCode(ResponseCode.SUCCESS);
 
                     final int tranType = MessageSysFlag.getTransactionValue(msgInner.getSysFlag());
-                    if (tranType == MessageSysFlag.TransactionPreparedType) {
+                    if (!brokerController.getBrokerConfig().isRejectTransactionMessage()
+                        && null != brokerController.getTransactionStore()
+                        && tranType == MessageSysFlag.TransactionPreparedType) {
                         TransactionRecord transactionRecord = new TransactionRecord();
                         transactionRecord.setOffset(putMessageResult.getAppendMessageResult().getWroteOffset());
                         transactionRecord.setProducerGroup(msgInner.getProperty(MessageConst.PROPERTY_PRODUCER_GROUP));
