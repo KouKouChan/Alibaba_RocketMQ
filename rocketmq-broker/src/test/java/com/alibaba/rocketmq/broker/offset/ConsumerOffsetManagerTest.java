@@ -3,6 +3,7 @@
  */
 package com.alibaba.rocketmq.broker.offset;
 
+import com.alibaba.rocketmq.broker.transaction.jdbc.JDBCTransactionStoreConfig;
 import java.util.Random;
 
 import org.junit.Test;
@@ -24,7 +25,8 @@ public class ConsumerOffsetManagerTest {
             new BrokerConfig(), //
             new NettyServerConfig(), //
             new NettyClientConfig(), //
-            new MessageStoreConfig());
+            new MessageStoreConfig(), //
+            new JDBCTransactionStoreConfig());
         boolean initResult = brokerController.initialize();
         System.out.println("initialize " + initResult);
         brokerController.start();

@@ -21,8 +21,11 @@ import com.alibaba.rocketmq.broker.BrokerController;
 import com.alibaba.rocketmq.broker.client.ClientChannelInfo;
 import com.alibaba.rocketmq.broker.transaction.TransactionRecord;
 import com.alibaba.rocketmq.common.constant.LoggerName;
+import com.alibaba.rocketmq.common.message.MessageDecoder;
+import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.protocol.header.CheckTransactionStateRequestHeader;
 import com.alibaba.rocketmq.store.SelectMappedBufferResult;
+import java.nio.ByteBuffer;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +36,8 @@ public class CheckStateService implements Runnable {
 
     public static final int BATCH_SIZE = 10;
 
+    public static final long INTERVAL_5_MINUTES = 5L * 300 * 1000;
+
     private final BrokerController brokerController;
 
     public CheckStateService(BrokerController brokerController) {
@@ -41,19 +46,20 @@ public class CheckStateService implements Runnable {
 
     @Override
     public void run() {
-        boolean complete = false;
+        boolean stopped = false;
         long min = brokerController.getTransactionStore().minPK();
         long max = brokerController.getTransactionStore().maxPK();
         long offset = min;
-        while (!complete) {
-            if (offset > max) {
-                complete = true;
+        while (!stopped) {
+
+            if (offset >= max) {
+                stopped = true;
                 continue;
             }
 
             List<TransactionRecord> transactionRecords = brokerController.getTransactionStore().traverse(offset, BATCH_SIZE);
             if (transactionRecords.isEmpty()) {
-                complete = true;
+                stopped = true;
                 continue;
             }
 
@@ -66,10 +72,21 @@ public class CheckStateService implements Runnable {
 
                     // Retrieve the prepared message.
                     SelectMappedBufferResult selectMappedBufferResult = brokerController.getMessageStore()
-                        .selectOneMessageByOffset(offset);
+                        .selectOneMessageByOffset(transactionRecord.getOffset());
 
+                    if (null == selectMappedBufferResult) {
+                        continue;
+                    }
+
+                    ByteBuffer byteBuffer = selectMappedBufferResult.getByteBuffer().slice();
+                    MessageExt msgExt = MessageDecoder.decode(byteBuffer);
+                    byteBuffer.flip();
+                    stopped = (System.currentTimeMillis() - msgExt.getStoreTimestamp()) < INTERVAL_5_MINUTES;
+                    if (stopped) {
+                        continue;
+                    }
                     brokerController.getBroker2Client().checkProducerTransactionState(clientChannelInfo.getChannel(), requestHeader, selectMappedBufferResult);
-                    offset = transactionRecord.getOffset() + 1;
+                    offset = transactionRecord.getOffset() + msgExt.getStoreSize();
                 } else {
                     LOGGER.warn("There is no online producer instance of producer group: {}", transactionRecord.getProducerGroup());
                 }
