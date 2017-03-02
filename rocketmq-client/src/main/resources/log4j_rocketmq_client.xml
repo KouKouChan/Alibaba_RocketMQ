@@ -32,7 +32,7 @@
 		<param name="file" value="${log.home}/logs/rocketmqlogs/rocketmq_client.log" />
 		<param name="append" value="true" />
 		<param name="encoding" value="UTF-8" />
-		<param name="maxFileSize" value="1073741824" />
+		<param name="maxFileSize" value="100MB" />
 		<param name="maxBackupIndex" value="10" />
 		<layout class="org.apache.log4j.PatternLayout">
 			<param name="ConversionPattern" value="%d{yyy-MM-dd HH\:mm\:ss,SSS} %p %c{1}(%L) - %m%n" />
