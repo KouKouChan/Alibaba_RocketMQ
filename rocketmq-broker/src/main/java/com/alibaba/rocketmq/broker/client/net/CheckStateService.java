@@ -78,7 +78,7 @@ public class CheckStateService implements Runnable {
                 byteBuffer.flip();
                 stopped = (System.currentTimeMillis() - msgExt.getStoreTimestamp()) < INTERVAL_5_MINUTES;
                 if (stopped) {
-                    continue;
+                    break;
                 }
 
                 ClientChannelInfo clientChannelInfo = brokerController.getProducerManager()
