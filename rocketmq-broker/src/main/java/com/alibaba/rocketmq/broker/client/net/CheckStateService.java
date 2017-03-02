@@ -46,6 +46,7 @@ public class CheckStateService implements Runnable {
 
     @Override
     public void run() {
+        LOGGER.info("CheckStateService starts.");
         boolean stopped = false;
         long min = brokerController.getTransactionStore().minPK();
         long max = brokerController.getTransactionStore().maxPK();
@@ -97,5 +98,7 @@ public class CheckStateService implements Runnable {
                 offset = transactionRecord.getOffset() + msgExt.getStoreSize();
             }
         }
+
+        LOGGER.info("CheckStateService completes.");
     }
 }
