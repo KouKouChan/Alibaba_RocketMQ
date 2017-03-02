@@ -64,32 +64,37 @@ public class CheckStateService implements Runnable {
             }
 
             for (TransactionRecord transactionRecord : transactionRecords) {
-                ClientChannelInfo clientChannelInfo = brokerController.getProducerManager().pickProducerChannelRandomly(transactionRecord.getProducerGroup());
+
+                // Retrieve the prepared message.
+                SelectMappedBufferResult selectMappedBufferResult = brokerController.getMessageStore()
+                    .selectOneMessageByOffset(transactionRecord.getOffset());
+
+                if (null == selectMappedBufferResult) {
+                    continue;
+                }
+
+                ByteBuffer byteBuffer = selectMappedBufferResult.getByteBuffer().slice();
+                MessageExt msgExt = MessageDecoder.decode(byteBuffer);
+                byteBuffer.flip();
+                stopped = (System.currentTimeMillis() - msgExt.getStoreTimestamp()) < INTERVAL_5_MINUTES;
+                if (stopped) {
+                    continue;
+                }
+
+                ClientChannelInfo clientChannelInfo = brokerController.getProducerManager()
+                    .pickProducerChannelRandomly(transactionRecord.getProducerGroup());
+
                 if (null != clientChannelInfo) {
                     CheckTransactionStateRequestHeader requestHeader = new CheckTransactionStateRequestHeader();
                     requestHeader.setCommitLogOffset(transactionRecord.getOffset());
                     requestHeader.setTranStateTableOffset(1L);
-
-                    // Retrieve the prepared message.
-                    SelectMappedBufferResult selectMappedBufferResult = brokerController.getMessageStore()
-                        .selectOneMessageByOffset(transactionRecord.getOffset());
-
-                    if (null == selectMappedBufferResult) {
-                        continue;
-                    }
-
-                    ByteBuffer byteBuffer = selectMappedBufferResult.getByteBuffer().slice();
-                    MessageExt msgExt = MessageDecoder.decode(byteBuffer);
-                    byteBuffer.flip();
-                    stopped = (System.currentTimeMillis() - msgExt.getStoreTimestamp()) < INTERVAL_5_MINUTES;
-                    if (stopped) {
-                        continue;
-                    }
                     brokerController.getBroker2Client().checkProducerTransactionState(clientChannelInfo.getChannel(), requestHeader, selectMappedBufferResult);
-                    offset = transactionRecord.getOffset() + msgExt.getStoreSize();
                 } else {
+                    selectMappedBufferResult.release();
                     LOGGER.warn("There is no online producer instance of producer group: {}", transactionRecord.getProducerGroup());
                 }
+
+                offset = transactionRecord.getOffset() + msgExt.getStoreSize();
             }
         }
     }
