@@ -21,8 +21,17 @@ import com.alibaba.rocketmq.common.sysflag.TopicSysFlag;
 import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
 import com.alibaba.rocketmq.tools.admin.DefaultMQAdminExt;
+import com.alibaba.rocketmq.tools.command.BrokerFilter;
 import com.alibaba.rocketmq.tools.command.CommandUtil;
 import com.alibaba.rocketmq.tools.command.SubCommand;
+import com.google.common.base.Strings;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -92,6 +101,11 @@ public class UpdateTopicSubCommand implements SubCommand {
         options.addOption(opt);
 
         opt = new Option("d", "supportUnitTest", true, "support unit test (true|false)");
+        opt.setRequired(false);
+        options.addOption(opt);
+
+        // comma separated zone ids.
+        opt = new Option("z", "zone", true, "Zone to create topic into");
         opt.setRequired(false);
         options.addOption(opt);
 
@@ -171,9 +185,15 @@ public class UpdateTopicSubCommand implements SubCommand {
             } else if (commandLine.hasOption('c')) {
                 String clusterName = commandLine.getOptionValue('c').trim();
 
-                defaultMQAdminExt.start();
+                String zone = commandLine.getOptionValue("z").trim();
+                BrokerFilter brokerFilter = null;
+                if (!Strings.isNullOrEmpty(zone)) {
+                    Collection<String> regionIds = zone.contains(",") ? Arrays.asList(zone.split(",")) : Collections.singleton(zone);
+                    brokerFilter = new RegionBrokerFilter(regionIds);
+                }
 
-                Set<String> masterSet = CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName);
+                defaultMQAdminExt.start();
+                Set<String> masterSet = CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName, brokerFilter);
 
                 final CountDownLatch countDownLatch = new CountDownLatch(masterSet.size());
                 ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -220,6 +240,31 @@ public class UpdateTopicSubCommand implements SubCommand {
         }
         finally {
             defaultMQAdminExt.shutdown();
+        }
+    }
+
+    private static final Pattern BROKER_NAME_PATTERN = Pattern.compile("\\p{Alpha}{1,}_(\\d{1,})_\\w*");
+
+    private class RegionBrokerFilter implements BrokerFilter {
+
+        private final Collection<String> regionIds;
+
+
+        public RegionBrokerFilter(Collection<String> regionIds) {
+            this.regionIds = regionIds;
+        }
+
+        @Override
+        public boolean accept(String brokerName) {
+            Matcher matcher = BROKER_NAME_PATTERN.matcher(brokerName);
+            if (matcher.matches()) {
+                String regionId = matcher.group(1);
+                if (regionIds.contains(regionId.trim())) {
+                    System.out.println(brokerName + " matches");
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

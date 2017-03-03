@@ -38,9 +38,16 @@ import com.alibaba.rocketmq.tools.admin.MQAdminExt;
  * @since 2013-7-25
  */
 public class CommandUtil {
+
     public static Set<String> fetchMasterAddrByClusterName(final MQAdminExt adminExt, final String clusterName)
-            throws InterruptedException, RemotingConnectException, RemotingTimeoutException,
-            RemotingSendRequestException, MQBrokerException {
+        throws InterruptedException, RemotingConnectException, RemotingTimeoutException,
+        RemotingSendRequestException, MQBrokerException {
+        return fetchMasterAddrByClusterName(adminExt, clusterName, null);
+    }
+
+    public static Set<String> fetchMasterAddrByClusterName(final MQAdminExt adminExt, final String clusterName,
+        final BrokerFilter brokerFilter) throws InterruptedException, RemotingConnectException,
+        RemotingTimeoutException, RemotingSendRequestException, MQBrokerException {
         Set<String> masterSet = new HashSet<String>();
 
         ClusterInfo clusterInfoSerializeWrapper = adminExt.examineBrokerClusterInfo();
@@ -49,6 +56,11 @@ public class CommandUtil {
 
         if (brokerNameSet != null) {
             for (String brokerName : brokerNameSet) {
+
+                if (null != brokerFilter && !brokerFilter.accept(brokerName)) {
+                    continue;
+                }
+
                 BrokerData brokerData = clusterInfoSerializeWrapper.getBrokerAddrTable().get(brokerName);
                 if (brokerData != null) {
 
