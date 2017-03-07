@@ -185,7 +185,7 @@ public class UpdateTopicSubCommand implements SubCommand {
             } else if (commandLine.hasOption('c')) {
                 String clusterName = commandLine.getOptionValue('c').trim();
 
-                String zone = commandLine.getOptionValue("z").trim();
+                String zone = commandLine.getOptionValue("z");
                 BrokerFilter brokerFilter = null;
                 if (!Strings.isNullOrEmpty(zone)) {
                     Collection<String> regionIds = zone.contains(",") ? Arrays.asList(zone.split(",")) : Collections.singleton(zone);

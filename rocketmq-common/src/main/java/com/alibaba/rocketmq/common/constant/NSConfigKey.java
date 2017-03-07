@@ -28,7 +28,7 @@ public enum NSConfigKey {
   private String namespace;
   private String key;
   
-  private NSConfigKey(String namespace,String key){
+  NSConfigKey(String namespace,String key){
     this.namespace = namespace;
     this.key = key;
   }
