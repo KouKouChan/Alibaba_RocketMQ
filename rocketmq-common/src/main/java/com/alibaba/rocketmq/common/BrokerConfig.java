@@ -75,7 +75,7 @@ public class BrokerConfig {
 
     // 是否从地址服务器寻找Name Server地址，正式发布后，默认值为false
     @ImportantField
-    private boolean fetchNamesrvAddrByAddressServer = false;
+    private boolean fetchNamesrvAddrByAddressServer = true;
 
     // 发送消息对应的线程池阻塞队列size
     private int sendThreadPoolQueueCapacity = 100000;
