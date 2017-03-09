@@ -245,7 +245,7 @@ public class UtilAll {
                 return -1;
             }
         }
-
+        STORE_LOGGER.info("Final Disk Usage Ratio: {}", ret);
         return ret;
     }
 
