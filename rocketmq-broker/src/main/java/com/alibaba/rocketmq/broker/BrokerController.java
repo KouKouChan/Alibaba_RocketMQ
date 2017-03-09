@@ -257,7 +257,7 @@ public class BrokerController {
         result = result && this.messageStore.load();
 
         // Establish connection to MySQL server.
-        if (BrokerRole.SLAVE != messageStoreConfig.getBrokerRole()) {
+        if (!this.brokerConfig.isRejectTransactionMessage() && BrokerRole.SLAVE != messageStoreConfig.getBrokerRole()) {
             result = result && this.transactionStore.open();
         }
 
