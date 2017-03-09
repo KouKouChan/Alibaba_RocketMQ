@@ -492,7 +492,7 @@ public class UtilAll {
                 continue;
             }
 
-            Pair<String, Long> pair = new Pair<>(path, new File(path).getFreeSpace());
+            Pair<String, Long> pair = new Pair<>(path, new File(path).getUsableSpace());
             pathList.add(pair);
         }
 
