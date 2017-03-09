@@ -229,14 +229,16 @@ public class UtilAll {
                 if (!file.exists()) {
                     boolean result = file.mkdirs();
                     if (!result) {
+                        STORE_LOGGER.warn("Unable to create directory: {}", storePath);
                     }
                 }
 
                 long totalSpace = file.getTotalSpace();
-                long freeSpace = file.getFreeSpace();
-                long usedSpace = totalSpace - freeSpace;
+                long usableSpace = file.getUsableSpace();
+                long usedSpace = totalSpace - usableSpace;
                 if (totalSpace > 0) {
                     double ratio = usedSpace / (double) totalSpace;
+                    STORE_LOGGER.info("Path: {}, Used Ratio: {}", storePath, ratio);
                     ret = ratio < ret ? ratio : ret;
                 }
             } catch (Exception e) {
