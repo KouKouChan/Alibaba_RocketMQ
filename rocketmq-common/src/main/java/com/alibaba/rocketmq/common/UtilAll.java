@@ -15,6 +15,7 @@
  */
 package com.alibaba.rocketmq.common;
 
+import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
 
 import java.io.ByteArrayInputStream;
@@ -30,7 +31,8 @@ import java.util.*;
 import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 各种方法大杂烩
@@ -38,6 +40,9 @@ import java.util.zip.InflaterInputStream;
  * @author shijia.wxr<vintage.wang@gmail.com>
  */
 public class UtilAll {
+
+    private static final Logger STORE_LOGGER = LoggerFactory.getLogger(LoggerName.StoreLoggerName);
+
     public static final String yyyy_MM_dd_HH_mm_ss = "yyyy-MM-dd HH:mm:ss";
     public static final String yyyy_MM_dd_HH_mm_ss_SSS = "yyyy-MM-dd#HH:mm:ss:SSS";
     public static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
@@ -487,18 +492,24 @@ public class UtilAll {
                 continue;
             }
 
-            Pair<String, Long> pair = new Pair<String, Long>(path, new File(path).getUsableSpace());
+            Pair<String, Long> pair = new Pair<>(path, new File(path).getFreeSpace());
             pathList.add(pair);
         }
 
         Collections.sort(pathList, new Comparator<Pair<String, Long>>() {
             @Override
             public int compare(Pair<String, Long> lhs, Pair<String, Long> rhs) {
-                return lhs.getObject2() > rhs.getObject2() ? -1 : (lhs.getObject2().equals(rhs.getObject2()) ? lhs.getObject1().compareTo(rhs.getObject1()) : 1);
+                return -Long.compare(lhs.getObject2(), rhs.getObject2());
             }
         });
 
-        return pathList.get(0).getObject1();
+        for (Pair<String, Long> next : pathList) {
+            STORE_LOGGER.info("Path: {} --> FreeSpace: {}", next.getObject1(), next.getObject2());
+        }
+
+        String selectedPath = pathList.get(0).getObject1();
+        STORE_LOGGER.info("Select: {}", selectedPath);
+        return selectedPath;
     }
 
 }
