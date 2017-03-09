@@ -71,7 +71,7 @@ public class BrokerConfig {
 
     // 是否拒绝接收事务消息
     @ImportantField
-    private boolean rejectTransactionMessage = false;
+    private boolean rejectTransactionMessage = true;
 
     // 是否从地址服务器寻找Name Server地址，正式发布后，默认值为false
     @ImportantField
