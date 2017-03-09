@@ -19,7 +19,8 @@ public class SelectPartition {
         }
 
         String pathCSV = commandLine.getOptionValue("p");
-        String selectedPath = UtilAll.selectPath(pathCSV);
-        System.out.println(selectedPath);
+        UtilAll.selectPath(pathCSV);
+
+        UtilAll.getDiskPartitionSpaceUsedPercent(pathCSV);
     }
 }
