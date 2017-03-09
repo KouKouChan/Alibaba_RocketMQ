@@ -1,42 +1,42 @@
 
-------------Ïû·ÑÕß----------
-Ïû·Ñ×·×Ù×ª»¯µã»÷
+------------æ¶ˆè´¹è€…----------
+æ¶ˆè´¹è¿½è¸ªè½¬åŒ–ç‚¹å‡»
 CG_yeahTool_click
 
-Ïû·Ñ·¢ËÍ´óÊı¾İÖĞĞÄÊ§°ÜÊı¾İ
+æ¶ˆè´¹å‘é€å¤§æ•°æ®ä¸­å¿ƒå¤±è´¥æ•°æ®
 CG_yeahTool_errorSendBigData
 
 userAgent
 CG_yeahTool_userAgent
 
-Campaign·¢Éú±ä»¯Ê±
+Campaignå‘ç”Ÿå˜åŒ–æ—¶
 CG_yeahTool_campaignModify
 
-------------Ìá¹©Õß------
+------------æä¾›è€…------
 
-´óÊı¾İÖĞĞÄĞ´ÈëÊı¾İÊ§°Ü£¬Ìá¹©Õß¶ÓÁĞÃû
+å¤§æ•°æ®ä¸­å¿ƒå†™å…¥æ•°æ®å¤±è´¥ï¼Œæä¾›è€…é˜Ÿåˆ—å
 PG_yeahTool_errorSendBigData
 
-Campaign·¢Éú±ä»¯Ê±£¬Ìá¹©Õß¶ÓÁĞÃû
+Campaignå‘ç”Ÿå˜åŒ–æ—¶ï¼Œæä¾›è€…é˜Ÿåˆ—å
 PG_yeahTool_campaignModify
 
-×·×Ù×ª»¯µã»÷
+è¿½è¸ªè½¬åŒ–ç‚¹å‡»
 PG_yeahTool_click
 
 userAgent
 PG_yeahTool_userAgent
 
 -----------Topic---------
-×ª»»
+è½¬æ¢
 T_yeahTool_conversionClick
 
-µã»÷
+ç‚¹å‡»
 T_yeahTool_trackingClick
 
-´óÊı¾İÖĞĞÄĞ´ÈëÊ§°Ü
+å¤§æ•°æ®ä¸­å¿ƒå†™å…¥å¤±è´¥
 T_yeahTool_errorSendBigData
 
-Campaign·¢Éú±ä»¯Ê±
+Campaignå‘ç”Ÿå˜åŒ–æ—¶
 T_yeahTool_campaignModify
 
 userAgent
