@@ -21,6 +21,7 @@ public class SelectPartition {
         String pathCSV = commandLine.getOptionValue("p");
         UtilAll.selectPath(pathCSV);
 
-        UtilAll.getDiskPartitionSpaceUsedPercent(pathCSV);
+        double ratio = UtilAll.getDiskPartitionSpaceUsedPercent(pathCSV);
+        System.out.println(ratio);
     }
 }
