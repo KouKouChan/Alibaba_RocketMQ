@@ -27,22 +27,24 @@ public class MQVersion {
 
 
     public static String getVersionDesc(int value) {
-        try {
-            Version v = Version.values()[value];
-            return v.name();
-        }
-        catch (Exception e) {
+
+        if (value >= Version.values().length - 1) {
+            return Version.HIGHER_VERSION.name();
         }
 
-        return "HigherVersion";
+        return Version.values()[value].name();
     }
 
-
     public static Version value2Version(int value) {
+
+        if (value >= Version.values().length - 1) {
+            return Version.HIGHER_VERSION;
+        }
+
         return Version.values()[value];
     }
 
-    public static enum Version {
+    public enum Version {
         V3_0_0_SNAPSHOT,
         V3_0_0_ALPHA1,
         V3_0_0_BETA1,
@@ -943,5 +945,6 @@ public class MQVersion {
 
         V5_9_9_SNAPSHOT,
         V5_9_9,
+        HIGHER_VERSION
     }
 }
