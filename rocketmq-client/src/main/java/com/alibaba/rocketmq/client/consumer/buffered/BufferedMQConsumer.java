@@ -40,7 +40,11 @@ public class BufferedMQConsumer {
 
     private static final int DEFAULT_PULL_BATCH_SIZE = 1024;
 
+    private static final int DEFAULT_PULL_THRESHOLD = 4096;
+
     private int pullBatchSize = DEFAULT_PULL_BATCH_SIZE;
+
+    private int pullThreshold = DEFAULT_PULL_THRESHOLD;
 
     private static final int DEFAULT_CONSUME_MESSAGE_MAX_BATCH_SIZE = 1;
 
@@ -215,6 +219,17 @@ public class BufferedMQConsumer {
 
         if (null != defaultMQPushConsumer) {
             defaultMQPushConsumer.setPullBatchSize(pullBatchSize);
+        }
+    }
+
+    public void pullThresholdForQueue(int pullThreshold) {
+        this.pullThreshold = pullThreshold;
+        if (status != ClientStatus.CREATED) {
+            throw new RuntimeException("Please set pullThreshold before start");
+        }
+
+        if (null != defaultMQPushConsumer) {
+            defaultMQPushConsumer.setPullThresholdForQueue(pullThreshold);
         }
     }
 

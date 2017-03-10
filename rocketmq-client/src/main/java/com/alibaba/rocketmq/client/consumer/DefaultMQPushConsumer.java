@@ -107,10 +107,11 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * 同一队列并行消费的最大跨度，顺序消费方式情况下，此参数无效
      */
     private int consumeConcurrentlyMaxSpan = 2000;
+
     /**
      * 本地队列消息数超过此阀值，开始流控
      */
-    private int pullThresholdForQueue = 1000;
+    private int pullThresholdForQueue = 4096;
 
     /**
      * 拉消息间隔，如果为了降低拉取速度，可以设置大于0的值
