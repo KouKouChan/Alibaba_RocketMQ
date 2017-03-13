@@ -775,4 +775,16 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         }
         return true;
     }
+
+    @Override
+    public boolean connect(String address) {
+        try {
+            Channel channel = getAndCreateChannel(address);
+            if (null != channel) {
+                return true;
+            }
+        } catch (InterruptedException ignore) {
+        }
+        return false;
+    }
 }

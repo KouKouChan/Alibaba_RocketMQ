@@ -572,6 +572,23 @@ public class MQClientInstance {
     public void updateTopicRouteInfoFromNameServer() {
         Set<String> topicList = new HashSet<String>();
 
+        // Producer
+        {
+            for (Entry<String, MQProducerInner> entry : this.producerTable.entrySet()) {
+                MQProducerInner impl = entry.getValue();
+                if (impl != null) {
+                    Set<String> lst = impl.getPublishTopicList();
+                    topicList.addAll(lst);
+                }
+            }
+        }
+
+        // Connect brokers eagerly
+        for (String topic : topicList) {
+            this.updateTopicRouteInfoFromNameServer(topic, true);
+        }
+        topicList.clear();
+
         // Consumer对象
         {
             for (Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
@@ -587,17 +604,6 @@ public class MQClientInstance {
             }
         }
 
-        // Producer
-        {
-            for (Entry<String, MQProducerInner> entry : this.producerTable.entrySet()) {
-                MQProducerInner impl = entry.getValue();
-                if (impl != null) {
-                    Set<String> lst = impl.getPublishTopicList();
-                    topicList.addAll(lst);
-                }
-            }
-        }
-
         for (String topic : topicList) {
             this.updateTopicRouteInfoFromNameServer(topic);
         }
@@ -605,15 +611,24 @@ public class MQClientInstance {
 
 
     public boolean updateTopicRouteInfoFromNameServer(final String topic) {
-        return updateTopicRouteInfoFromNameServer(topic, false, null);
+        return updateTopicRouteInfoFromNameServer(topic, false);
     }
 
+
+    public boolean updateTopicRouteInfoFromNameServer(final String topic, final boolean connectNow) {
+        return updateTopicRouteInfoFromNameServer(topic, false, null, connectNow);
+    }
+
+    public boolean updateTopicRouteInfoFromNameServer(final String topic, boolean isDefault,
+        DefaultMQProducer defaultMQProducer) {
+        return updateTopicRouteInfoFromNameServer(topic, isDefault, defaultMQProducer, false);
+    }
 
     /**
      * 调用Name Server接口，根据Topic获取路由信息
      */
     public boolean updateTopicRouteInfoFromNameServer(final String topic, boolean isDefault,
-                                                      DefaultMQProducer defaultMQProducer) {
+                                                      DefaultMQProducer defaultMQProducer, final boolean connectNow) {
         try {
             if (this.lockNamesrv.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS)) {
                 try {
@@ -650,6 +665,11 @@ public class MQClientInstance {
 
                             // 更新Broker地址信息
                             for (BrokerData bd : topicRouteData.getBrokerDatas()) {
+                                if (connectNow) {
+                                    // Connect newly found brokers immediately.
+                                    connect(bd);
+                                }
+
                                 this.brokerAddrTable.put(bd.getBrokerName(), bd.getBrokerAddrs());
                             }
 
@@ -697,6 +717,35 @@ public class MQClientInstance {
         }
 
         return false;
+    }
+
+    private void connect(BrokerData brokerData) {
+
+        if (null == brokerData || null == brokerData.getBrokerAddrs() || brokerData.getBrokerAddrs().isEmpty()) {
+            return;
+        }
+
+        Map<Long, String> existingBrokers = this.brokerAddrTable.get(brokerData.getBrokerName());
+
+        List<String> brokerAddresses = new ArrayList<String>();
+        if (null == existingBrokers) {
+            brokerAddresses.addAll(brokerData.getBrokerAddrs().values());
+        } else {
+            Set<String> existingBrokerAddresses = new HashSet<String>();
+            existingBrokerAddresses.addAll(existingBrokers.values());
+            for (Map.Entry<Long, String> next : brokerData.getBrokerAddrs().entrySet()) {
+                if (!existingBrokerAddresses.contains(next.getValue())) {
+                    brokerAddresses.add(next.getValue());
+                }
+            }
+        }
+
+        for (String brokerAddress : brokerAddresses) {
+            boolean successful = this.mQClientAPIImpl.getRemotingClient().connect(brokerAddress);
+            if (successful) {
+                log.info("Eagerly Established a connection to: {}", brokerAddress);
+            }
+        }
     }
 
 
