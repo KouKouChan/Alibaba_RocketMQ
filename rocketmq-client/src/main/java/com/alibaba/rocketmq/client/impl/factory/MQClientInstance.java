@@ -744,6 +744,8 @@ public class MQClientInstance {
             boolean successful = this.mQClientAPIImpl.getRemotingClient().connect(brokerAddress);
             if (successful) {
                 log.info("Eagerly Established a connection to: {}", brokerAddress);
+            } else {
+                log.warn("Failed to eagerly establish a connection to: {}", brokerAddress);
             }
         }
     }
