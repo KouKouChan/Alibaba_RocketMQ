@@ -399,6 +399,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     public void setTraceLevel(String level) {
         if (null == level || level.isEmpty()) {
             traceLevel = TraceLevel.NONE;
+            return;
         }
 
         if ("DEBUG".equals(level)) {
@@ -418,9 +419,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
         }
 
 
-        if ("NONE".equals(level)) {
-            traceLevel = TraceLevel.NONE;
-        }
+        traceLevel = TraceLevel.NONE;
     }
 
     public AtomicLong getTraceCounter() {
