@@ -81,7 +81,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
     // 长轮询模式，Consumer连接在Broker挂起最长时间
     private static final long BrokerSuspendMaxTimeMillis = 1000 * 15;
     // 长轮询模式，Consumer超时时间（必须要大于brokerSuspendMaxTimeMillis）
-    private static final long ConsumerTimeoutMillisWhenSuspend = 1000 * 60;
+    private static final long ConsumerTimeoutMillisWhenSuspend = 1000 * 30;
     private final Logger log = ClientLogger.getLog();
     private final DefaultMQPushConsumer defaultMQPushConsumer;
     // Rebalance实现
