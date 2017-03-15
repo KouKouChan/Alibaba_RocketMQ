@@ -412,10 +412,14 @@ public class MQClientInstance {
 
 
     public void sendHeartbeatToAllBrokerWithLock() {
+        long startTime = System.currentTimeMillis();
         if (this.lockHeartbeat.tryLock()) {
+            long lockAcquiredTime = System.currentTimeMillis();
             try {
                 this.sendHeartbeatToAllBroker();
                 this.uploadFilterClassSource();
+                log.info("sendHeartbeatToAllBrokerWithLock() takes {}ms without lock acquiring time",
+                        System.currentTimeMillis() - lockAcquiredTime);
             } catch (final Exception e) {
                 log.error("sendHeartbeatToAllBroker exception", e);
             } finally {
@@ -424,6 +428,9 @@ public class MQClientInstance {
         } else {
             log.warn("lock heartBeat, but failed.");
         }
+
+        log.info("sendHeartbeatToAllBrokerWithLock() takes {}ms including acquiring lock",
+                System.currentTimeMillis() - startTime);
     }
 
 
