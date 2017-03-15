@@ -111,7 +111,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     /**
      * 本地队列消息数超过此阀值，开始流控
      */
-    private int pullThresholdForQueue = 4096;
+    private int pullThresholdForQueue = 2048;
 
     /**
      * 拉消息间隔，如果为了降低拉取速度，可以设置大于0的值
@@ -131,7 +131,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
     /**
      * 拉消息，一次拉多少条
      */
-    private int pullBatchSize = 1024;
+    private int pullBatchSize = 256;
 
     /**
      * 是否每次拉消息时，都上传订阅关系
