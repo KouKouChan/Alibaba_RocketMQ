@@ -22,12 +22,15 @@ import com.alibaba.rocketmq.client.exception.MQBrokerException;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.hook.SendMessageClientTraceHook;
 import com.alibaba.rocketmq.client.impl.producer.DefaultMQProducerImpl;
+import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.common.MixAll;
+import com.alibaba.rocketmq.common.SystemClock;
 import com.alibaba.rocketmq.common.message.Message;
 import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.message.MessageQueue;
 import com.alibaba.rocketmq.remoting.RPCHook;
 import com.alibaba.rocketmq.remoting.exception.RemotingException;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,6 +43,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 2013-7-25
  */
 public class DefaultMQProducer extends ClientConfig implements MQProducer {
+
+    private static Logger LOGGER = ClientLogger.getLog();
 
     protected final transient DefaultMQProducerImpl defaultMQProducerImpl;
 
@@ -96,6 +101,8 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
     private volatile TraceLevel traceLevel = TraceLevel.NONE;
     private volatile AtomicLong traceCounter = new AtomicLong(0L);
+
+    private final SystemClock systemClock = new SystemClock(1L);
 
     public DefaultMQProducer() {
         this(MixAll.DEFAULT_PRODUCER_GROUP, null);
@@ -221,7 +228,12 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     @Override
     public void send(Message msg, MessageQueueSelector selector, Object arg, SendCallback sendCallback)
             throws MQClientException, RemotingException, InterruptedException {
+        long start = systemClock.now();
         this.defaultMQProducerImpl.send(msg, selector, arg, sendCallback);
+        long duration = systemClock.now() - start;
+        if (duration > 100) {
+            LOGGER.warn("Async send takes {}ms", duration);
+        }
     }
 
 
