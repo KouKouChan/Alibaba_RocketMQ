@@ -519,7 +519,6 @@ public class MQClientInstance {
                         try {
                             this.mQClientAPIImpl.sendHearbeat(addr, heartbeatData, clientConfig.getHeartbeatTimeout());
                             log.info("send heart beat to broker[{} {} {}] success", brokerName, id, addr);
-                            log.info(heartbeatData.toString());
                         } catch (Exception e) {
                             log.error("send heart beat to broker exception", e);
                         }
