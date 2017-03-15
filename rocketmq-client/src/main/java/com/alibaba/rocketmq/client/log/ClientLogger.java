@@ -48,6 +48,9 @@ public class ClientLogger {
 
         final String logbackResourceFile = System.getProperty("rocketmq.client.logback.resource.fileName", "logback_rocketmq_client.xml");
 
+        String logHome = System.getProperty("log.home", "${user.home}");
+        System.setProperty("log.home", logHome);
+
         if (loadCustomConfig) {
             try {
                 ILoggerFactory iLoggerFactory = LoggerFactory.getILoggerFactory();
