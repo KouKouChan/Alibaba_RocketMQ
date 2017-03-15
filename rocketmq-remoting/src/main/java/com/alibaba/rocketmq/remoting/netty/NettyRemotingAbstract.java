@@ -15,6 +15,7 @@
  */
 package com.alibaba.rocketmq.remoting.netty;
 
+import com.alibaba.rocketmq.common.SystemClock;
 import com.alibaba.rocketmq.remoting.ChannelEventListener;
 import com.alibaba.rocketmq.remoting.InvokeCallback;
 import com.alibaba.rocketmq.remoting.RPCHook;
@@ -56,6 +57,8 @@ public abstract class NettyRemotingAbstract {
 
     // 信号量，异步调用情况会使用，防止本地Netty缓存请求过多
     protected final Semaphore semaphoreAsync;
+
+    protected final SystemClock systemClock = new SystemClock(1);
 
     // 缓存所有对外请求
     protected final ConcurrentHashMap<Integer /* opaque */, ResponseFuture> responseTable =
@@ -390,7 +393,15 @@ public abstract class NettyRemotingAbstract {
     public void invokeAsyncImpl(final Channel channel, final RemotingCommand request,
             final long timeoutMillis, final InvokeCallback invokeCallback) throws InterruptedException,
             RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
+
+        long start = systemClock.now();
         boolean acquired = this.semaphoreAsync.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
+        long duration = systemClock.now() - start;
+
+        if (duration > 10) {
+            LOGGER.warn("Acquire semaphore async takes {}ms", duration);
+        }
+
         if (acquired) {
             final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreAsync);
 
