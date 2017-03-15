@@ -223,15 +223,13 @@ public class PullAPIWrapper {
             final CommunicationMode communicationMode,// 10
             final PullCallback pullCallback// 11
     ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
-        FindBrokerResult findBrokerResult =
-                this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(),
-                    this.recalculatePullFromWhichNode(mq), false);
+        FindBrokerResult findBrokerResult = this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(),
+                this.recalculatePullFromWhichNode(mq), false);
         if (null == findBrokerResult) {
             // TODO 此处可能对Name Server压力过大，需要调优
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(mq.getTopic());
-            findBrokerResult =
-                    this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(),
-                        this.recalculatePullFromWhichNode(mq), false);
+            findBrokerResult = this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(),
+                    this.recalculatePullFromWhichNode(mq), false);
         }
 
         if (findBrokerResult != null) {
@@ -258,6 +256,8 @@ public class PullAPIWrapper {
             if (PullSysFlag.hasClassFilterFlag(sysFlagInner)) {
                 brokerAddr = computePullFromWhichFilterServer(mq.getTopic(), brokerAddr);
             }
+
+            log.info("Pulling {}", mq);
 
             PullResult pullResult = this.mQClientFactory.getMQClientAPIImpl().pullMessage(//
                 brokerAddr,//

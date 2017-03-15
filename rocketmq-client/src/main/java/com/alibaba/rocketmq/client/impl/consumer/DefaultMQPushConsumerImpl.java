@@ -334,9 +334,8 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         // 检测Consumer是否启动
         try {
             this.makeSureStateOK();
-        }
-        catch (MQClientException e) {
-            log.warn("pullMessage exception, consumer state not isOK", e);
+        } catch (MQClientException e) {
+            log.warn("pullMessage exception, consumer state is not OK", e);
             this.executePullRequestLater(pullRequest, PullTimeDelayMillsWhenException);
             return;
         }
@@ -388,6 +387,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             @Override
             public void onSuccess(PullResult pullResult) {
                 if (pullResult != null) {
+                    log.info("Pulling {} returns on success", pullRequest.getMessageQueue());
                     pullResult = DefaultMQPushConsumerImpl.this.pullAPIWrapper.processPullResult(
                             pullRequest.getMessageQueue(), pullResult, subscriptionData);
 
@@ -511,18 +511,19 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     default:
                         break;
                     }
+                } else {
+                    log.error("[BUG] Pull returns, but pull result is null!");
                 }
             }
 
 
             @Override
             public void onException(Throwable e) {
+                log.error("Pulling {} returns on exception", pullRequest.getMessageQueue());
                 if (!pullRequest.getMessageQueue().getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
                     log.warn("execute the pull request exception", e);
                 }
-
-                DefaultMQPushConsumerImpl.this.executePullRequestLater(pullRequest,
-                    PullTimeDelayMillsWhenException);
+                DefaultMQPushConsumerImpl.this.executePullRequestLater(pullRequest, PullTimeDelayMillsWhenException);
             }
         };
 

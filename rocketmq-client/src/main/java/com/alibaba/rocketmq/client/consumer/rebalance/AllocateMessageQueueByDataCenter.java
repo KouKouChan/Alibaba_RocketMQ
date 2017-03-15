@@ -276,8 +276,9 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
             }
             LOGGER.debug("Allocation End.");
         }
-        return null == result.get(currentConsumerID) ? new ArrayList<MessageQueue>()
-                : result.get(currentConsumerID);
+        List<MessageQueue> allocation = result.get(currentConsumerID);
+        LOGGER.info("Allocation result: {}", allocation);
+        return null == allocation ? new ArrayList<MessageQueue>() : allocation;
     }
 
     private static boolean isSuspended(List<Pair<Long, Long>> ranges, String consumerId) {

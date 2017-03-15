@@ -379,20 +379,18 @@ public abstract class RebalanceImpl {
                 // 超过2分钟没有拉取动作了，删除它
                 else if (pq.isPullExpired()) {
                     switch (this.consumeType()) {
-                    case CONSUME_ACTIVELY:
-                        break;
-                    case CONSUME_PASSIVELY:
-                        pq.setDropped(true);
-                        if (this.removeUnnecessaryMessageQueue(mq, pq)) {
-                            it.remove();
-                            changed = true;
-                            log.error(
-                                "[BUG]doRebalance, {}, remove unnecessary mq, {}, because pull is pause, so try to fixed it",
-                                consumerGroup, mq);
-                        }
-                        break;
-                    default:
-                        break;
+                        case CONSUME_ACTIVELY:
+                            break;
+                        case CONSUME_PASSIVELY:
+                            pq.setDropped(true);
+                            if (this.removeUnnecessaryMessageQueue(mq, pq)) {
+                                it.remove();
+                                changed = true;
+                                log.error("[BUG]doRebalance, consume group: {}, remove message queue: {}, because pull is expired, so try to fix it", consumerGroup, mq);
+                            }
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
@@ -414,11 +412,11 @@ public abstract class RebalanceImpl {
                     pullRequestList.add(pullRequest);
                     changed = true;
                     this.processQueueTable.put(mq, pullRequest.getProcessQueue());
-                    log.info("doRebalance, {}, add a new mq, {}", consumerGroup, mq);
+                    log.info("doRebalance, consumer group: {}, successfully add a new message queue: {}", consumerGroup, mq);
                 }
                 else {
                     // 等待此次Rebalance做重试
-                    log.warn("doRebalance, {}, add new mq failed, {}", consumerGroup, mq);
+                    log.warn("doRebalance, consumer group: {}, failed to add new message queue: {}", consumerGroup, mq);
                 }
             }
         }
@@ -446,8 +444,7 @@ public abstract class RebalanceImpl {
                 ProcessQueue pq = this.processQueueTable.remove(mq);
                 if (pq != null) {
                     pq.setDropped(true);
-                    log.info("doRebalance, {}, truncateMessageQueueNotMyTopic remove unnecessary mq, {}",
-                        consumerGroup, mq);
+                    log.info("doRebalance, consumer group: {}, #truncateMessageQueueNotMyTopic remove unnecessary mq: {}", consumerGroup, mq);
                 }
             }
         }
