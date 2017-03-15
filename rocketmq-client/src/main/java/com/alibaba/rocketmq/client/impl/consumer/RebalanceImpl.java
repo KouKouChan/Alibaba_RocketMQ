@@ -243,7 +243,9 @@ public abstract class RebalanceImpl {
             for (final Map.Entry<String, SubscriptionData> entry : subTable.entrySet()) {
                 final String topic = entry.getKey();
                 try {
+                    log.info("Begin to re-balance by topic: {}", topic);
                     this.rebalanceByTopic(topic);
+                    log.info("End of re-balance by topic: {}", topic);
                 } catch (Exception e) {
                     if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
                         log.warn("rebalanceByTopic Exception", e);
@@ -258,87 +260,88 @@ public abstract class RebalanceImpl {
 
     private void rebalanceByTopic(final String topic) {
         switch (messageModel) {
-        case BROADCASTING: {
-            Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
-            if (mqSet != null) {
-                boolean changed = this.updateProcessQueueTableInRebalance(topic, mqSet);
-                if (changed) {
-                    this.messageQueueChanged(topic, mqSet, mqSet);
-                    log.info("messageQueueChanged {} {} {} {}",//
-                        consumerGroup,//
-                        topic,//
-                        mqSet,//
-                        mqSet);
-                }
-            }
-            else {
-                log.warn("doRebalance, {}, but the topic[{}] not exist.", consumerGroup, topic);
-            }
-            break;
-        }
-        case CLUSTERING: {
-            Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
-            List<String> cidAll = this.mQClientFactory.findConsumerIdList(topic, consumerGroup);
-            if (null == mqSet) {
-                if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
+            case BROADCASTING: {
+                Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
+                if (mqSet != null) {
+                    boolean changed = this.updateProcessQueueTableInRebalance(topic, mqSet);
+                    if (changed) {
+                        this.messageQueueChanged(topic, mqSet, mqSet);
+                        log.info("messageQueueChanged {} {} {} {}",//
+                            consumerGroup,//
+                            topic,//
+                            mqSet,//
+                            mqSet);
+                    }
+                } else {
                     log.warn("doRebalance, {}, but the topic[{}] not exist.", consumerGroup, topic);
                 }
+                break;
             }
 
-            if (null == cidAll) {
-                log.warn("doRebalance, {} {}, get consumer id list failed", consumerGroup, topic);
+            case CLUSTERING: {
+                Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
+                List<String> cidAll = this.mQClientFactory.findConsumerIdList(topic, consumerGroup);
+                if (null == mqSet) {
+                    if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
+                        log.warn("doRebalance, {}, but the topic[{}] not exist.", consumerGroup, topic);
+                    }
+                }
+
+                if (null == cidAll) {
+                    log.warn("doRebalance, {} {}, get consumer id list failed", consumerGroup, topic);
+                }
+
+                if (mqSet != null && cidAll != null) {
+                    List<MessageQueue> mqAll = new ArrayList<MessageQueue>();
+                    mqAll.addAll(mqSet);
+
+                    // 排序
+                    Collections.sort(mqAll);
+                    Collections.sort(cidAll);
+
+                    AllocateMessageQueueStrategy strategy = this.allocateMessageQueueStrategy;
+
+                    // 执行分配算法
+                    List<MessageQueue> allocateResult = null;
+                    try {
+                        allocateResult = strategy.allocate(//
+                            this.consumerGroup, //
+                            this.mQClientFactory.getClientId(), //
+                            mqAll,//
+                            cidAll);
+                    }
+                    catch (Throwable e) {
+                        log.error(
+                            "AllocateMessageQueueStrategy.allocate Exception. allocateMessageQueueStrategyName={}",
+                            strategy.getName(), e);
+                        return;
+                    }
+
+                    Set<MessageQueue> allocateResultSet = new HashSet<MessageQueue>();
+                    if (allocateResult != null) {
+                        allocateResultSet.addAll(allocateResult);
+                    }
+
+                    // 更新本地队列
+                    boolean changed = this.updateProcessQueueTableInRebalance(topic, allocateResultSet);
+                    if (changed) {
+                        log.info(
+                            "rebalanced allocate source. allocateMessageQueueStrategyName={}, group={}, topic={}, mqAllSize={}, cidAllSize={}, mqAll={}, cidAll={}",
+                            strategy.getName(), consumerGroup, topic, mqSet.size(), cidAll.size(), mqSet, cidAll);
+                        log.info(
+                            "rebalanced result changed. allocateMessageQueueStrategyName={}, group={}, topic={}, ConsumerId={}, rebalanceSize={}, rebalanceMqSet={}",
+                            strategy.getName(), consumerGroup, topic, this.mQClientFactory.getClientId(),
+                            allocateResultSet.size(), mqAll.size(), cidAll.size(), allocateResultSet);
+
+                        this.messageQueueChanged(topic, mqSet, allocateResultSet);
+                    }
+                }
+                break;
             }
 
-            if (mqSet != null && cidAll != null) {
-                List<MessageQueue> mqAll = new ArrayList<MessageQueue>();
-                mqAll.addAll(mqSet);
-
-                // 排序
-                Collections.sort(mqAll);
-                Collections.sort(cidAll);
-
-                AllocateMessageQueueStrategy strategy = this.allocateMessageQueueStrategy;
-
-                // 执行分配算法
-                List<MessageQueue> allocateResult = null;
-                try {
-                    allocateResult = strategy.allocate(//
-                        this.consumerGroup, //
-                        this.mQClientFactory.getClientId(), //
-                        mqAll,//
-                        cidAll);
-                }
-                catch (Throwable e) {
-                    log.error(
-                        "AllocateMessageQueueStrategy.allocate Exception. allocateMessageQueueStrategyName={}",
-                        strategy.getName(), e);
-                    return;
-                }
-
-                Set<MessageQueue> allocateResultSet = new HashSet<MessageQueue>();
-                if (allocateResult != null) {
-                    allocateResultSet.addAll(allocateResult);
-                }
-
-                // 更新本地队列
-                boolean changed = this.updateProcessQueueTableInRebalance(topic, allocateResultSet);
-                if (changed) {
-                    log.info(
-                        "rebalanced allocate source. allocateMessageQueueStrategyName={}, group={}, topic={}, mqAllSize={}, cidAllSize={}, mqAll={}, cidAll={}",
-                        strategy.getName(), consumerGroup, topic, mqSet.size(), cidAll.size(), mqSet, cidAll);
-                    log.info(
-                        "rebalanced result changed. allocateMessageQueueStrategyName={}, group={}, topic={}, ConsumerId={}, rebalanceSize={}, rebalanceMqSet={}",
-                        strategy.getName(), consumerGroup, topic, this.mQClientFactory.getClientId(),
-                        allocateResultSet.size(), mqAll.size(), cidAll.size(), allocateResultSet);
-
-                    this.messageQueueChanged(topic, mqSet, allocateResultSet);
-                }
+            default:
+                break;
             }
-            break;
-        }
-        default:
-            break;
-        }
     }
 
 
