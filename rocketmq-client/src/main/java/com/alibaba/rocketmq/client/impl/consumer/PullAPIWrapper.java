@@ -257,8 +257,6 @@ public class PullAPIWrapper {
                 brokerAddr = computePullFromWhichFilterServer(mq.getTopic(), brokerAddr);
             }
 
-            log.info("Pulling {}", mq);
-
             PullResult pullResult = this.mQClientFactory.getMQClientAPIImpl().pullMessage(//
                 brokerAddr,//
                 requestHeader,//
