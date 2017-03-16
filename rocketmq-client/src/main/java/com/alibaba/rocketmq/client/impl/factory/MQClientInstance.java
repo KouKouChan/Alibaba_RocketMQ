@@ -349,6 +349,8 @@ public class MQClientInstance {
      * 清理下线的broker
      */
     private void cleanOfflineBroker() {
+        log.info("Enter cleanOfflineBroker");
+
         try {
             if (this.lockNamesrv.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS))
                 try {
@@ -392,6 +394,8 @@ public class MQClientInstance {
         } catch (InterruptedException e) {
             log.warn("cleanOfflineBroker Exception", e);
         }
+
+        log.info("Exit cleanOfflineBroker");
     }
 
 
@@ -585,6 +589,7 @@ public class MQClientInstance {
 
 
     public void updateTopicRouteInfoFromNameServer() {
+        log.info("Enter updateTopicRouteInfoFromNameServer");
         Set<String> topicList = new HashSet<String>();
 
         // Producer
@@ -622,6 +627,7 @@ public class MQClientInstance {
         for (String topic : topicList) {
             this.updateTopicRouteInfoFromNameServer(topic);
         }
+        log.info("Exit updateTopicRouteInfoFromNameServer");
     }
 
 
@@ -644,6 +650,9 @@ public class MQClientInstance {
      */
     public boolean updateTopicRouteInfoFromNameServer(final String topic, boolean isDefault,
                                                       DefaultMQProducer defaultMQProducer, final boolean connectNow) {
+        log.info("Enter updateTopicRouteInfoFromNameServer(topic: {}, isDefault: {}, connectNow: {})",
+                topic, isDefault, connectNow);
+
         try {
             if (this.lockNamesrv.tryLock(LockTimeoutMillis, TimeUnit.MILLISECONDS)) {
                 try {
@@ -712,6 +721,8 @@ public class MQClientInstance {
                             }
                             log.info("topicRouteTable.put TopicRouteData[{}]", cloneTopicRouteData);
                             this.topicRouteTable.put(topic, cloneTopicRouteData);
+
+                            log.info("Exit updateTopicRouteInfoFromNameServer, return: {}", true);
                             return true;
                         }
                     } else {
@@ -731,6 +742,7 @@ public class MQClientInstance {
             log.warn("updateTopicRouteInfoFromNameServer Exception", e);
         }
 
+        log.info("Exit updateTopicRouteInfoFromNameServer, return: {}", false);
         return false;
     }
 
