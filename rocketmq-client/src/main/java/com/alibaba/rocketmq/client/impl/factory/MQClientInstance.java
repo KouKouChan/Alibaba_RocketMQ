@@ -163,6 +163,15 @@ public class MQClientInstance {
         this.nettyClientConfig = new NettyClientConfig();
         this.nettyClientConfig.setConnectTimeoutMillis(NettySystemConfig.NETTY_CONNECT_TIMEOUT);
         this.nettyClientConfig.setClientCallbackExecutorThreads(clientConfig.getClientCallbackExecutorThreads());
+
+        if (clientConfig.getClientAsyncSemaphoreValue() != null) {
+            this.nettyClientConfig.setClientAsyncSemaphoreValue(clientConfig.getClientAsyncSemaphoreValue());
+        }
+
+        if (clientConfig.getClientOnewaySemaphoreValue() != null) {
+            this.nettyClientConfig.setClientOnewaySemaphoreValue(clientConfig.getClientOnewaySemaphoreValue());
+        }
+
         this.clientRemotingProcessor = new ClientRemotingProcessor(this);
         this.mQClientAPIImpl = new MQClientAPIImpl(this.nettyClientConfig, this.clientRemotingProcessor, rpcHook);
 

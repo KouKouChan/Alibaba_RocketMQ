@@ -42,6 +42,8 @@ public class ClientConfig {
     private int persistConsumerOffsetInterval = 1000 * 5;
     private ClientType clientType;
     private WeakReference weakReference;
+    private Integer clientAsyncSemaphoreValue;
+    private Integer clientOnewaySemaphoreValue;
 
     public String buildMQClientId() {
         StringBuilder sb = new StringBuilder();
@@ -73,6 +75,8 @@ public class ClientConfig {
         this.persistConsumerOffsetInterval = cc.persistConsumerOffsetInterval;
         this.clientType = cc.clientType;
         this.weakReference = cc.weakReference;
+        this.clientAsyncSemaphoreValue = cc.clientAsyncSemaphoreValue;
+        this.clientOnewaySemaphoreValue = cc.clientOnewaySemaphoreValue;
     }
 
 
@@ -89,6 +93,8 @@ public class ClientConfig {
         cc.persistConsumerOffsetInterval = persistConsumerOffsetInterval;
         cc.clientType = clientType;
         cc.weakReference = weakReference;
+        cc.clientAsyncSemaphoreValue = clientAsyncSemaphoreValue;
+        cc.clientOnewaySemaphoreValue = clientOnewaySemaphoreValue;
         return cc;
     }
 
@@ -204,6 +210,22 @@ public class ClientConfig {
         this.networkTimeout = networkTimeout;
     }
 
+    public Integer getClientAsyncSemaphoreValue() {
+        return clientAsyncSemaphoreValue;
+    }
+
+    public void setClientAsyncSemaphoreValue(Integer clientAsyncSemaphoreValue) {
+        this.clientAsyncSemaphoreValue = clientAsyncSemaphoreValue;
+    }
+
+    public Integer getClientOnewaySemaphoreValue() {
+        return clientOnewaySemaphoreValue;
+    }
+
+    public void setClientOnewaySemaphoreValue(Integer clientOnewaySemaphoreValue) {
+        this.clientOnewaySemaphoreValue = clientOnewaySemaphoreValue;
+    }
+
     @Override
     public String toString() {
         return "ClientConfig [namesrvAddr=" + namesrvAddr + ", clientIP=" + clientIP + ", instanceName="
@@ -211,6 +233,10 @@ public class ClientConfig {
                 + ", pollNameServerInterval=" + pollNameServerInterval + ", heartbeatBrokerInterval="
                 + heartbeatBrokerInterval + ", heartbeatTimeout=" + heartbeatTimeout
                 + ", networkTimeout=" + networkTimeout
-                + ", persistConsumerOffsetInterval=" + persistConsumerOffsetInterval + ", clientType=" + clientType + "]";
+                + ", persistConsumerOffsetInterval=" + persistConsumerOffsetInterval
+                + ", clientType=" + clientType
+                + ", clientAsyncSemaphoreValue=" + clientAsyncSemaphoreValue
+                + ", clientOnewaySemaphoreValue=" + clientOnewaySemaphoreValue
+                + "]";
     }
 }
