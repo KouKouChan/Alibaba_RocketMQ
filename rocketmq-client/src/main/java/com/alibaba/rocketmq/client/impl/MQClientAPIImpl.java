@@ -1531,11 +1531,15 @@ public class MQClientAPIImpl {
         throw new MQClientException(response.getCode(), response.getRemark());
     }
 
+    public TopicRouteData getTopicRouteInfoFromNameServer(final String topic, final long timeoutMillis)
+            throws RemotingException, MQClientException, InterruptedException {
+        return getTopicRouteInfoFromNameServer(topic, true, timeoutMillis);
+    }
 
     /**
      * Name Server: 从Name Server获取Topic路由信息
      */
-    public TopicRouteData getTopicRouteInfoFromNameServer(final String topic, final long timeoutMillis)
+    public TopicRouteData getTopicRouteInfoFromNameServer(final String topic, boolean logWarning, final long timeoutMillis)
             throws RemotingException, MQClientException, InterruptedException {
         // 添加虚拟运行环境相关的projectGroupPrefix
         String topicWithProjectGroup = topic;
@@ -1551,19 +1555,23 @@ public class MQClientAPIImpl {
         RemotingCommand response = this.remotingClient.invokeSync(null, request, timeoutMillis);
         assert response != null;
         switch (response.getCode()) {
-        case ResponseCode.TOPIC_NOT_EXIST: {
-            log.warn("getRouteInfoFromNameServer for topic [{}] failed. Response Code: TOPIC_NOT_EXIST; Remark: {}",
-                    topic, response.getRemark());
-            break;
-        }
-        case ResponseCode.SUCCESS: {
-            byte[] body = response.getBody();
-            if (body != null) {
-                return TopicRouteData.decode(body, TopicRouteData.class);
+            case ResponseCode.TOPIC_NOT_EXIST: {
+                if (logWarning) {
+                    log.warn("getRouteInfoFromNameServer for topic [{}] failed. Response Code: TOPIC_NOT_EXIST; Remark: {}",
+                            topic, response.getRemark());
+                }
+                break;
             }
-        }
-        default:
-            break;
+
+            case ResponseCode.SUCCESS: {
+                byte[] body = response.getBody();
+                if (body != null) {
+                    return TopicRouteData.decode(body, TopicRouteData.class);
+                }
+            }
+
+            default:
+                break;
         }
 
         throw new MQClientException(response.getCode(), response.getRemark());

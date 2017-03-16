@@ -672,6 +672,8 @@ public class MQClientInstance {
                         }
                     } else if (!MixAll.DEFAULT_TOPIC.equals(topic)) {
                         topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, nettyClientConfig.getIoTimeoutMillis());
+                    } else {
+                        topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, false, nettyClientConfig.getIoTimeoutMillis());
                     }
 
                     if (topicRouteData != null) {
