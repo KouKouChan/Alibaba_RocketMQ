@@ -165,6 +165,7 @@ public class MQClientAPIImpl {
 
 
     public String fetchNameServerAddr() {
+        log.info("Enter fetchNameServerAddr");
         try {
             String addrs = this.topAddressing.fetchNSAddr();
             if (addrs != null) {
@@ -175,10 +176,10 @@ public class MQClientAPIImpl {
                     return nameSrvAddr;
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("fetchNameServerAddr Exception", e);
         }
+        log.info("Exit fetchNameServerAddr, return {}", nameSrvAddr);
         return nameSrvAddr;
     }
 

@@ -36,7 +36,6 @@ import com.alibaba.rocketmq.client.impl.producer.MQProducerInner;
 import com.alibaba.rocketmq.client.impl.producer.TopicPublishInfo;
 import com.alibaba.rocketmq.client.log.ClientLogger;
 import com.alibaba.rocketmq.client.producer.DefaultMQProducer;
-import com.alibaba.rocketmq.client.producer.selector.SelectMessageQueueByDataCenter;
 import com.alibaba.rocketmq.client.producer.selector.Util;
 import com.alibaba.rocketmq.client.stat.ConsumerStatsManager;
 import com.alibaba.rocketmq.common.MQVersion;
@@ -371,7 +370,7 @@ public class MQClientInstance {
                         while (it.hasNext()) {
                             Entry<Long, String> ee = it.next();
                             String addr = ee.getValue();
-                            if (!this.isBrokerAddrExistInTopicRouteTable(addr)) {
+                            if (!this.isBrokerAddressInTopicRouteTable(addr)) {
                                 it.remove();
                                 log.info("the broker addr[{} {}] is offline, remove it", brokerName, addr);
                             }
@@ -399,13 +398,13 @@ public class MQClientInstance {
     }
 
 
-    private boolean isBrokerAddrExistInTopicRouteTable(final String addr) {
+    private boolean isBrokerAddressInTopicRouteTable(final String address) {
         for (Entry<String, TopicRouteData> entry : this.topicRouteTable.entrySet()) {
             TopicRouteData topicRouteData = entry.getValue();
             List<BrokerData> bds = topicRouteData.getBrokerDatas();
             for (BrokerData bd : bds) {
                 if (bd.getBrokerAddrs() != null) {
-                    boolean exist = bd.getBrokerAddrs().containsValue(addr);
+                    boolean exist = bd.getBrokerAddrs().containsValue(address);
                     if (exist)
                         return true;
                 }
@@ -425,6 +424,7 @@ public class MQClientInstance {
 
 
     public void sendHeartbeatToAllBrokerWithLock() {
+        log.info("Enter #sendHeartbeatToAllBrokerWithLock");
         long startTime = System.currentTimeMillis();
         if (this.lockHeartbeat.tryLock()) {
             long lockAcquiredTime = System.currentTimeMillis();
@@ -444,6 +444,7 @@ public class MQClientInstance {
 
         log.info("sendHeartbeatToAllBrokerWithLock() takes {}ms including acquiring lock",
                 System.currentTimeMillis() - startTime);
+        log.info("Exit #sendHeartbeatToAllBrokerWithLock");
     }
 
 
