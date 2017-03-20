@@ -238,14 +238,12 @@ public class UtilAll {
                 long usedSpace = totalSpace - usableSpace;
                 if (totalSpace > 0) {
                     double ratio = usedSpace / (double) totalSpace;
-                    STORE_LOGGER.info("Path: {}, Used Ratio: {}", storePath, ratio);
                     ret = ratio < ret ? ratio : ret;
                 }
             } catch (Exception e) {
                 return -1;
             }
         }
-        STORE_LOGGER.info("Final Disk Usage Ratio: {}", ret);
         return ret;
     }
 
@@ -504,13 +502,7 @@ public class UtilAll {
                 return -Long.compare(lhs.getObject2(), rhs.getObject2());
             }
         });
-
-        for (Pair<String, Long> next : pathList) {
-            STORE_LOGGER.info("Path: {} --> FreeSpace: {}", next.getObject1(), next.getObject2());
-        }
-
         String selectedPath = pathList.get(0).getObject1();
-        STORE_LOGGER.info("Select: {}", selectedPath);
         return selectedPath;
     }
 
