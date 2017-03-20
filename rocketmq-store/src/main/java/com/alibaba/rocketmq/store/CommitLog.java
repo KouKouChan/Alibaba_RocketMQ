@@ -27,9 +27,6 @@ import com.alibaba.rocketmq.store.config.BrokerRole;
 import com.alibaba.rocketmq.store.config.FlushDiskType;
 import com.alibaba.rocketmq.store.ha.HAService;
 import com.alibaba.rocketmq.store.schedule.ScheduleMessageService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -38,6 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -71,6 +72,10 @@ public class CommitLog {
     // 用来保存每个ConsumeQueue的当前最大Offset信息
     private HashMap<String/* topic-queueId */, Long/* offset */> topicQueueTable = new HashMap<String, Long>(1024);
 
+    //true: Can lock, false : in lock.
+    private AtomicBoolean putMessageSpinLock = new AtomicBoolean(true);
+
+    private ReentrantLock putMessageNormalLock = new ReentrantLock(); // NonfairSync
 
     /**
      * 构造函数
@@ -521,7 +526,8 @@ public class CommitLog {
         // 写文件要加锁
         long eclipseTimeInLock = 0;
         MappedFile mappedFileToUnlock = null;
-        synchronized (this) {
+        lockForPutMessage();
+        try {
             long beginLockTimestamp = this.defaultMessageStore.getSystemClock().now();
 
             // 这里设置存储时间戳，才能保证全局有序
@@ -580,7 +586,9 @@ public class CommitLog {
             this.defaultMessageStore.putDispatchRequest(dispatchRequest);
 
             eclipseTimeInLock = this.defaultMessageStore.getSystemClock().now() - beginLockTimestamp;
-        } // end of synchronized
+        } finally {
+            releasePutMessageLock();
+        }
 
         if (eclipseTimeInLock > 1000) {
             // XXX: warn and notify me
@@ -822,6 +830,28 @@ public class CommitLog {
         public long getJoinTime() {
             // 由于CommitLog数据量较大，所以回收时间要更长
             return 1000 * 60 * 5;
+        }
+    }
+
+    /**
+     * Spin util acquired the lock.
+     */
+    private void lockForPutMessage() {
+        if (this.defaultMessageStore.getMessageStoreConfig().isUseReentrantLockWhenPutMessage()) {
+            putMessageNormalLock.lock();
+        } else {
+            boolean flag;
+            do {
+                flag = this.putMessageSpinLock.compareAndSet(true, false);
+            } while (!flag);
+        }
+    }
+
+    private void releasePutMessageLock() {
+        if (this.defaultMessageStore.getMessageStoreConfig().isUseReentrantLockWhenPutMessage()) {
+            putMessageNormalLock.unlock();
+        } else {
+            this.putMessageSpinLock.compareAndSet(false, true);
         }
     }
 

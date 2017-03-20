@@ -521,7 +521,7 @@ public class MappedFile extends ReferenceResource {
             }
 
             // prevent gc
-            if (j % 1000 == 0) {
+            if (j % 1024 == 0) {
                 LOGGER.info("j={}, costTime={}", j, System.currentTimeMillis() - time);
                 time = System.currentTimeMillis();
                 try {

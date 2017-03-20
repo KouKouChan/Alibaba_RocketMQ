@@ -136,6 +136,8 @@ public class MessageStoreConfig {
 
     private boolean warmMappedFileEnable = false;
 
+    private boolean useReentrantLockWhenPutMessage = false;
+
 
     public int getMappedFileSizeCommitLog() {
         return mappedFileSizeCommitLog;
@@ -618,5 +620,13 @@ public class MessageStoreConfig {
 
     public void setFlushLeastPagesWhenWarmMappedFile(int flushLeastPagesWhenWarmMappedFile) {
         this.flushLeastPagesWhenWarmMappedFile = flushLeastPagesWhenWarmMappedFile;
+    }
+
+    public boolean isUseReentrantLockWhenPutMessage() {
+        return useReentrantLockWhenPutMessage;
+    }
+
+    public void setUseReentrantLockWhenPutMessage(boolean useReentrantLockWhenPutMessage) {
+        this.useReentrantLockWhenPutMessage = useReentrantLockWhenPutMessage;
     }
 }
