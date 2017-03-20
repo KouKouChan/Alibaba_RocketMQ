@@ -869,8 +869,8 @@ public class CommitLog {
         private volatile List<GroupCommitRequest> requestsRead = new ArrayList<GroupCommitRequest>();
 
 
-        public void putRequest(final GroupCommitRequest request) {
-            synchronized (this) {
+        public synchronized void putRequest(final GroupCommitRequest request) {
+            synchronized (this.requestsWrite) {
                 this.requestsWrite.add(request);
                 if (!this.hasNotified) {
                     this.hasNotified = true;
@@ -889,27 +889,28 @@ public class CommitLog {
 
         private void doCommit() {
             if (!this.requestsRead.isEmpty()) {
-                for (GroupCommitRequest req : this.requestsRead) {
-                    // 消息有可能在下一个文件，所以最多刷盘2次
-                    boolean flushOK = false;
-                    for (int i = 0; (i < 2) && !flushOK; i++) {
-                        flushOK = (CommitLog.this.mappedFileQueue.getCommittedWhere() >= req.getNextOffset());
+                synchronized (this.requestsRead) {
+                    for (GroupCommitRequest req : this.requestsRead) {
+                        // 消息有可能在下一个文件，所以最多刷盘2次
+                        boolean flushOK = false;
+                        for (int i = 0; (i < 2) && !flushOK; i++) {
+                            flushOK = (CommitLog.this.mappedFileQueue.getCommittedWhere() >= req.getNextOffset());
 
-                        if (!flushOK) {
-                            CommitLog.this.mappedFileQueue.commit(0);
+                            if (!flushOK) {
+                                CommitLog.this.mappedFileQueue.commit(0);
+                            }
                         }
+
+                        req.wakeupCustomer(flushOK);
                     }
 
-                    req.wakeupCustomer(flushOK);
-                }
+                    long storeTimestamp = CommitLog.this.mappedFileQueue.getStoreTimestamp();
+                    if (storeTimestamp > 0) {
+                        CommitLog.this.defaultMessageStore.getStoreCheckpoint().setPhysicMsgTimestamp(storeTimestamp);
+                    }
 
-                long storeTimestamp = CommitLog.this.mappedFileQueue.getStoreTimestamp();
-                if (storeTimestamp > 0) {
-                    CommitLog.this.defaultMessageStore.getStoreCheckpoint().setPhysicMsgTimestamp(
-                            storeTimestamp);
+                    this.requestsRead.clear();
                 }
-
-                this.requestsRead.clear();
             } else {
                 // 由于个别消息设置为不同步刷盘，所以会走到此流程
                 CommitLog.this.mappedFileQueue.commit(0);

@@ -268,8 +268,8 @@ public class HAService {
         private volatile List<GroupCommitRequest> requestsRead = new ArrayList<GroupCommitRequest>();
 
 
-        public void putRequest(final GroupCommitRequest request) {
-            synchronized (this) {
+        public synchronized void putRequest(final GroupCommitRequest request) {
+            synchronized (this.requestsWrite) {
                 this.requestsWrite.add(request);
                 if (!this.hasNotified) {
                     this.hasNotified = true;
@@ -297,21 +297,22 @@ public class HAService {
 
         private void doWaitTransfer() {
             if (!this.requestsRead.isEmpty()) {
-                for (GroupCommitRequest req : this.requestsRead) {
-                    boolean transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
-                    for (int i = 0; !transferOK && i < 5; i++) {
-                        this.notifyTransferObject.waitForRunning(1000);
-                        transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
-                    }
+                synchronized (this.requestsRead) {
+                    for (GroupCommitRequest req : this.requestsRead) {
+                        boolean transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
+                        for (int i = 0; !transferOK && i < 5; i++) {
+                            this.notifyTransferObject.waitForRunning(1000);
+                            transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
+                        }
 
-                    if (!transferOK) {
-                        log.warn("transfer message to slave timeout, " + req.getNextOffset());
-                    }
+                        if (!transferOK) {
+                            log.warn("transfer message to slave timeout, " + req.getNextOffset());
+                        }
 
-                    req.wakeupCustomer(transferOK);
+                        req.wakeupCustomer(transferOK);
+                    }
+                    this.requestsRead.clear();
                 }
-
-                this.requestsRead.clear();
             }
         }
 
