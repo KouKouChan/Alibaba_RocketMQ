@@ -32,6 +32,7 @@ import com.alibaba.rocketmq.common.protocol.header.filtersrv.RegisterMessageFilt
 import com.alibaba.rocketmq.common.sysflag.MessageSysFlag;
 import com.alibaba.rocketmq.filtersrv.FiltersrvController;
 import com.alibaba.rocketmq.filtersrv.filter.FilterClassInfo;
+import com.alibaba.rocketmq.remoting.RpcContext;
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
 import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
 import com.alibaba.rocketmq.remoting.netty.NettyRequestProcessor;
@@ -67,7 +68,7 @@ public class DefaultRequestProcessor implements NettyRequestProcessor {
 
 
     @Override
-    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
+    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request, RpcContext rpcContext)
             throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("receive request, {} {} {}",//

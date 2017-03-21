@@ -42,6 +42,7 @@ import com.alibaba.rocketmq.common.protocol.header.SendMessageResponseHeader;
 import com.alibaba.rocketmq.common.subscription.SubscriptionGroupConfig;
 import com.alibaba.rocketmq.common.sysflag.MessageSysFlag;
 import com.alibaba.rocketmq.common.sysflag.TopicSysFlag;
+import com.alibaba.rocketmq.remoting.RpcContext;
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
 import com.alibaba.rocketmq.remoting.exception.RemotingCommandException;
 import com.alibaba.rocketmq.remoting.netty.NettyRequestProcessor;
@@ -49,18 +50,18 @@ import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.store.MessageExtBrokerInner;
 import com.alibaba.rocketmq.store.PutMessageResult;
 import com.alibaba.rocketmq.store.config.StorePathConfigHelper;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import java.util.Arrays;
-import java.util.Collections;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -86,7 +87,7 @@ public class SendMessageProcessor implements NettyRequestProcessor {
 
 
     @Override
-    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
+    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request, RpcContext rpcContext)
             throws RemotingCommandException {
         SendMessageRequestHeaderV2 requestHeaderV2 = null;
 
@@ -115,7 +116,7 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                     this.executeSendMessageHookBefore(ctx, request, mqTraceContext);
                 }
 
-                final RemotingCommand response = this.sendMessage(ctx, request, mqTraceContext, requestHeader);
+                final RemotingCommand response = this.sendMessage(ctx, request, mqTraceContext, requestHeader, rpcContext);
 
                 // 消息轨迹：记录发送成功的消息
                 if (this.hasSendMessageHook()) {
@@ -330,7 +331,8 @@ public class SendMessageProcessor implements NettyRequestProcessor {
     private RemotingCommand sendMessage(final ChannelHandlerContext ctx, //
                                         final RemotingCommand request,//
                                         final SendMessageContext mqtraceContext,//
-                                        final SendMessageRequestHeader requestHeader) throws RemotingCommandException {
+                                        final SendMessageRequestHeader requestHeader, //
+                                        final RpcContext rpcContext) throws RemotingCommandException {
 
         final RemotingCommand response =
                 RemotingCommand.createResponseCommand(SendMessageResponseHeader.class);
@@ -543,7 +545,16 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                 // 直接返回
                 if (!request.isOnewayRPC()) {
                     try {
-                        ctx.writeAndFlush(response);
+                        ChannelFuture channelFuture = ctx.writeAndFlush(response);
+                        channelFuture.addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(ChannelFuture future) throws Exception {
+                                if (future.isSuccess()) {
+                                    long interval = rpcContext.getSystemClock().now() -  rpcContext.getCreateTimePoint();
+                                    rpcContext.getLatencyStatisticsItem().add(interval);
+                                }
+                            }
+                        });
                     } catch (Throwable e) {
                         log.error("SendMessageProcessor process request over, but response failed", e);
                         log.error(request.toString());

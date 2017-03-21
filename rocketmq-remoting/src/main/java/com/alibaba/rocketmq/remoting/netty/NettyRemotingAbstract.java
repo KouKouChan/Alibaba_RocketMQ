@@ -19,6 +19,7 @@ import com.alibaba.rocketmq.common.SystemClock;
 import com.alibaba.rocketmq.remoting.ChannelEventListener;
 import com.alibaba.rocketmq.remoting.InvokeCallback;
 import com.alibaba.rocketmq.remoting.RPCHook;
+import com.alibaba.rocketmq.remoting.RpcContext;
 import com.alibaba.rocketmq.remoting.common.Pair;
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
 import com.alibaba.rocketmq.remoting.common.SemaphoreReleaseOnlyOnce;
@@ -56,7 +57,6 @@ public abstract class NettyRemotingAbstract {
     protected static final String LATENCY_NAME_RPC = "RPC";
 
     protected static final String LATENCY_NAME_SEND_MESSAGE = "SendMessage";
-
 
     // 信号量，one-way情况会使用，防止本地Netty缓存请求过多
     protected final Semaphore semaphoreOneway;
@@ -176,7 +176,16 @@ public abstract class NettyRemotingAbstract {
         final Pair<NettyRequestProcessor, ExecutorService> matched = this.processorTable.get(cmd.getCode());
         final Pair<NettyRequestProcessor, ExecutorService> pair =
                 null == matched ? this.defaultRequestProcessor : matched;
-        final long startTimePoint = systemClock.now();
+        LatencyStatisticsItem latencyStatisticsItem = null;
+
+        if (cmd.getCode() == 10 || cmd.getCode() == 310 || cmd.getCode() == 36) {
+            latencyStatisticsItem = latencyMap.get(LATENCY_NAME_SEND_MESSAGE);
+        } else {
+            latencyStatisticsItem = latencyMap.get(LATENCY_NAME_RPC);
+        }
+
+        final RpcContext rpcContext = new RpcContext(systemClock.now(), systemClock, latencyStatisticsItem);
+
         if (pair != null) {
             Runnable run = new Runnable() {
                 @Override
@@ -187,7 +196,7 @@ public abstract class NettyRemotingAbstract {
                             rpcHook.doBeforeRequest(RemotingHelper.parseChannelRemoteAddr(ctx.channel()), cmd);
                         }
 
-                        final RemotingCommand response = pair.getObject1().processRequest(ctx, cmd);
+                        final RemotingCommand response = pair.getObject1().processRequest(ctx, cmd, rpcContext);
                         if (rpcHook != null) {
                             rpcHook.doAfterResponse(cmd, response);
                         }
@@ -199,19 +208,15 @@ public abstract class NettyRemotingAbstract {
                                 response.markResponseType();
                                 try {
                                     ChannelFuture channelFuture = ctx.writeAndFlush(response);
-                                    if (null != latencyMap) {
-                                        channelFuture.addListener(new ChannelFutureListener() {
-                                            @Override
-                                            public void operationComplete(ChannelFuture future) throws Exception {
-                                                long interval = systemClock.now() - startTimePoint;
-
-                                                latencyMap.get(LATENCY_NAME_RPC).add(interval);
-                                                if (cmd.getCode() == 10 || cmd.getCode() == 310 || cmd.getCode() == 36 ) {
-                                                    latencyMap.get(LATENCY_NAME_SEND_MESSAGE).add(interval);
-                                                }
+                                    channelFuture.addListener(new ChannelFutureListener() {
+                                        @Override
+                                        public void operationComplete(ChannelFuture future) throws Exception {
+                                            if (future.isSuccess()) {
+                                                long interval = systemClock.now() - rpcContext.getCreateTimePoint();
+                                                rpcContext.getLatencyStatisticsItem().add(interval);
                                             }
-                                        });
-                                    }
+                                        }
+                                    });
                                 } catch (Throwable e) {
                                     LOGGER.error("process request over, but response failed", e);
                                     LOGGER.error(cmd.toString());
@@ -242,10 +247,10 @@ public abstract class NettyRemotingAbstract {
             try {
                 // 这里需要做流控，要求线程池对应的队列必须是有大小限制的
                 pair.getObject2().submit(run);
-            }
-            catch (RejectedExecutionException e) {
+            } catch (RejectedExecutionException e) {
+
                 // 每个线程10s打印一次
-                if ((System.currentTimeMillis() % 10000) == 0) {
+                if ((systemClock.now() % 10000) == 0) {
                     LOGGER.warn(RemotingHelper.parseChannelRemoteAddr(ctx.channel()) //
                             + ", too many requests and system thread pool busy, RejectedExecutionException " //
                             + pair.getObject2().toString() //
@@ -253,9 +258,9 @@ public abstract class NettyRemotingAbstract {
                 }
 
                 if (!cmd.isOnewayRPC()) {
-                    final RemotingCommand response =
-                            RemotingCommand.createResponseCommand(RemotingSysResponseCode.SYSTEM_BUSY,
-                                "too many requests and system thread pool busy, please try another server");
+                    final RemotingCommand response = RemotingCommand.createResponseCommand(
+                        RemotingSysResponseCode.SYSTEM_BUSY,
+                        "too many requests and system thread pool busy, please try another server");
                     response.setOpaque(cmd.getOpaque());
                     ctx.writeAndFlush(response);
                 }

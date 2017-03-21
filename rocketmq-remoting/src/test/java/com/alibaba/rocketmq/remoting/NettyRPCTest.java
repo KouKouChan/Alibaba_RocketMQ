@@ -35,7 +35,7 @@ public class NettyRPCTest {
 
 
             @Override
-            public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) {
+            public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request, RpcContext rpcContext) {
                 System.out.println("processRequest=" + request + " " + (i++));
                 request.setRemark("hello, I am response " + ctx.channel().remoteAddress());
                 return request;
@@ -119,7 +119,7 @@ public class NettyRPCTest {
 
         server.registerProcessor(0, new NettyRequestProcessor() {
             @Override
-            public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) {
+            public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request,RpcContext rpcContext) {
                 try {
                     return server.invokeSync(ctx.channel(), request, 1000 * 10);
                 }
@@ -139,7 +139,7 @@ public class NettyRPCTest {
 
         client.registerProcessor(0, new NettyRequestProcessor() {
             @Override
-            public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) {
+            public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request, RpcContext rpcContext) {
                 System.out.println("client receive server request = " + request);
                 request.setRemark("client remark");
                 return request;

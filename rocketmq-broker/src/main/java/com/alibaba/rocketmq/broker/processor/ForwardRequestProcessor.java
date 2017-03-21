@@ -15,6 +15,7 @@
  */
 package com.alibaba.rocketmq.broker.processor;
 
+import com.alibaba.rocketmq.remoting.RpcContext;
 import io.netty.channel.ChannelHandlerContext;
 
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ public class ForwardRequestProcessor implements NettyRequestProcessor {
 
 
     @Override
-    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) {
+    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request, RpcContext rpcContext) {
         // TODO Auto-generated method stub
         return null;
     }

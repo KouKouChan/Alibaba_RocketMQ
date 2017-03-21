@@ -15,6 +15,7 @@
  */
 package com.alibaba.rocketmq.broker.processor;
 
+import com.alibaba.rocketmq.remoting.RpcContext;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.util.Collections;
@@ -88,7 +89,7 @@ public class EndTransactionProcessor implements NettyRequestProcessor {
 
 
     @Override
-    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request)
+    public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request, RpcContext rpcContext)
             throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);
         final EndTransactionRequestHeader requestHeader =

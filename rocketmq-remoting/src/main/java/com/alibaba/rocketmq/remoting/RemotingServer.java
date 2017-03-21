@@ -40,11 +40,11 @@ public interface RemotingServer extends RemotingService {
      * @param processor
      * @param executor
      */
-    public void registerProcessor(final int requestCode, final NettyRequestProcessor processor,
+    void registerProcessor(final int requestCode, final NettyRequestProcessor processor,
             final ExecutorService executor);
 
 
-    public void registerDefaultProcessor(final NettyRequestProcessor processor, final ExecutorService executor);
+    void registerDefaultProcessor(final NettyRequestProcessor processor, final ExecutorService executor);
 
 
     /**
@@ -52,20 +52,20 @@ public interface RemotingServer extends RemotingService {
      * 
      * @return PORT
      */
-    public int localListenPort();
+    int localListenPort();
 
 
-    public RemotingCommand invokeSync(final Channel channel, final RemotingCommand request,
+    RemotingCommand invokeSync(final Channel channel, final RemotingCommand request,
             final long timeoutMillis) throws InterruptedException, RemotingSendRequestException,
             RemotingTimeoutException;
 
 
-    public void invokeAsync(final Channel channel, final RemotingCommand request, final long timeoutMillis,
+    void invokeAsync(final Channel channel, final RemotingCommand request, final long timeoutMillis,
             final InvokeCallback invokeCallback) throws InterruptedException,
             RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException;
 
 
-    public void invokeOneway(final Channel channel, final RemotingCommand request, final long timeoutMillis)
+    void invokeOneway(final Channel channel, final RemotingCommand request, final long timeoutMillis)
             throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException,
             RemotingSendRequestException;
 
