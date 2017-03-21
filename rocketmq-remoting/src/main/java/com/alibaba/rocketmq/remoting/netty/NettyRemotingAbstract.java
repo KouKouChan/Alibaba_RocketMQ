@@ -206,8 +206,7 @@ public abstract class NettyRemotingAbstract {
                                                 long interval = systemClock.now() - startTimePoint;
 
                                                 latencyMap.get(LATENCY_NAME_RPC).add(interval);
-
-                                                if (cmd.getCode() == 10) {
+                                                if (cmd.getCode() == 10 || cmd.getCode() == 310 || cmd.getCode() == 36 ) {
                                                     latencyMap.get(LATENCY_NAME_SEND_MESSAGE).add(interval);
                                                 }
                                             }
