@@ -67,6 +67,14 @@ public class Producer {
                     Long[] begin = snapshotList.getFirst();
                     Long[] end = snapshotList.getLast();
 
+                    long max = 0;
+                    int len = snapshotList.getFirst().length;
+                    for (Long[] next : snapshotList) {
+                        if (next[len - 1] > max) {
+                            max = next[len - 1];
+                        }
+                    }
+
                     final long sendTps =
                             (long) (((end[3] - begin[3]) / (double) (end[0] - begin[0])) * 1000L);
                     final double averageRT = ((end[5] - begin[5]) / (double) (end[3] - begin[3]));
@@ -74,7 +82,7 @@ public class Producer {
                     System.out.printf(
                         "Send TPS: %d Max RT: %d Average RT: %7.3f Send Failed: %d Response Failed: %d\n"//
                         , sendTps//
-                        , statsBenchmark.getSendMessageMaxRT().get()//
+                        , max//
                         , averageRT//
                         , end[2]//
                         , end[4]//
@@ -203,6 +211,7 @@ class StatsBenchmarkProducer {
                         this.receiveResponseSuccessCount.get(),//
                         this.receiveResponseFailedCount.get(),//
                         this.sendMessageSuccessTimeTotal.get(), //
+                        this.sendMessageMaxRT.getAndSet(0L) // Make sure the max response time is the last element of this array.
                 };
 
         return snap;
