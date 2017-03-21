@@ -116,7 +116,9 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
 
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, RemotingCommand msg) throws Exception {
+            long start = systemClock.now();
             processMessageReceived(ctx, msg);
+            long interval = systemClock.now() - start;
 
         }
     }

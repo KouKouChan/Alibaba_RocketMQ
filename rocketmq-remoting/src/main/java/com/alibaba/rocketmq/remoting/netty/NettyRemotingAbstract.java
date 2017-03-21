@@ -28,6 +28,7 @@ import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTooMuchRequestException;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.remoting.protocol.RemotingSysResponseCode;
+import com.alibaba.rocketmq.remoting.statistics.LatencyStatisticsItem;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -52,6 +53,11 @@ public abstract class NettyRemotingAbstract {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RemotingHelper.RemotingLogName);
 
+    protected static final String LATENCY_NAME_RPC = "RPC";
+
+    protected static final String LATENCY_NAME_SEND_MESSAGE = "SendMessage";
+
+
     // 信号量，one-way情况会使用，防止本地Netty缓存请求过多
     protected final Semaphore semaphoreOneway;
 
@@ -74,6 +80,8 @@ public abstract class NettyRemotingAbstract {
     protected final NettyEventExecutor nettyEventExecutor = new NettyEventExecutor();
 
     protected SSLContext sslContext;
+
+    protected final ConcurrentHashMap<String, LatencyStatisticsItem> latencyMap;
 
 
     public abstract ChannelEventListener getChannelEventListener();
@@ -150,6 +158,17 @@ public abstract class NettyRemotingAbstract {
     public NettyRemotingAbstract(final int permitsOneway, final int permitsAsync) {
         this.semaphoreOneway = new Semaphore(permitsOneway, true);
         this.semaphoreAsync = new Semaphore(permitsAsync, true);
+        if (this instanceof NettyRemotingServer) {
+            this.latencyMap = new ConcurrentHashMap<>(2);
+            initLatencyReport();
+        } else {
+            this.latencyMap = null;
+        }
+    }
+
+    protected void initLatencyReport() {
+        this.latencyMap.put(LATENCY_NAME_RPC, new LatencyStatisticsItem(LATENCY_NAME_RPC));
+        this.latencyMap.put(LATENCY_NAME_SEND_MESSAGE, new LatencyStatisticsItem(LATENCY_NAME_SEND_MESSAGE));
     }
 
 
@@ -157,7 +176,7 @@ public abstract class NettyRemotingAbstract {
         final Pair<NettyRequestProcessor, ExecutorService> matched = this.processorTable.get(cmd.getCode());
         final Pair<NettyRequestProcessor, ExecutorService> pair =
                 null == matched ? this.defaultRequestProcessor : matched;
-
+        final long startTimePoint = systemClock.now();
         if (pair != null) {
             Runnable run = new Runnable() {
                 @Override
@@ -179,9 +198,22 @@ public abstract class NettyRemotingAbstract {
                                 response.setOpaque(cmd.getOpaque());
                                 response.markResponseType();
                                 try {
-                                    ctx.writeAndFlush(response);
-                                }
-                                catch (Throwable e) {
+                                    ChannelFuture channelFuture = ctx.writeAndFlush(response);
+                                    if (null != latencyMap) {
+                                        channelFuture.addListener(new ChannelFutureListener() {
+                                            @Override
+                                            public void operationComplete(ChannelFuture future) throws Exception {
+                                                long interval = systemClock.now() - startTimePoint;
+
+                                                latencyMap.get(LATENCY_NAME_RPC).add(interval);
+
+                                                if (response.getCode() == 10) {
+                                                    latencyMap.get(LATENCY_NAME_SEND_MESSAGE).add(interval);
+                                                }
+                                            }
+                                        });
+                                    }
+                                } catch (Throwable e) {
                                     LOGGER.error("process request over, but response failed", e);
                                     LOGGER.error(cmd.toString());
                                     LOGGER.error(response.toString());
@@ -229,8 +261,7 @@ public abstract class NettyRemotingAbstract {
                     ctx.writeAndFlush(response);
                 }
             }
-        }
-        else {
+        } else {
             String error = " request type " + cmd.getCode() + " not supported";
             final RemotingCommand response = RemotingCommand
                     .createResponseCommand(RemotingSysResponseCode.REQUEST_CODE_NOT_SUPPORTED, error);

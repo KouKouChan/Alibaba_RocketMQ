@@ -27,6 +27,7 @@ import com.alibaba.rocketmq.remoting.exception.RemotingTimeoutException;
 import com.alibaba.rocketmq.remoting.exception.RemotingTooMuchRequestException;
 import com.alibaba.rocketmq.remoting.exception.SSLContextCreationException;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
+import com.alibaba.rocketmq.remoting.statistics.LatencyStatisticsItem;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -38,6 +39,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -229,6 +231,22 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 }
             }
         }, 1000 * 3, 1000);
+
+        this.timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    if (null != latencyMap) {
+                        for (Map.Entry<String, LatencyStatisticsItem> next : latencyMap.entrySet()) {
+                            String report = next.getValue().rotateAndReport();
+                            log.info(report);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("report latency statistics throws exception", e);
+                }
+            }
+        }, 1000 * 60, 1000 * 60);
     }
 
 
