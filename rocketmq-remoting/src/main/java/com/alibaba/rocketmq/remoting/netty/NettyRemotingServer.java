@@ -30,7 +30,14 @@ import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.remoting.statistics.LatencyStatisticsItem;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -39,17 +46,20 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.netty.util.concurrent.DefaultThreadFactory;
 import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -67,8 +77,12 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
     // 处理Callback应答器
     private final ExecutorService publicExecutor;
     private final ChannelEventListener channelEventListener;
+
     // 定时器
     private final Timer timer = new Timer("ServerHouseKeepingService", true);
+
+    private final ScheduledExecutorService statsThreadPool;
+
     private DefaultEventExecutorGroup defaultEventExecutorGroup;
 
     private RPCHook rpcHook;
@@ -139,6 +153,10 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                 System.exit(1);
             }
         }
+
+        // Warning: this thread pool is unbounded.
+        statsThreadPool = new ScheduledThreadPoolExecutor(1,
+            new DefaultThreadFactory("RemotingStatsThread", true));
     }
 
 
@@ -232,7 +250,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
             }
         }, 1000 * 3, 1000);
 
-        this.timer.scheduleAtFixedRate(new TimerTask() {
+        this.statsThreadPool.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -246,7 +264,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                     log.error("report latency statistics throws exception", e);
                 }
             }
-        }, 1000 * 60, 1000 * 60);
+        }, 60, 60, TimeUnit.SECONDS);
     }
 
 
