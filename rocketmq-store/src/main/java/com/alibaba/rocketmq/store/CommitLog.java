@@ -488,8 +488,6 @@ public class CommitLog {
 
 
     public PutMessageResult putMessage(final MessageExtBrokerInner msg) {
-        // 设置存储时间
-        msg.setStoreTimestamp(System.currentTimeMillis());
         // 设置消息体BODY CRC（考虑在客户端设置最合适）
         msg.setBodyCRC(UtilAll.crc32(msg.getBody()));
         // 返回结果
@@ -531,6 +529,7 @@ public class CommitLog {
         int msgLength = computeMsgLength(msg);
         if (msgLength > defaultMessageStore.getMessageStoreConfig().getMaxMessageSize()) {
             LOGGER.warn("message size exceeded, msg total size: {}", msgLength);
+            result = new AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED);
             return new PutMessageResult(PutMessageStatus.MESSAGE_ILLEGAL, result);
         }
 
@@ -1003,7 +1002,7 @@ public class CommitLog {
         }
     }
 
-    private final int computeMsgLength(MessageExtBrokerInner msgInner) {
+    private int computeMsgLength(MessageExtBrokerInner msgInner) {
         final byte[] propertiesData = msgInner.getPropertiesString() == null ? null : msgInner.getPropertiesString().getBytes();
         final int propertiesLength = propertiesData == null ? 0 : propertiesData.length;
         final byte[] topicData = msgInner.getTopic().getBytes();
@@ -1032,7 +1031,7 @@ public class CommitLog {
         return msgLen;
     }
 
-    private final ByteBuf encode(MessageExtBrokerInner msgInner) {
+    private ByteBuf encode(MessageExtBrokerInner msgInner) {
 
         final byte[] propertiesData = msgInner.getPropertiesString() == null ? null : msgInner.getPropertiesString().getBytes();
         final int propertiesLength = propertiesData == null ? 0 : propertiesData.length;
