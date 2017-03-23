@@ -60,7 +60,7 @@ public class BrokerConfig {
     @ImportantField
     private boolean autoCreateSubscriptionGroup = true;
 
-    private int sendMessageThreadPoolNums = 1; //16 + Runtime.getRuntime().availableProcessors() * 4;
+    private int sendMessageThreadPoolNums = Runtime.getRuntime().availableProcessors(); //16 + Runtime.getRuntime().availableProcessors() * 4;
     private int pullMessageThreadPoolNums = 16 + Runtime.getRuntime().availableProcessors() * 2;
     private int adminBrokerThreadPoolNums = 16;
     private int clientManageThreadPoolNums = 16;

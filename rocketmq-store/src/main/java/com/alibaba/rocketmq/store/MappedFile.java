@@ -21,6 +21,7 @@ import com.alibaba.rocketmq.store.config.FlushDiskType;
 import com.alibaba.rocketmq.store.util.LibC;
 import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
+import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
@@ -81,6 +82,8 @@ public class MappedFile extends ReferenceResource {
     // 最后一条消息存储时间
     private volatile long storeTimestamp = 0;
     private boolean firstCreateInQueue = false;
+
+    public static final int END_FILE_MIN_BLANK_LENGTH = 4 + 4;
 
 
     public MappedFile(final String fileName, final int fileSize) throws IOException {
@@ -222,7 +225,7 @@ public class MappedFile extends ReferenceResource {
      *            用来对消息进行序列化，尤其对于依赖MappedFile Offset的属性进行动态序列化
      * @return 是否成功，写入多少数据
      */
-    public AppendMessageResult appendMessage(final Object msg, final AppendMessageCallback cb) {
+    public AppendMessageResult appendMessage(final Object msg, final ByteBuf encodedMsg, final AppendMessageCallback cb) {
         assert msg != null;
         assert cb != null;
 
@@ -233,7 +236,7 @@ public class MappedFile extends ReferenceResource {
             ByteBuffer byteBuffer = this.mappedByteBuffer.slice();
             byteBuffer.position(currentPos);
             AppendMessageResult result = cb.doAppend(this.getFileFromOffset(), byteBuffer, this.fileSize - currentPos,
-                    msg);
+                    msg, encodedMsg);
             this.wrotePosition.addAndGet(result.getWroteBytes());
             this.storeTimestamp = result.getStoreTimestamp();
             return result;

@@ -15,6 +15,8 @@
  */
 package com.alibaba.rocketmq.store;
 
+import io.netty.buffer.ByteBuf;
+
 import java.nio.ByteBuffer;
 
 
@@ -37,6 +39,6 @@ public interface AppendMessageCallback {
      *            要写入的message
      * @return 写入多少字节
      */
-    public AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer,
-            final int maxBlank, final Object msg);
+    AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank,
+                                        final Object msg, final ByteBuf encodedMsg);
 }
