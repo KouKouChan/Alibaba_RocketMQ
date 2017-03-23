@@ -1180,7 +1180,13 @@ public class CommitLog {
                     .resetWriterIndex();
 
             // 向队列缓冲区写入消息
-            byteBuffer.put(encodedMsg.array());
+            if (encodedMsg.hasArray()) {
+                // Heap based ByteBuf
+                byteBuffer.put(encodedMsg.array(), 0, encodedMsg.readableBytes());
+            } else {
+                // Direct ByteBuf
+                byteBuffer.put(encodedMsg.nioBuffer());
+            }
 
             AppendMessageResult result = new AppendMessageResult(AppendMessageStatus.PUT_OK, wroteOffset, msgLen, msgId,
                     msgInner.getStoreTimestamp(), queueOffset);
