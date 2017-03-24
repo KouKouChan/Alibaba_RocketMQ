@@ -459,8 +459,7 @@ public class StoreStatsService extends ServiceThread {
                 this.sampling();
 
                 this.printTps();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 log.warn(this.getServiceName() + " service has exception. ", e);
             }
         }

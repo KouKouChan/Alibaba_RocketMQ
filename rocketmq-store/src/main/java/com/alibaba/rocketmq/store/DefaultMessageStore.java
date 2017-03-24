@@ -51,6 +51,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1473,11 +1474,10 @@ public class DefaultMessageStore implements MessageStore {
 
 
         private void doFlush(int retryTimes) {
-            /**
+            /*
              * 变量含义：如果大于0，则标识这次刷盘必须刷多少个page，如果=0，则有多少刷多少
              */
-            int flushConsumeQueueLeastPages =
-                    DefaultMessageStore.this.getMessageStoreConfig().getFlushConsumeQueueLeastPages();
+            int flushConsumeQueueLeastPages = DefaultMessageStore.this.getMessageStoreConfig().getFlushConsumeQueueLeastPages();
 
             if (retryTimes == RetryTimesOver) {
                 flushConsumeQueueLeastPages = 0;
@@ -1553,25 +1553,26 @@ public class DefaultMessageStore implements MessageStore {
      * 分发消息索引服务
      */
     class DispatchMessageService extends ServiceThread {
-        private volatile List<DispatchRequest> requestsWrite;
-        private volatile List<DispatchRequest> requestsRead;
+        private volatile LinkedBlockingQueue<DispatchRequest> requestsWrite;
+        private volatile LinkedBlockingQueue<DispatchRequest> requestsRead;
+        private final int putMsgIndexHighWater;
 
 
         public DispatchMessageService(int putMsgIndexHighWater) {
-            putMsgIndexHighWater *= 1.5;
-            this.requestsWrite = new ArrayList<DispatchRequest>(putMsgIndexHighWater);
-            this.requestsRead = new ArrayList<DispatchRequest>(putMsgIndexHighWater);
+            this.putMsgIndexHighWater = putMsgIndexHighWater * 2;
+            this.requestsWrite = new LinkedBlockingQueue<>();
+            this.requestsRead = new LinkedBlockingQueue<>();
         }
 
 
         public boolean hasRemainMessage() {
-            List<DispatchRequest> reqs = this.requestsWrite;
-            if (reqs != null && !reqs.isEmpty()) {
+            LinkedBlockingQueue<DispatchRequest> requests = this.requestsWrite;
+            if (requests != null && !requests.isEmpty()) {
                 return true;
             }
 
-            reqs = this.requestsRead;
-            if (reqs != null && !reqs.isEmpty()) {
+            requests = this.requestsRead;
+            if (requests != null && !requests.isEmpty()) {
                 return true;
             }
 
@@ -1580,15 +1581,10 @@ public class DefaultMessageStore implements MessageStore {
 
 
         public void putRequest(final DispatchRequest dispatchRequest) {
-            int requestsWriteSize = 0;
-            int putMsgIndexHighWater = DefaultMessageStore.this.getMessageStoreConfig().getPutMsgIndexHighWater();
-            synchronized (this) {
-                this.requestsWrite.add(dispatchRequest);
-                requestsWriteSize = this.requestsWrite.size();
-                if (!this.hasNotified) {
-                    this.hasNotified = true;
-                    this.notify();
-                }
+            this.requestsWrite.offer(dispatchRequest);
+            int requestsWriteSize = this.requestsWrite.size();
+            if (hasNotified.compareAndSet(false, true)) {
+                this.notify();
             }
 
             DefaultMessageStore.this.getStoreStatsService().setDispatchMaxBuffer(requestsWriteSize);
@@ -1597,10 +1593,8 @@ public class DefaultMessageStore implements MessageStore {
             if (requestsWriteSize > putMsgIndexHighWater) {
                 try {
                     if (log.isDebugEnabled()) {
-                        log.debug("Message index buffer size " + requestsWriteSize + " > high water "
-                                + putMsgIndexHighWater);
+                        log.debug("Message index buffer size[{}] > high water mark[{}]", requestsWriteSize, putMsgIndexHighWater);
                     }
-
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
                 }
@@ -1609,7 +1603,7 @@ public class DefaultMessageStore implements MessageStore {
 
 
         private void swapRequests() {
-            List<DispatchRequest> tmp = this.requestsWrite;
+            LinkedBlockingQueue<DispatchRequest> tmp = this.requestsWrite;
             this.requestsWrite = this.requestsRead;
             this.requestsRead = tmp;
         }
@@ -1617,8 +1611,9 @@ public class DefaultMessageStore implements MessageStore {
 
         private void doDispatch() {
             if (!this.requestsRead.isEmpty()) {
-                for (DispatchRequest req : this.requestsRead) {
-
+                List<DispatchRequest> indexRequests = new ArrayList<>(this.requestsRead.size());
+                DispatchRequest req = this.requestsRead.poll();
+                while (null != req) {
                     final int tranType = MessageSysFlag.getTransactionValue(req.getSysFlag());
                     // 1、分发消息位置信息到ConsumeQueue
                     switch (tranType) {
@@ -1633,13 +1628,13 @@ public class DefaultMessageStore implements MessageStore {
                         case MessageSysFlag.TransactionRollbackType:
                             break;
                     }
+                    indexRequests.add(req);
+                    req = this.requestsRead.poll();
                 }
 
                 if (DefaultMessageStore.this.getMessageStoreConfig().isMessageIndexEnable()) {
-                    DefaultMessageStore.this.indexService.putRequest(this.requestsRead.toArray());
+                    DefaultMessageStore.this.indexService.putRequest(indexRequests.toArray());
                 }
-
-                this.requestsRead.clear();
             }
         }
 
@@ -1663,11 +1658,11 @@ public class DefaultMessageStore implements MessageStore {
                 DefaultMessageStore.log.warn("DispatchMessageService Exception, ", e);
             }
 
-            synchronized (this) {
+            // Make sure both requestRead and requestWrite are covered.
+            for (int i = 0; i < 2; i++) {
                 this.swapRequests();
+                this.doDispatch();
             }
-
-            this.doDispatch();
 
             DefaultMessageStore.log.info(this.getServiceName() + " service end");
         }

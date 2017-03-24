@@ -158,17 +158,15 @@ public class HAConnection {
                     }
 
                     // 检测心跳间隔时间，超过则强制断开
-                    long interval =
-                            HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now()
-                                    - this.lastReadTimestamp;
+                    long interval = HAConnection.this.haService.getDefaultMessageStore().getSystemClock().now()
+                            - this.lastReadTimestamp;
                     if (interval > HAConnection.this.haService.getDefaultMessageStore()
                         .getMessageStoreConfig().getHaHousekeepingInterval()) {
                         log.warn("ha housekeeping, found this connection[" + HAConnection.this.clientAddr
                                 + "] expired, " + interval);
                         break;
                     }
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     HAConnection.log.error(this.getServiceName() + " service has exception.", e);
                     break;
                 }

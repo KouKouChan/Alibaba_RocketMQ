@@ -32,11 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -531,7 +531,7 @@ public class CommitLog {
             return new PutMessageResult(PutMessageStatus.MESSAGE_ILLEGAL, result);
         }
 
-        final ByteBuffer encodedMsg = encode(msg);
+        final ByteBuffer encodedMsg = encode(msg, msgLength);
 
         // 写文件要加锁
         long eclipseTimeInLock = 0;
@@ -899,23 +899,20 @@ public class CommitLog {
      * GroupCommit Service
      */
     class GroupCommitService extends FlushCommitLogService {
-        private volatile List<GroupCommitRequest> requestsWrite = new ArrayList<GroupCommitRequest>();
-        private volatile List<GroupCommitRequest> requestsRead = new ArrayList<GroupCommitRequest>();
+        private volatile LinkedBlockingQueue<GroupCommitRequest> requestsWrite = new LinkedBlockingQueue<>();
+        private volatile LinkedBlockingQueue<GroupCommitRequest> requestsRead = new LinkedBlockingQueue<>();
 
 
-        public synchronized void putRequest(final GroupCommitRequest request) {
-            synchronized (this.requestsWrite) {
-                this.requestsWrite.add(request);
-                if (!this.hasNotified) {
-                    this.hasNotified = true;
-                    this.notify();
-                }
+        public void putRequest(final GroupCommitRequest request) {
+            this.requestsWrite.offer(request);
+            if (hasNotified.compareAndSet(false, true)) {
+                this.notify();
             }
         }
 
 
         private void swapRequests() {
-            List<GroupCommitRequest> tmp = this.requestsWrite;
+            LinkedBlockingQueue<GroupCommitRequest> tmp = this.requestsWrite;
             this.requestsWrite = this.requestsRead;
             this.requestsRead = tmp;
         }
@@ -923,27 +920,27 @@ public class CommitLog {
 
         private void doCommit() {
             if (!this.requestsRead.isEmpty()) {
-                synchronized (this.requestsRead) {
-                    for (GroupCommitRequest req : this.requestsRead) {
-                        // 消息有可能在下一个文件，所以最多刷盘2次
-                        boolean flushOK = false;
-                        for (int i = 0; (i < 2) && !flushOK; i++) {
-                            flushOK = (CommitLog.this.mappedFileQueue.getCommittedWhere() >= req.getNextOffset());
+                GroupCommitRequest req = this.requestsRead.poll();
+                while (null != req) {
+                    // 消息有可能在下一个文件，所以最多刷盘2次
+                    boolean flushOK = false;
+                    for (int i = 0; (i < 2) && !flushOK; i++) {
+                        flushOK = (CommitLog.this.mappedFileQueue.getCommittedWhere() >= req.getNextOffset());
 
-                            if (!flushOK) {
-                                CommitLog.this.mappedFileQueue.commit(0);
-                            }
+                        if (!flushOK) {
+                            CommitLog.this.mappedFileQueue.commit(0);
                         }
-
-                        req.wakeupCustomer(flushOK);
                     }
 
-                    long storeTimestamp = CommitLog.this.mappedFileQueue.getStoreTimestamp();
-                    if (storeTimestamp > 0) {
-                        CommitLog.this.defaultMessageStore.getStoreCheckpoint().setPhysicMsgTimestamp(storeTimestamp);
-                    }
+                    req.wakeupCustomer(flushOK);
 
-                    this.requestsRead.clear();
+                    // Poll the next request
+                    req = this.requestsRead.poll();
+                }
+
+                long storeTimestamp = CommitLog.this.mappedFileQueue.getStoreTimestamp();
+                if (storeTimestamp > 0) {
+                    CommitLog.this.defaultMessageStore.getStoreCheckpoint().setPhysicMsgTimestamp(storeTimestamp);
                 }
             } else {
                 // 由于个别消息设置为不同步刷盘，所以会走到此流程
@@ -971,10 +968,11 @@ public class CommitLog {
                 CommitLog.LOGGER.warn("GroupCommitService Exception, ", e);
             }
 
-            synchronized (this) {
-                this.swapRequests();
-            }
+            this.swapRequests();
+            this.doCommit();
 
+            // Swap a second time here is on purpose to cover concurrent scenarios.
+            this.swapRequests();
             this.doCommit();
 
             CommitLog.LOGGER.info(this.getServiceName() + " service end");
@@ -1029,7 +1027,7 @@ public class CommitLog {
         return msgLen;
     }
 
-    private ByteBuffer encode(MessageExtBrokerInner msgInner) {
+    private ByteBuffer encode(MessageExtBrokerInner msgInner, final int msgLen) {
 
         final byte[] propertiesData = msgInner.getPropertiesString() == null ? null : msgInner.getPropertiesString().getBytes();
         final int propertiesLength = propertiesData == null ? 0 : propertiesData.length;
@@ -1038,8 +1036,6 @@ public class CommitLog {
         final int topicLength = topicData.length;
 
         final int bodyLength = msgInner.getBody() == null ? 0 : msgInner.getBody().length;
-
-        final int msgLen = computeMsgLength(msgInner);
 
         // Note, we are using
         ByteBuffer msgStoreItemMemory = encodedMsgByteBuffer.get();

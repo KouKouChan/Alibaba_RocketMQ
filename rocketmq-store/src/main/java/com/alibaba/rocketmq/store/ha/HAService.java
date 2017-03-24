@@ -32,10 +32,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -264,21 +264,14 @@ public class HAService {
     class GroupTransferService extends ServiceThread {
         // 异步通知
         private final WaitNotifyObject notifyTransferObject = new WaitNotifyObject();
-        private volatile List<GroupCommitRequest> requestsWrite = new ArrayList<GroupCommitRequest>();
-        private volatile List<GroupCommitRequest> requestsRead = new ArrayList<GroupCommitRequest>();
+        private volatile LinkedBlockingQueue<GroupCommitRequest> requestsWrite = new LinkedBlockingQueue<>();
+        private volatile LinkedBlockingQueue<GroupCommitRequest> requestsRead = new LinkedBlockingQueue<>();
 
 
-        public synchronized void putRequest(final GroupCommitRequest request) {
-            synchronized (this.requestsWrite) {
-                this.requestsWrite.add(request);
-                if (!this.hasNotified) {
-                    this.hasNotified = true;
-                    this.notify();
-
-                    // TODO 这里要Notify两个线程 1、GroupTransferService
-                    // 2、WriteSocketService
-                    // 在调用putRequest后，已经Notify了WriteSocketService
-                }
+        public void putRequest(final GroupCommitRequest request) {
+            this.requestsWrite.offer(request);
+            if (this.hasNotified.compareAndSet(false, true)) {
+                this.latch.countDown();
             }
         }
 
@@ -289,7 +282,7 @@ public class HAService {
 
 
         private void swapRequests() {
-            List<GroupCommitRequest> tmp = this.requestsWrite;
+            LinkedBlockingQueue<GroupCommitRequest> tmp = this.requestsWrite;
             this.requestsWrite = this.requestsRead;
             this.requestsRead = tmp;
         }
@@ -297,21 +290,21 @@ public class HAService {
 
         private void doWaitTransfer() {
             if (!this.requestsRead.isEmpty()) {
-                synchronized (this.requestsRead) {
-                    for (GroupCommitRequest req : this.requestsRead) {
-                        boolean transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
-                        for (int i = 0; !transferOK && i < 5; i++) {
-                            this.notifyTransferObject.waitForRunning(1000);
-                            transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
-                        }
-
-                        if (!transferOK) {
-                            log.warn("transfer message to slave timeout, " + req.getNextOffset());
-                        }
-
-                        req.wakeupCustomer(transferOK);
+                GroupCommitRequest req = this.requestsRead.poll();
+                while (null != req) {
+                    boolean transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
+                    for (int i = 0; !transferOK && i < 5; i++) {
+                        this.notifyTransferObject.waitForRunning(1000);
+                        transferOK = HAService.this.push2SlaveMaxOffset.get() >= req.getNextOffset();
                     }
-                    this.requestsRead.clear();
+
+                    if (!transferOK) {
+                        log.warn("transfer message to slave timeout, " + req.getNextOffset());
+                    }
+
+                    req.wakeupCustomer(transferOK);
+
+                    req = this.requestsRead.poll();
                 }
             }
         }

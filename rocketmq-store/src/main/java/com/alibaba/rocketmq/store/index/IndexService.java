@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -234,29 +233,37 @@ public class IndexService extends ServiceThread {
             if (log.isDebugEnabled()) {
                 log.debug("putRequest index failed, {}", requests);
             }
+        } else {
+            if (this.hasNotified.compareAndSet(false, true)) {
+                this.latch.countDown();
+            }
         }
     }
-
 
     @Override
     public void run() {
         log.info(this.getServiceName() + " service started");
 
         while (!this.isStopped()) {
-            try {
-                Object[] req = this.requestQueue.poll(3000, TimeUnit.MILLISECONDS);
-
-                if (req != null) {
-                    this.buildIndex(req);
-                }
-            } catch (Exception e) {
-                log.warn(this.getServiceName() + " service has exception. ", e);
-            }
+            this.waitForRunning(0);
+            buildIndex();
         }
 
         log.info(this.getServiceName() + " service end");
     }
 
+    private void buildIndex() {
+        try {
+            Object[] req = this.requestQueue.poll();
+            while (req != null) {
+                this.buildIndex(req);
+
+                req = this.requestQueue.poll();
+            }
+        } catch (Exception e) {
+            log.warn(this.getServiceName() + " service has exception. ", e);
+        }
+    }
 
     public void buildIndex(Object[] req) {
         boolean breakdown = false;

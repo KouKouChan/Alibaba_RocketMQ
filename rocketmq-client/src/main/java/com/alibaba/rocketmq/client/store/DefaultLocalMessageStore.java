@@ -103,8 +103,8 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
 
     private class FlushDiskService extends ServiceThread {
 
-        private volatile List<FlushDiskRequest> requestsWrite = new ArrayList<FlushDiskRequest>();
-        private volatile List<FlushDiskRequest> requestsRead = new ArrayList<FlushDiskRequest>();
+        private volatile LinkedBlockingQueue<FlushDiskRequest> requestsWrite = new LinkedBlockingQueue<>();
+        private volatile LinkedBlockingQueue<FlushDiskRequest> requestsRead = new LinkedBlockingQueue<>();
 
         @Override
         public String getServiceName() {
@@ -112,18 +112,15 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
         }
 
         void putRequest(final FlushDiskRequest request) {
-            synchronized (this) {
-                this.requestsWrite.add(request);
-                if (!hasNotified) {
-                    hasNotified = true;
-                    notify();
-                }
+            this.requestsWrite.offer(request);
+            if (hasNotified.compareAndSet(false, true)) {
+                notify();
             }
         }
 
 
         private void swapRequests() {
-            List<FlushDiskRequest> tmp = requestsWrite;
+            LinkedBlockingQueue<FlushDiskRequest> tmp = requestsWrite;
             requestsWrite = requestsRead;
             requestsRead = tmp;
         }
@@ -144,10 +141,8 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
             }
 
 
-            synchronized (this) {
-                putRequest(new FlushDiskRequest(true));
-                swapRequests();
-            }
+            putRequest(new FlushDiskRequest(true));
+            swapRequests();
 
             doFlush();
             LOGGER.info(getServiceName() + " terminated.");
@@ -158,21 +153,21 @@ public class DefaultLocalMessageStore implements LocalMessageStore {
             if (!requestsRead.isEmpty()) {
                 boolean flushed = false;
 
-                // Check if there is any request to flush all messages to disk.
-                for (FlushDiskRequest request : requestsRead) {
+                FlushDiskRequest request = requestsRead.poll();
+                while (null != request) {
                     if (request.isForceful()) {
                         flushed = true;
                         flush(true);
                         break;
                     }
+
+                    request = requestsRead.poll();
                 }
 
                 // We need to perform a normal maintaining flush.
                 if (!flushed) {
                     flush();
                 }
-
-                requestsRead.clear();
             }
         }
 
