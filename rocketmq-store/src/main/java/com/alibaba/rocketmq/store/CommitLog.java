@@ -27,8 +27,6 @@ import com.alibaba.rocketmq.store.config.BrokerRole;
 import com.alibaba.rocketmq.store.config.FlushDiskType;
 import com.alibaba.rocketmq.store.ha.HAService;
 import com.alibaba.rocketmq.store.schedule.ScheduleMessageService;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +78,7 @@ public class CommitLog {
 
     private ReentrantLock putMessageNormalLock = new ReentrantLock(); // NonfairSync
 
-    private final ThreadLocal<ByteBuf> encodedMsgByteBuffer = new ThreadLocal<>();
+    private final ThreadLocal<ByteBuffer> encodedMsgByteBuffer = new ThreadLocal<>();
 
     /**
      * 构造函数
@@ -533,7 +531,7 @@ public class CommitLog {
             return new PutMessageResult(PutMessageStatus.MESSAGE_ILLEGAL, result);
         }
 
-        final ByteBuf encodedMsg = encode(msg);
+        final ByteBuffer encodedMsg = encode(msg);
 
         // 写文件要加锁
         long eclipseTimeInLock = 0;
@@ -1031,7 +1029,7 @@ public class CommitLog {
         return msgLen;
     }
 
-    private ByteBuf encode(MessageExtBrokerInner msgInner) {
+    private ByteBuffer encode(MessageExtBrokerInner msgInner) {
 
         final byte[] propertiesData = msgInner.getPropertiesString() == null ? null : msgInner.getPropertiesString().getBytes();
         final int propertiesLength = propertiesData == null ? 0 : propertiesData.length;
@@ -1043,55 +1041,58 @@ public class CommitLog {
 
         final int msgLen = computeMsgLength(msgInner);
 
-        ByteBuf msgStoreItemMemory = encodedMsgByteBuffer.get();
+        // Note, we are using
+        ByteBuffer msgStoreItemMemory = encodedMsgByteBuffer.get();
         if (msgStoreItemMemory == null) {
-            msgStoreItemMemory = Unpooled.buffer(defaultMessageStore.getMessageStoreConfig().getMaxMessageSize() + MappedFile.END_FILE_MIN_BLANK_LENGTH);
+            msgStoreItemMemory = ByteBuffer.allocateDirect(defaultMessageStore.getMessageStoreConfig().getMaxMessageSize() + MappedFile.END_FILE_MIN_BLANK_LENGTH);
             encodedMsgByteBuffer.set(msgStoreItemMemory);
         }
 
-        // reset readerIndex/writerIndex
-        msgStoreItemMemory.readerIndex(0).writerIndex(0);
+        // set position to 0, limit to capacity.
+        msgStoreItemMemory.clear();
 
         // 1 TOTALSIZE
-        msgStoreItemMemory.writeInt(msgLen);
+        msgStoreItemMemory.putInt(msgLen);
         // 2 MAGICCODE
-        msgStoreItemMemory.writeInt(CommitLog.MessageMagicCode);
+        msgStoreItemMemory.putInt(CommitLog.MessageMagicCode);
         // 3 BODYCRC
-        msgStoreItemMemory.writeInt(msgInner.getBodyCRC());
+        msgStoreItemMemory.putInt(msgInner.getBodyCRC());
         // 4 QUEUEID
-        msgStoreItemMemory.writeInt(msgInner.getQueueId());
+        msgStoreItemMemory.putInt(msgInner.getQueueId());
         // 5 FLAG
-        msgStoreItemMemory.writeInt(msgInner.getFlag());
+        msgStoreItemMemory.putInt(msgInner.getFlag());
         // 6 QUEUEOFFSET, will be overridden in synchronized block.
-        msgStoreItemMemory.writeLong(0L);
+        msgStoreItemMemory.putLong(0L);
         // 7 PHYSICALOFFSET, will be overridden in synchronized block.
-        msgStoreItemMemory.writeLong(0L);
+        msgStoreItemMemory.putLong(0L);
         // 8 SYSFLAG
-        msgStoreItemMemory.writeInt(msgInner.getSysFlag());
+        msgStoreItemMemory.putInt(msgInner.getSysFlag());
         // 9 BORNTIMESTAMP
-        msgStoreItemMemory.writeLong(msgInner.getBornTimestamp());
+        msgStoreItemMemory.putLong(msgInner.getBornTimestamp());
         // 10 BORNHOST
-        msgStoreItemMemory.writeBytes(msgInner.getBornHostBytes());
+        msgStoreItemMemory.put(msgInner.getBornHostBytes());
         // 11 STORETIMESTAMP, will be overridden in synchronized block.
-        msgStoreItemMemory.writeLong(msgInner.getStoreTimestamp());
+        msgStoreItemMemory.putLong(msgInner.getStoreTimestamp());
         // 12 STOREHOSTADDRESS
-        msgStoreItemMemory.writeBytes(msgInner.getStoreHostBytes());
+        msgStoreItemMemory.put(msgInner.getStoreHostBytes());
         // 13 RECONSUMETIMES
-        msgStoreItemMemory.writeInt(msgInner.getReconsumeTimes());
+        msgStoreItemMemory.putInt(msgInner.getReconsumeTimes());
         // 14 Prepared Transaction Offset
-        msgStoreItemMemory.writeLong(msgInner.getPreparedTransactionOffset());
+        msgStoreItemMemory.putLong(msgInner.getPreparedTransactionOffset());
         // 15 BODY
-        msgStoreItemMemory.writeInt(bodyLength);
+        msgStoreItemMemory.putInt(bodyLength);
         if (bodyLength > 0)
-            msgStoreItemMemory.writeBytes(msgInner.getBody());
+            msgStoreItemMemory.put(msgInner.getBody());
         // 16 TOPIC
-        msgStoreItemMemory.writeByte(topicLength);
-        msgStoreItemMemory.writeBytes(topicData);
+        msgStoreItemMemory.put((byte) topicLength);
+        msgStoreItemMemory.put(topicData);
         // 17 PROPERTIES
-        msgStoreItemMemory.writeShort(propertiesLength);
+        msgStoreItemMemory.putShort((short) propertiesLength);
         if (propertiesLength > 0) {
-            msgStoreItemMemory.writeBytes(propertiesData);
+            msgStoreItemMemory.put(propertiesData);
         }
+
+        msgStoreItemMemory.flip();
 
         return msgStoreItemMemory;
     }
@@ -1117,7 +1118,7 @@ public class CommitLog {
 
 
         public AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank,
-                                            final Object msg, final ByteBuf encodedMsg) {
+                                            final Object msg, final ByteBuffer encodedMsg) {
             /*
              * 生成消息ID STORETIMESTAMP + STOREHOSTADDRESS + OFFSET <br>
              */
@@ -1152,7 +1153,7 @@ public class CommitLog {
                     break;
             }
 
-            final int msgLen = encodedMsg.readableBytes();
+            final int msgLen = encodedMsg.remaining();
 
             // 判断是否有足够空余空间
             if ((msgLen + END_FILE_MIN_BLANK_LENGTH) > maxBlank) {
@@ -1171,22 +1172,15 @@ public class CommitLog {
             }
 
             // Update byte buffer to reflect actual commit log written offset and logical queue offset.
-            encodedMsg.markWriterIndex()
-                    .writerIndex(20)
-                    .writeLong(queueOffset)
-                    .writeLong(fileFromOffset + byteBuffer.position())
-                    .writerIndex(56)
-                    .writeLong(defaultMessageStore.getSystemClock().now())
-                    .resetWriterIndex();
+            encodedMsg.position(20);
+            encodedMsg.putLong(queueOffset);
+            encodedMsg.putLong(fileFromOffset + byteBuffer.position());
+            encodedMsg.position(56);
+            encodedMsg.putLong(defaultMessageStore.getSystemClock().now());
+            encodedMsg.rewind();
 
             // 向队列缓冲区写入消息
-            if (encodedMsg.hasArray()) {
-                // Heap based ByteBuf
-                byteBuffer.put(encodedMsg.array(), 0, encodedMsg.readableBytes());
-            } else {
-                // Direct ByteBuf
-                byteBuffer.put(encodedMsg.nioBuffer());
-            }
+            byteBuffer.put(encodedMsg);
 
             AppendMessageResult result = new AppendMessageResult(AppendMessageStatus.PUT_OK, wroteOffset, msgLen, msgId,
                     msgInner.getStoreTimestamp(), queueOffset);

@@ -40,5 +40,5 @@ public interface AppendMessageCallback {
      * @return 写入多少字节
      */
     AppendMessageResult doAppend(final long fileFromOffset, final ByteBuffer byteBuffer, final int maxBlank,
-                                        final Object msg, final ByteBuf encodedMsg);
+                                        final Object msg, final ByteBuffer encodedMsg);
 }

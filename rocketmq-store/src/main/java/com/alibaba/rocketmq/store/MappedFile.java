@@ -225,7 +225,7 @@ public class MappedFile extends ReferenceResource {
      *            用来对消息进行序列化，尤其对于依赖MappedFile Offset的属性进行动态序列化
      * @return 是否成功，写入多少数据
      */
-    public AppendMessageResult appendMessage(final Object msg, final ByteBuf encodedMsg, final AppendMessageCallback cb) {
+    public AppendMessageResult appendMessage(final Object msg, final ByteBuffer encodedMsg, final AppendMessageCallback cb) {
         assert msg != null;
         assert cb != null;
 
