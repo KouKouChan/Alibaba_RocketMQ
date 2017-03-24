@@ -17,6 +17,7 @@ package com.alibaba.rocketmq.common.message;
 
 import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.common.sysflag.MessageSysFlag;
+import org.apache.commons.codec.binary.Hex;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -60,7 +61,7 @@ public class MessageDecoder {
         // 消息对应的物理分区 OFFSET 8
         input.putLong(offset);
 
-        return UtilAll.bytes2string(input.array());
+        return new String(Hex.encodeHex(input.array(), false));
     }
 
 

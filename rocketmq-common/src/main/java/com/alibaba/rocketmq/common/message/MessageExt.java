@@ -22,6 +22,8 @@ import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -60,6 +62,7 @@ public class MessageExt extends Message implements Serializable{
 
     private long preparedTransactionOffset;
 
+    private static Map<SocketAddress, ByteBuffer> STORE_HOST_MAP = new HashMap<>();
 
     public MessageExt() {
     }
@@ -78,13 +81,21 @@ public class MessageExt extends Message implements Serializable{
     /**
      * SocketAddress ----> ByteBuffer 转化成8个字节
      */
-    public static ByteBuffer SocketAddress2ByteBuffer(SocketAddress socketAddress) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
-        InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
-        byteBuffer.put(inetSocketAddress.getAddress().getAddress());
-        byteBuffer.putInt(inetSocketAddress.getPort());
-        byteBuffer.flip();
-        return byteBuffer;
+    public static ByteBuffer socketAddress2ByteBuffer(SocketAddress socketAddress) {
+        if (!STORE_HOST_MAP.containsKey(socketAddress)) {
+            synchronized (MessageExt.class) {
+                if (!STORE_HOST_MAP.containsKey(socketAddress)) {
+                    ByteBuffer byteBuffer = ByteBuffer.allocate(8);
+                    InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
+                    byteBuffer.put(inetSocketAddress.getAddress().getAddress());
+                    byteBuffer.putInt(inetSocketAddress.getPort());
+                    byteBuffer.flip();
+                    STORE_HOST_MAP.put(socketAddress, byteBuffer);
+                }
+            }
+        }
+
+        return STORE_HOST_MAP.get(socketAddress).slice();
     }
 
 
@@ -92,7 +103,7 @@ public class MessageExt extends Message implements Serializable{
      * 获取bornHost字节形式，8个字节 HOST + PORT
      */
     public ByteBuffer getBornHostBytes() {
-        return SocketAddress2ByteBuffer(this.bornHost);
+        return socketAddress2ByteBuffer(this.bornHost);
     }
 
 
@@ -100,7 +111,7 @@ public class MessageExt extends Message implements Serializable{
      * 获取storehost字节形式，8个字节 HOST + PORT
      */
     public ByteBuffer getStoreHostBytes() {
-        return SocketAddress2ByteBuffer(this.storeHost);
+        return socketAddress2ByteBuffer(this.storeHost);
     }
 
 

@@ -17,6 +17,8 @@ package com.alibaba.rocketmq.common;
 
 import com.alibaba.rocketmq.common.constant.LoggerName;
 import com.alibaba.rocketmq.remoting.common.RemotingHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,12 +29,17 @@ import java.lang.management.RuntimeMXBean;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 各种方法大杂烩
@@ -262,27 +269,6 @@ public class UtilAll {
         crc32.update(array, offset, length);
         return (int) (crc32.getValue() & 0x7FFFFFFF);
     }
-
-
-    /**
-     * 字节数组转化成16进制形式
-     */
-    public static String bytes2string(byte[] src) {
-        StringBuilder sb = new StringBuilder();
-        if (src == null || src.length <= 0) {
-            return null;
-        }
-        for (int i = 0; i < src.length; i++) {
-            int v = src[i] & 0xFF;
-            String hv = Integer.toHexString(v);
-            if (hv.length() < 2) {
-                sb.append(0);
-            }
-            sb.append(hv.toUpperCase());
-        }
-        return sb.toString();
-    }
-
 
     /**
      * 16进制字符串转化成字节数组
