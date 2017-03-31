@@ -38,7 +38,7 @@ public class Producer {
         producer.start();
         byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'x');
-        float limit = 5000;
+        float limit = 1000;
         if (args.length > 0) {
             limit = Float.parseFloat(args[0]);
         }
@@ -46,6 +46,7 @@ public class Producer {
                 "TagA",// tag
                 data
         );
+        msg.setWaitStoreMsgOK(false);
         RateLimiter rateLimiter = RateLimiter.create(limit);
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
             rateLimiter.acquire();

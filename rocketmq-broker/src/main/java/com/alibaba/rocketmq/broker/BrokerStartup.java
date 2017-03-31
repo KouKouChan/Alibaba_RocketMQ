@@ -15,8 +15,6 @@
  */
 package com.alibaba.rocketmq.broker;
 
-import com.alibaba.rocketmq.broker.mqtrace.ConsumeMessageBrokerTraceHook;
-import com.alibaba.rocketmq.broker.mqtrace.SendMessageBrokerTraceHook;
 import com.alibaba.rocketmq.broker.transaction.jdbc.JDBCTransactionStoreConfig;
 import com.alibaba.rocketmq.common.BrokerConfig;
 import com.alibaba.rocketmq.common.MQVersion;
@@ -30,7 +28,10 @@ import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.srvutil.ServerUtil;
 import com.alibaba.rocketmq.store.config.BrokerRole;
 import com.alibaba.rocketmq.store.config.MessageStoreConfig;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.slf4j.Logger;
 
 import java.io.BufferedInputStream;
@@ -213,9 +214,6 @@ public class BrokerStartup {
                 controller.shutdown();
                 System.exit(-3);
             }
-
-            controller.registerSendMessageHook(new SendMessageBrokerTraceHook("ReceiveMessageTracer"));
-            controller.registerConsumeMessageHook(new ConsumeMessageBrokerTraceHook("DeliverMessageTracer"));
 
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 private volatile boolean hasShutdown = false;
