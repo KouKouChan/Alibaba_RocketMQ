@@ -178,10 +178,12 @@ public abstract class NettyRemotingAbstract {
                 null == matched ? this.defaultRequestProcessor : matched;
         LatencyStatisticsItem latencyStatisticsItem = null;
 
-        if (cmd.getCode() == 10 || cmd.getCode() == 310 || cmd.getCode() == 36) {
-            latencyStatisticsItem = latencyMap.get(LATENCY_NAME_SEND_MESSAGE);
-        } else {
-            latencyStatisticsItem = latencyMap.get(LATENCY_NAME_RPC);
+        if (null != latencyMap) {
+            if (cmd.getCode() == 10 || cmd.getCode() == 310 || cmd.getCode() == 36) {
+                latencyStatisticsItem = latencyMap.get(LATENCY_NAME_SEND_MESSAGE);
+            } else {
+                latencyStatisticsItem = latencyMap.get(LATENCY_NAME_RPC);
+            }
         }
 
         final RpcContext rpcContext = new RpcContext(systemClock.now(), systemClock, latencyStatisticsItem);
