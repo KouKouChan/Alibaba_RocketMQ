@@ -81,6 +81,7 @@ import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import com.alibaba.rocketmq.remoting.netty.ResponseFuture;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.remoting.protocol.RemotingSerializable;
+import java.io.IOException;
 import org.slf4j.Logger;
 
 import java.io.UnsupportedEncodingException;
@@ -111,6 +112,12 @@ public class MQClientAPIImpl {
     }
 
     private final static Logger log = ClientLogger.getLog();
+
+    /**
+     * 消息压缩level，默认5
+     */
+    private int zipCompressLevel = Integer.parseInt(System.getProperty(MixAll.MESSAGE_COMPRESS_LEVEL, "5"));
+
     private final RemotingClient remotingClient;
     private final TopAddressing topAddressing = new TopAddressing(MixAll.WS_ADDR);
     private final ClientRemotingProcessor clientRemotingProcessor;
@@ -326,6 +333,19 @@ public class MQClientAPIImpl {
                 projectGroupPrefix));
         }
 
+        byte[] msgBody = msg.getBody();
+
+        // If message body exceeds compression threshold, try to compress it.
+        if ((requestHeader.getSysFlag() & MessageSysFlag.CompressedFlag) == MessageSysFlag.CompressedFlag) {
+            try {
+                msgBody = UtilAll.compress(msgBody, zipCompressLevel);
+            } catch (IOException e) {
+                requestHeader.setSysFlag(MessageSysFlag.clearCompressedFlag(requestHeader.getSysFlag()));
+                log.error("tryToCompressMessage exception", e);
+                log.warn(msg.toString());
+            }
+        }
+
         RemotingCommand request = null;
         if (sendSmartMsg) {
             SendMessageRequestHeaderV2 requestHeaderV2 = SendMessageRequestHeaderV2.createSendMessageRequestHeaderV2(requestHeader);
@@ -334,7 +354,7 @@ public class MQClientAPIImpl {
             request = RemotingCommand.createRequestCommand(RequestCode.SEND_MESSAGE, requestHeader);
         }
 
-        request.setBody(msg.getBody());
+        request.setBody(msgBody);
 
         switch (communicationMode) {
             case ONEWAY:
@@ -502,12 +522,6 @@ public class MQClientAPIImpl {
             }
 
             try {
-
-                // Restore message body before invoking onException of sendCallback.
-                if ((requestHeader.getSysFlag() & MessageSysFlag.CompressedFlag) == MessageSysFlag.CompressedFlag) {
-                    msg.setBody(UtilAll.uncompress(msg.getBody()));
-                }
-
                 sendCallback.onException(e);
             } catch (Exception ignore) {
             }

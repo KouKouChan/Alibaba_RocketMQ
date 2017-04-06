@@ -94,11 +94,6 @@ public class DefaultMQProducerImpl implements MQProducerInner {
     private ArrayList<CheckForbiddenHook> checkForbiddenHookList = new ArrayList<CheckForbiddenHook>();
 
     /**
-     * 消息压缩level，默认5
-     */
-    private int zipCompressLevel = Integer.parseInt(System.getProperty(MixAll.MESSAGE_COMPRESS_LEVEL, "5"));
-
-    /**
      * 通信层hook
      */
     private final RPCHook rpcHook;
@@ -680,10 +675,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
         SendMessageContext context = null;
         if (brokerAddr != null) {
-            byte[] prevBody = msg.getBody();
             try {
                 int sysFlag = 0;
-                if (this.tryToCompressMessage(msg)) {
+
+                // Just update the message system flag.
+                if (this.needToCompressMessageBody(msg)) {
                     sysFlag |= MessageSysFlag.CompressedFlag;
                 }
 
@@ -814,35 +810,15 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     this.executeSendMessageHookAfter(context);
                 }
                 throw e;
-            } finally {
-                if (communicationMode == CommunicationMode.SYNC) {
-                    msg.setBody(prevBody);
-                }
             }
         }
 
         throw new MQClientException("The broker[" + mq.getBrokerName() + "] not exist", null);
     }
 
-
-    private boolean tryToCompressMessage(final Message msg) {
+    private boolean needToCompressMessageBody(final Message msg) {
         byte[] body = msg.getBody();
-        if (body != null) {
-            if (body.length >= this.defaultMQProducer.getCompressMsgBodyThreshold()) {
-                try {
-                    byte[] data = UtilAll.compress(body, zipCompressLevel);
-                    if (data != null) {
-                        msg.setBody(data);
-                        return true;
-                    }
-                } catch (IOException e) {
-                    log.error("tryToCompressMessage exception", e);
-                    log.warn(msg.toString());
-                }
-            }
-        }
-
-        return false;
+        return null != body && body.length >= defaultMQProducer.getCompressMsgBodyThreshold();
     }
 
 
@@ -1115,16 +1091,6 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
     public MQClientInstance getmQClientFactory() {
         return mQClientFactory;
-    }
-
-
-    public int getZipCompressLevel() {
-        return zipCompressLevel;
-    }
-
-
-    public void setZipCompressLevel(int zipCompressLevel) {
-        this.zipCompressLevel = zipCompressLevel;
     }
 
 
