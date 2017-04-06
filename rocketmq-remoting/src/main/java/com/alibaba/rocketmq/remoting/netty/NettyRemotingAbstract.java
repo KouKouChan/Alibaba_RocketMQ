@@ -473,7 +473,11 @@ public abstract class NettyRemotingAbstract {
         }
     }
 
-    //execute callback in callback executor. If callback executor is null, run directly in current thread
+    /**
+     * Execute callback in callback executor. If callback executor is null, run directly in current thread.
+     *
+     * @param responseFuture Response future wrapper.
+     */
     private void executeInvokeCallback(final ResponseFuture responseFuture) {
         boolean runInThisThread = false;
         ExecutorService executor = this.getCallbackExecutor();
