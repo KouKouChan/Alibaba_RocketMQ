@@ -40,8 +40,15 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLContext;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -287,39 +294,7 @@ public abstract class NettyRemotingAbstract {
 
             // 异步调用
             if (responseFuture.getInvokeCallback() != null) {
-                boolean runInThisThread = false;
-                ExecutorService executor = this.getCallbackExecutor();
-                if (executor != null) {
-                    try {
-                        executor.submit(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    responseFuture.executeInvokeCallback();
-                                }
-                                catch (Throwable e) {
-                                    LOGGER.warn("execute callback in executor exception, and callback throw", e);
-                                }
-                            }
-                        });
-                    }
-                    catch (Exception e) {
-                        runInThisThread = true;
-                        LOGGER.warn("execute callback in executor exception, maybe executor busy", e);
-                    }
-                }
-                else {
-                    runInThisThread = true;
-                }
-
-                if (runInThisThread) {
-                    try {
-                        responseFuture.executeInvokeCallback();
-                    }
-                    catch (Throwable e) {
-                        LOGGER.warn("executeInvokeCallback Exception", e);
-                    }
-                }
+                executeInvokeCallback(responseFuture);
             }
             // 同步调用
             else {
@@ -356,25 +331,25 @@ public abstract class NettyRemotingAbstract {
 
 
     public void scanResponseTable() {
+        final List<ResponseFuture> responseFutures = new LinkedList<ResponseFuture>();
         Iterator<Entry<Integer, ResponseFuture>> it = this.responseTable.entrySet().iterator();
         while (it.hasNext()) {
             Entry<Integer, ResponseFuture> next = it.next();
-            ResponseFuture rep = next.getValue();
+            ResponseFuture responseFuture = next.getValue();
 
-            if ((rep.getBeginTimestamp() + rep.getTimeoutMillis() + 1000) <= System.currentTimeMillis()) {
-                LOGGER.info("Removing_opaque due to timeout: opaqueId = " + next.getKey());
+            if ((responseFuture.getBeginTimestamp() + responseFuture.getTimeoutMillis() + 1000) <= System.currentTimeMillis()) {
+                responseFuture.release();
                 it.remove();
-                try {
-                    rep.executeInvokeCallback();
-                }
-                catch (Throwable e) {
-                    LOGGER.warn("scanResponseTable, operationComplete Exception", e);
-                }
-                finally {
-                    rep.release();
-                }
+                responseFutures.add(responseFuture);
+                LOGGER.warn("remove timeout request, " + responseFuture);
+            }
+        }
 
-                LOGGER.warn("remove timeout request, " + rep);
+        for (ResponseFuture responseFuture : responseFutures) {
+            try {
+                executeInvokeCallback(responseFuture);
+            } catch (Throwable e) {
+                LOGGER.warn("scanResponseTable, operationComplete Exception", e);
             }
         }
     }
@@ -460,12 +435,10 @@ public abstract class NettyRemotingAbstract {
                         responseFuture.putResponse(null);
                         responseTable.remove(request.getOpaque());
                         try {
-                            responseFuture.executeInvokeCallback();
-                        }
-                        catch (Throwable e) {
+                            executeInvokeCallback(responseFuture);
+                        } catch (Throwable e) {
                             LOGGER.warn("execute callback in writeAndFlush addListener, and callback throw", e);
-                        }
-                        finally {
+                        } finally {
                             responseFuture.release();
                         }
 
@@ -477,8 +450,7 @@ public abstract class NettyRemotingAbstract {
             }
             catch (Exception e) {
                 responseFuture.release();
-                LOGGER.warn(
-                        "send a request command to channel <" + RemotingHelper.parseChannelRemoteAddr(channel)
+                LOGGER.warn("send a request command to channel <" + RemotingHelper.parseChannelRemoteAddr(channel)
                                 + "> Exception", e);
                 throw new RemotingSendRequestException(RemotingHelper.parseChannelRemoteAddr(channel), e);
             }
@@ -497,6 +469,39 @@ public abstract class NettyRemotingAbstract {
                 LOGGER.warn(info);
                 LOGGER.warn(request.toString());
                 throw new RemotingTimeoutException(info);
+            }
+        }
+    }
+
+    //execute callback in callback executor. If callback executor is null, run directly in current thread
+    private void executeInvokeCallback(final ResponseFuture responseFuture) {
+        boolean runInThisThread = false;
+        ExecutorService executor = this.getCallbackExecutor();
+        if (executor != null) {
+            try {
+                executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            responseFuture.executeInvokeCallback();
+                        } catch (Throwable e) {
+                            LOGGER.warn("execute callback in executor exception, and callback throw", e);
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                runInThisThread = true;
+                LOGGER.warn("execute callback in executor exception, maybe executor busy", e);
+            }
+        } else {
+            runInThisThread = true;
+        }
+
+        if (runInThisThread) {
+            try {
+                responseFuture.executeInvokeCallback();
+            } catch (Throwable e) {
+                LOGGER.warn("executeInvokeCallback Exception", e);
             }
         }
     }

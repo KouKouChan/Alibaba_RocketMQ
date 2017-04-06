@@ -815,7 +815,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 }
                 throw e;
             } finally {
-                msg.setBody(prevBody);
+                if (communicationMode == CommunicationMode.SYNC) {
+                    msg.setBody(prevBody);
+                }
             }
         }
 

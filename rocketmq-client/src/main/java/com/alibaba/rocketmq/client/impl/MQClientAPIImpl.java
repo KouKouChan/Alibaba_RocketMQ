@@ -388,16 +388,17 @@ public class MQClientAPIImpl {
             @Override
             public void operationComplete(ResponseFuture responseFuture) {
                 RemotingCommand response = responseFuture.getResponseCommand();
+
                 if (null == sendCallback && response != null) {
 
                     try {
                         SendResult sendResult = MQClientAPIImpl.this.processSendResponse(brokerName, msg, response);
-                        if (context != null && sendResult != null) {
+                        if (context != null) {
                             context.setSendResult(sendResult);
                             context.getProducer().executeSendMessageHookAfter(context);
                         }
                     } catch (Throwable e) {
-                        //
+                        // TODO we need handle possible exception here and incur retry when applicable.
                     }
 
                     producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), false);
@@ -407,7 +408,6 @@ public class MQClientAPIImpl {
                 if (response != null) {
                     try {
                         SendResult sendResult = MQClientAPIImpl.this.processSendResponse(brokerName, msg, response);
-                        assert sendResult != null;
                         if (context != null) {
                             context.setSendResult(sendResult);
                             context.getProducer().executeSendMessageHookAfter(context);
