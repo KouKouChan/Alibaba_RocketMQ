@@ -130,10 +130,15 @@ public class ConsumerOffsetManager extends ConfigManager {
     }
 
 
-    public void commitOffset(final String group, final String topic, final int queueId, final long offset) {
+    public void commitOffset(final String group, final String topic, final int queueId, final long offset, String source) {
+        long maxOffsetInQueue = brokerController.getMessageStore().getMaxOffsetInQueue(topic, queueId);
+        if (maxOffsetInQueue > 0 && offset > maxOffsetInQueue) {
+            log.error("[BUG][{}]Illegal offset. Max offset in queue: {}, updating offset: {}", source, maxOffsetInQueue, offset);
+        }
+
         // topic@group
         String key = topic + TOPIC_GROUP_SEPARATOR + group;
-        this.commitOffset(key, queueId, offset);
+        this.commitOffset(key, queueId, offset, source);
     }
 
 
@@ -151,15 +156,18 @@ public class ConsumerOffsetManager extends ConfigManager {
     }
 
 
-    private void commitOffset(final String key, final int queueId, final long offset) {
+    private void commitOffset(final String key, final int queueId, final long offset, String source) {
         ConcurrentHashMap<Integer, Long> map = this.offsetTable.get(key);
         if (null == map) {
             map = new ConcurrentHashMap<Integer, Long>(32);
             map.put(queueId, offset);
             this.offsetTable.put(key, map);
-        }
-        else {
-            map.put(queueId, offset);
+        } else {
+            Long previous = map.put(queueId, offset);
+            if (null != previous && previous > offset) {
+                log.warn("Offset is moving backward. Source: {}, key: {}, queueId: {}, offset: {}", source,
+                        key, queueId, offset);
+            }
         }
     }
 

@@ -464,7 +464,9 @@ public class PullMessageProcessor implements NettyRequestProcessor {
                 && this.brokerController.getMessageStoreConfig().getBrokerRole() != BrokerRole.SLAVE;
         if (storeOffsetEnable) {
             this.brokerController.getConsumerOffsetManager().commitOffset(requestHeader.getConsumerGroup(),
-                    requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getCommitOffset());
+                    requestHeader.getTopic(),
+                    requestHeader.getQueueId(),
+                    requestHeader.getCommitOffset(), "Pull");
         }
 
         return response;

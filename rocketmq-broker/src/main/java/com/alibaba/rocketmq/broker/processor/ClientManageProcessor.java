@@ -145,7 +145,7 @@ public class ClientManageProcessor implements NettyRequestProcessor {
             this.executeConsumeMessageHookAfter(context);
         }
         this.brokerController.getConsumerOffsetManager().commitOffset(requestHeader.getConsumerGroup(),
-            requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getCommitOffset());
+            requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getCommitOffset(), "Command");
         response.setCode(ResponseCode.SUCCESS);
         response.setRemark(null);
         return response;
