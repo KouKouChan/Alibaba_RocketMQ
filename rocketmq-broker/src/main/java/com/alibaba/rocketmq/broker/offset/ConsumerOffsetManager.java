@@ -87,6 +87,8 @@ public class ConsumerOffsetManager extends ConfigManager {
             long offsetInPersist = next.getValue();
             if (offsetInPersist > minOffsetInStore) {
                 result = false;
+            } else {
+                result = true;
             }
         }
 
