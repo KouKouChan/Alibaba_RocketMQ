@@ -132,7 +132,8 @@ public class ConsumerOffsetManager extends ConfigManager {
 
     public void commitOffset(final String group, final String topic, final int queueId, final long offset, String source) {
         long maxOffsetInQueue = brokerController.getMessageStore().getMaxOffsetInQueue(topic, queueId);
-        if (maxOffsetInQueue > 0 && offset > maxOffsetInQueue) {
+        long minOffsetInQueue = brokerController.getMessageStore().getMinOffsetInQueue(topic, queueId);
+        if (maxOffsetInQueue > 0 && (offset > maxOffsetInQueue || offset < minOffsetInQueue)) {
             log.error("[BUG][{}]Illegal offset. Group: {}, Topic: {}, Max offset in queue: {}, Updating offset: {}",
                     source, group, topic, maxOffsetInQueue, offset);
             return;
