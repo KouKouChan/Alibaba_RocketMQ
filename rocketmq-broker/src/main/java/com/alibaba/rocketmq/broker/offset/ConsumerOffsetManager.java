@@ -165,7 +165,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         } else {
             Long previous = map.put(queueId, offset);
             if (null != previous && previous > offset) {
-                log.warn("Offset is moving backward. Source: {}, key: {}, queueId: {}, offset: {}, previous offset:｛｝",
+                log.warn("Offset is moving backward. Source: {}, key: {}, queueId: {}, offset: {}, previous offset: {}",
                         source, key, queueId, offset, previous);
             }
         }
