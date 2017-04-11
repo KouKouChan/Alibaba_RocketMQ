@@ -135,6 +135,7 @@ public class ConsumerOffsetManager extends ConfigManager {
         if (maxOffsetInQueue > 0 && offset >= maxOffsetInQueue) {
             log.error("[BUG][{}]Illegal offset. Group: {}, Topic: {}, Max offset in queue: {}, Updating offset: {}",
                     source, group, topic, maxOffsetInQueue, offset);
+            return;
         }
 
         // topic@group
