@@ -53,6 +53,9 @@ import com.alibaba.rocketmq.store.config.StorePathConfigHelper;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collections;
@@ -60,8 +63,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -549,7 +550,7 @@ public class SendMessageProcessor implements NettyRequestProcessor {
                         channelFuture.addListener(new ChannelFutureListener() {
                             @Override
                             public void operationComplete(ChannelFuture future) throws Exception {
-                                if (future.isSuccess()) {
+                                if (future.isSuccess() && null != rpcContext.getLatencyStatisticsItem()) {
                                     long interval = rpcContext.getSystemClock().now() -  rpcContext.getCreateTimePoint();
                                     rpcContext.getLatencyStatisticsItem().add(interval);
                                 }

@@ -220,7 +220,7 @@ public abstract class NettyRemotingAbstract {
                                     channelFuture.addListener(new ChannelFutureListener() {
                                         @Override
                                         public void operationComplete(ChannelFuture future) throws Exception {
-                                            if (future.isSuccess()) {
+                                            if (future.isSuccess() && null != rpcContext.getLatencyStatisticsItem()) {
                                                 long interval = systemClock.now() - rpcContext.getCreateTimePoint();
                                                 rpcContext.getLatencyStatisticsItem().add(interval);
                                             }
