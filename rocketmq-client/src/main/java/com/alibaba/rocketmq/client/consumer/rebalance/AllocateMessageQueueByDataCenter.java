@@ -155,7 +155,20 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
             allocateByCircle(pendingMessageQueues, activeConsumerIds, result);
         }
 
-        return result.containsKey(currentConsumerID) ? result.get(currentConsumerID) : new ArrayList<MessageQueue>();
+        List<MessageQueue> allocationResult = result.containsKey(currentConsumerID) ? result.get(currentConsumerID) : new ArrayList<MessageQueue>();
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Algorithm: {}", getName());
+            String topic = "Unknown";
+            if (!mqAll.isEmpty()) {
+                topic = mqAll.get(0).getTopic();
+            }
+            LOGGER.info("CG: {}, Topic: {}, Allocation Result:", consumerGroup, topic);
+            for (MessageQueue messageQueue : allocationResult) {
+                LOGGER.info("Broker Name: {}, Queue ID: {}", messageQueue.getBrokerName(), messageQueue.getQueueId());
+            }
+        }
+
+        return allocationResult;
     }
 
     private static boolean isSuspended(List<Pair<Long, Long>> ranges, String consumerId) {
