@@ -142,6 +142,8 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
                 groupedClients.get(dataCenterIndex).add(clientID);
             }
         }
+
+        // begin to allocate
         List<MessageQueue> pendingMessageQueues = new ArrayList<>();
         for (Map.Entry<Integer, List<MessageQueue>> next : groupedMessageQueues.entrySet()) {
             if (groupedClients.keySet().contains(next.getKey())) {
