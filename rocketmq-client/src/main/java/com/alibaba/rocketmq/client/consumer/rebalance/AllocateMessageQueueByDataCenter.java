@@ -17,7 +17,6 @@ package com.alibaba.rocketmq.client.consumer.rebalance;
 
 import com.alibaba.rocketmq.client.MQHelper;
 import com.alibaba.rocketmq.client.consumer.AllocateMessageQueueStrategy;
-import com.alibaba.rocketmq.client.consumer.DefaultMQPushConsumer;
 import com.alibaba.rocketmq.client.exception.MQClientException;
 import com.alibaba.rocketmq.client.impl.factory.MQClientInstance;
 import com.alibaba.rocketmq.client.log.ClientLogger;
@@ -65,32 +64,9 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
      *    This method allocates message queue by data center.
      * </p>
      *
-     * <p>
-     *     Prerequisite:
-     *     <ul>
-     *         <li>Broker names conform to pattern of {@link Helper#BROKER_NAME_REGEX}</li>
-     *         <li>Consumers use IPv4 address, whose second integer represents data center the very consumer reside in.
-     *         </li>
-     *     </ul>
-     * </p>
-     *
-     * <p>
-     *     Algorithm specification:
-     *     <ul>
-     *         <li>Filter out all suspended clients.</li>
-     *         <li>For those DCs which have both consumers and brokers in, message queues are allocated averagely per DC.</li>
-     *         <li>For those DCs which have brokers only, their message queues are allocated to all active consumers
-     *         averagely. Note, under allocated consumers from previous step may allocate more message queues in this
-     *         step, improving load balance.</li>
-     *         <li>For those DCs which have consumers only, all their opportunities of allocation lie in the previous
-     *         step. They indeed have risks of starvation.</li>
-     *     </ul>
-     * </p>
-     *
      * @param consumerGroup Consumer group.
      * @param currentConsumerID buffered consumer client ID, in form of IP@instance_name
-     * @param mqAll
-     *            当前Topic的所有队列集合，无重复数据，且有序
+     * @param mqAll 当前Topic的所有队列集合，无重复数据，且有序
      * @param allConsumerIDs All consumer IDs.
      * @return message queues allocated to current consumer client.
      */
@@ -139,7 +115,7 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
         }
 
         //This map holds final result.
-        HashMap<String, List<MessageQueue>> result = new HashMap<String, List<MessageQueue>>();
+        HashMap<String/*client-id*/, List<MessageQueue>> result = new HashMap<String, List<MessageQueue>>();
 
         //group message queues by data center.
         HashMap<Integer, List<MessageQueue>> groupedMessageQueues = new HashMap<Integer, List<MessageQueue>>();
@@ -166,119 +142,20 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
                 groupedClients.get(dataCenterIndex).add(clientID);
             }
         }
-
-        List<String> underAllocatedClientIds = new ArrayList<String>();
-
-        //Scenario: all client consumers have broker message queues in same DC.
-        if (groupedMessageQueues.keySet().containsAll(groupedClients.keySet())) {
-            //Averagely allocate message queues to consumers, both of which are of the same DC.
-            for (Integer dcIndex : groupedClients.keySet()) {
-                List<String> clientIDsPerDC = groupedClients.get(dcIndex);
-                List<MessageQueue> messageQueuesPerDC = groupedMessageQueues.get(dcIndex);
-                allocateMessageQueueClientPerDC(messageQueuesPerDC, clientIDsPerDC, underAllocatedClientIds,
-                        result);
-            }
-
-            //allocate those message queues where there are no consumer clients.
-            if (groupedClients.size() < groupedMessageQueues.size()) {
-                List<MessageQueue> unallocatedMessageQueues = new ArrayList<MessageQueue>();
-
-                for (Integer dcIndex : groupedMessageQueues.keySet()) {
-                    if (!groupedClients.containsKey(dcIndex)) {
-                        unallocatedMessageQueues.addAll(groupedMessageQueues.get(dcIndex));
-                    }
-                }
-
-                int unallocatedMessageQueueIndex = 0;
-                if (unallocatedMessageQueues.size() <= underAllocatedClientIds.size()) {
-                    for (String clientID : underAllocatedClientIds) {
-                        if (unallocatedMessageQueueIndex >= unallocatedMessageQueues.size()) {
-                            break;
-                        }
-                        result.get(clientID).add(unallocatedMessageQueues.get(unallocatedMessageQueueIndex++));
-                    }
-
-                } else {
-                    int avg = unallocatedMessageQueues.size() / activeConsumerIds.size();
-                    int remaining = unallocatedMessageQueues.size() % activeConsumerIds.size();
-
-                    //First, allocate the message queues to all active clients averagely.
-                    for (String clientId : activeConsumerIds) {
-                        for (int i = 0; i < avg; i++) {
-                            result.get(clientId).add(unallocatedMessageQueues.get(unallocatedMessageQueueIndex++));
-                        }
-                    }
-
-                    //allocate the remaining message queues to those under allocated clients.
-                    if (remaining > 0) {
-                        int average = remaining / underAllocatedClientIds.size();
-                        int restOfRemaining = remaining % underAllocatedClientIds.size();
-                        for (int i = 0; i < underAllocatedClientIds.size(); i++) {
-                            String clientId = underAllocatedClientIds.get(i);
-                            if (i < restOfRemaining) {
-                                for (int j = 0; j < average + 1; j++) {
-                                    result.get(clientId).add(unallocatedMessageQueues.get(unallocatedMessageQueueIndex++));
-                                }
-                            } else if (unallocatedMessageQueueIndex < unallocatedMessageQueues.size()) {
-                                for (int j = 0; j < average; j++) {
-                                    result.get(clientId).add(unallocatedMessageQueues.get(unallocatedMessageQueueIndex++));
-                                }
-                            }  else {
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            //Allocate those DCs which have both consumer and broker in.
-            for (Integer dcIndex : groupedClients.keySet()) {
-                if (groupedMessageQueues.keySet().contains(dcIndex)) {
-                    List<String> clientIDsPerDC = groupedClients.get(dcIndex);
-                    List<MessageQueue> messageQueuesPerDC = groupedMessageQueues.get(dcIndex);
-                    allocateMessageQueueClientPerDC(messageQueuesPerDC, clientIDsPerDC, underAllocatedClientIds,
-                            result);
-                }
-            }
-
-            List<String> clientIDsNotInBrokerDCs = new ArrayList<String>();
-            for (Integer dcIndex : groupedClients.keySet()) {
-                if (!groupedMessageQueues.containsKey(dcIndex)) {
-                    clientIDsNotInBrokerDCs.addAll(groupedClients.get(dcIndex));
-                }
-            }
-
-            List<MessageQueue> messageQueuesHasNoClients = new ArrayList<MessageQueue>();
-            for (Integer dcIndex : groupedMessageQueues.keySet()) {
-                if (!groupedClients.keySet().contains(dcIndex)) {
-                    messageQueuesHasNoClients.addAll(groupedMessageQueues.get(dcIndex));
-                }
-            }
-
-            //Allocate those broker message queues that have no consumers in to consumers that have no brokers in same
-            // DC.
-            if (!messageQueuesHasNoClients.isEmpty()) {
-                allocateAveragely(messageQueuesHasNoClients, clientIDsNotInBrokerDCs, result);
+        List<MessageQueue> pendingMessageQueues = new ArrayList<>();
+        for (Map.Entry<Integer, List<MessageQueue>> next : groupedMessageQueues.entrySet()) {
+            if (groupedClients.keySet().contains(next.getKey())) {
+                allocateByCircle(next.getValue(), groupedClients.get(next.getKey()), result);
+            } else {
+                pendingMessageQueues.addAll(next.getValue());
             }
         }
 
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Allocation Result:");
-            for (Map.Entry<String, List<MessageQueue>> row : result.entrySet()) {
-                StringBuilder stringBuilder = new StringBuilder();
-                for (MessageQueue messageQueue : row.getValue()) {
-                    stringBuilder.append(messageQueue.getBrokerName()).append(":").append(messageQueue.getQueueId())
-                            .append(", ");
-                }
-                if (stringBuilder.length() > 2) {
-                    LOGGER.debug(row.getKey() + " --> " + stringBuilder.substring(0, stringBuilder.length() - 2));
-                }
-            }
-            LOGGER.debug("Allocation End.");
+        if (!pendingMessageQueues.isEmpty()) {
+            allocateByCircle(pendingMessageQueues, activeConsumerIds, result);
         }
-        List<MessageQueue> allocation = result.get(currentConsumerID);
-        LOGGER.info("Allocation result: {}", allocation);
-        return null == allocation ? new ArrayList<MessageQueue>() : allocation;
+
+        return result.containsKey(currentConsumerID) ? result.get(currentConsumerID) : new ArrayList<MessageQueue>();
     }
 
     private static boolean isSuspended(List<Pair<Long, Long>> ranges, String consumerId) {
@@ -303,58 +180,16 @@ public class AllocateMessageQueueByDataCenter implements AllocateMessageQueueStr
         return false;
     }
 
-
-    private static void allocateMessageQueueClientPerDC(List<MessageQueue> messageQueuesPerDC,
-                                                 List<String> clientIDsPerDC,
-                                                 List<String> underAllocatedClientIds,
-                                                 HashMap<String, List<MessageQueue>> result) {
-        int avgMessageQueuePerClient = messageQueuesPerDC.size() / clientIDsPerDC.size();
-        int remaining = messageQueuesPerDC.size() % clientIDsPerDC.size();
-
-        int messageQueueIndex = 0;
-        for (int i = 0; i < clientIDsPerDC.size(); i++) {
-            List<MessageQueue> resultItemList = new ArrayList<MessageQueue>();
-            String clientId = clientIDsPerDC.get(i);
-            if (i < remaining) {
-                for (int j = 0; j < avgMessageQueuePerClient + 1; j++) {
-                    resultItemList.add(messageQueuesPerDC.get(messageQueueIndex++));
-                }
-                result.put(clientIDsPerDC.get(i), resultItemList);
-            } else if (messageQueueIndex < messageQueuesPerDC.size()) {
-                for (int j = 0; j < avgMessageQueuePerClient; j++) {
-                    resultItemList.add(messageQueuesPerDC.get(messageQueueIndex++));
-                }
-                result.put(clientId, resultItemList);
-                underAllocatedClientIds.add(clientId);
+    private static void allocateByCircle(List<MessageQueue> messageQueues, List<String> clientIDs,
+                                          HashMap<String, List<MessageQueue>> result) {
+        for (int i = 0; i < messageQueues.size(); i++) {
+            String targetClientId = clientIDs.get(i % clientIDs.size());
+            if (!result.containsKey(targetClientId)) {
+                List<MessageQueue> list = new ArrayList<>();
+                list.add(messageQueues.get(i));
+                result.put(targetClientId, list);
             } else {
-                result.put(clientId, resultItemList);
-                underAllocatedClientIds.add(clientId);
-            }
-        }
-
-    }
-
-    private static void allocateAveragely(List<MessageQueue> messageQueues, List<String> clientIDs,
-                                   HashMap<String, List<MessageQueue>> result) {
-        int average = messageQueues.size() / clientIDs.size();
-        int remain = messageQueues.size() % clientIDs.size();
-
-        int messageQueueIndex = 0;
-        for (int i = 0; i < clientIDs.size(); i++) {
-            String clientId = clientIDs.get(i);
-            List<MessageQueue> resultItemList = new ArrayList<MessageQueue>(average + 1);
-            if (i < remain) {
-                for (int j = 0; j < average + 1; j++) {
-                    resultItemList.add(messageQueues.get(messageQueueIndex++));
-                }
-                result.put(clientId, resultItemList);
-            } else if (messageQueueIndex < messageQueues.size()) {
-                for (int j = 0; j < average; j++) {
-                    resultItemList.add(messageQueues.get(messageQueueIndex++));
-                }
-                result.put(clientId, resultItemList);
-            } else {
-                break;
+                result.get(targetClientId).add(messageQueues.get(i));
             }
         }
     }
