@@ -40,9 +40,15 @@ import com.alibaba.rocketmq.client.producer.TransactionMQProducer;
 import com.alibaba.rocketmq.client.producer.TransactionSendResult;
 import com.alibaba.rocketmq.common.MixAll;
 import com.alibaba.rocketmq.common.ServiceState;
-import com.alibaba.rocketmq.common.UtilAll;
 import com.alibaba.rocketmq.common.help.FAQUrl;
-import com.alibaba.rocketmq.common.message.*;
+import com.alibaba.rocketmq.common.message.Message;
+import com.alibaba.rocketmq.common.message.MessageAccessor;
+import com.alibaba.rocketmq.common.message.MessageConst;
+import com.alibaba.rocketmq.common.message.MessageDecoder;
+import com.alibaba.rocketmq.common.message.MessageExt;
+import com.alibaba.rocketmq.common.message.MessageId;
+import com.alibaba.rocketmq.common.message.MessageQueue;
+import com.alibaba.rocketmq.common.message.MessageType;
 import com.alibaba.rocketmq.common.protocol.ResponseCode;
 import com.alibaba.rocketmq.common.protocol.header.CheckTransactionStateRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.EndTransactionRequestHeader;
@@ -54,9 +60,14 @@ import com.alibaba.rocketmq.remoting.common.RemotingUtil;
 import com.alibaba.rocketmq.remoting.exception.RemotingException;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -640,7 +651,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                       final CommunicationMode communicationMode,//
                                       final SendCallback sendCallback, //
                                       final TopicPublishInfo topicPublishInfo, //
-                                      final long timeout) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+                                      final long timeout, //
+                                      final boolean ignoreSemaphore) throws MQClientException, RemotingException,
+            MQBrokerException, InterruptedException {
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
         if (null == brokerAddr) {
             // TODO 此处可能对Name Server压力过大，需要调优
@@ -763,7 +776,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                 this.mQClientFactory, // 9
                                 this.defaultMQProducer.getRetryTimesWhenSendAsyncFailed(), // 10
                                 context, //
-                                this);
+                                this, //
+                                ignoreSemaphore //
+                                );
                         break;
                     case ONEWAY:
                     case SYNC:
@@ -814,6 +829,17 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         }
 
         throw new MQClientException("The broker[" + mq.getBrokerName() + "] not exist", null);
+    }
+
+    private SendResult sendKernelImpl(final Message msg,//
+                                      final MessageQueue mq,//
+                                      final CommunicationMode communicationMode,//
+                                      final SendCallback sendCallback, //
+                                      final TopicPublishInfo topicPublishInfo, //
+                                      final long timeout //
+    ) throws MQClientException, RemotingException,
+            MQBrokerException, InterruptedException {
+        return sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout, false);
     }
 
     private boolean needToCompressMessageBody(final Message msg) {
@@ -916,7 +942,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                       Object arg,//
                                       final CommunicationMode communicationMode,//
                                       final SendCallback sendCallback, //
-                                      final long timeout//
+                                      final long timeout, //
+                                      final boolean ignoreSemaphore
     ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         // 有效性检查
         this.makeSureStateOK();
@@ -932,7 +959,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             }
 
             if (mq != null) {
-                return this.sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout);
+                return this.sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout, ignoreSemaphore);
             } else {
                 throw new MQClientException("select message queue return null.", null);
             }
@@ -941,12 +968,32 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         throw new MQClientException("No route info for this topic, " + msg.getTopic(), null);
     }
 
+    private SendResult sendSelectImpl(//
+                                      Message msg,//
+                                      MessageQueueSelector selector,//
+                                      Object arg,//
+                                      final CommunicationMode communicationMode,//
+                                      final SendCallback sendCallback, //
+                                      final long timeout//
+    ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+        return sendSelectImpl(msg, selector, arg, communicationMode, sendCallback, timeout, false);
+    }
+
     /**
      * SELECT ASYNC -------------------------------------------------------
      */
     public void send(Message msg, MessageQueueSelector selector, Object arg, SendCallback sendCallback)
             throws MQClientException, RemotingException, InterruptedException {
         send(msg, selector, arg, sendCallback, this.defaultMQProducer.getSendMsgTimeout());
+    }
+
+    public void send(Message msg, MessageQueueSelector selector, Object arg, SendCallback sendCallback, long timeout,
+                     final boolean ignoreSemaphore) throws MQClientException, RemotingException, InterruptedException {
+        try {
+            this.sendSelectImpl(msg, selector, arg, CommunicationMode.ASYNC, sendCallback, timeout, ignoreSemaphore);
+        } catch (MQBrokerException e) {
+            throw new MQClientException("unknown exception", e);
+        }
     }
 
     public void send(Message msg, MessageQueueSelector selector, Object arg, SendCallback sendCallback, long timeout)

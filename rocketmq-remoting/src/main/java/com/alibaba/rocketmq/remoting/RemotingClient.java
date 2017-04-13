@@ -49,6 +49,11 @@ public interface RemotingClient extends RemotingService {
             final InvokeCallback invokeCallback) throws InterruptedException, RemotingConnectException,
             RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException;
 
+    void invokeAsync(final String addr, final RemotingCommand request, final long timeoutMillis,
+                     final boolean ignoreSemaphore, final InvokeCallback invokeCallback) throws InterruptedException,
+            RemotingConnectException, RemotingTooMuchRequestException, RemotingTimeoutException,
+            RemotingSendRequestException;
+
 
     void invokeOneway(final String addr, final RemotingCommand request, final long timeoutMillis)
             throws InterruptedException, RemotingConnectException, RemotingTooMuchRequestException,

@@ -63,7 +63,7 @@ public class Producer {
                     public void onException(Throwable e) {
                         e.printStackTrace();
                     }
-                });
+                }, 200, true);
             } catch (Exception e) {
                 e.printStackTrace();
                 Thread.sleep(1000);

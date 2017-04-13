@@ -243,6 +243,12 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
         this.defaultMQProducerImpl.send(msg, selector, arg, sendCallback, timeout);
     }
 
+    @Override
+    public void send(Message msg, MessageQueueSelector selector, Object arg, SendCallback sendCallback, long timeout,
+                     boolean ignoreSemaphore) throws MQClientException, RemotingException, InterruptedException {
+        this.defaultMQProducerImpl.send(msg, selector, arg, sendCallback, timeout, ignoreSemaphore);
+    }
+
 
     @Override
     public void sendOneway(Message msg, MessageQueueSelector selector, Object arg) throws MQClientException,

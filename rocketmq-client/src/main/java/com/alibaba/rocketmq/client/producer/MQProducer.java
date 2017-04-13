@@ -220,6 +220,9 @@ public interface MQProducer extends MQAdmin {
               final SendCallback sendCallback, final long timeout) throws MQClientException, RemotingException,
             InterruptedException;
 
+    void send(Message msg, MessageQueueSelector selector, Object arg, SendCallback sendCallback, long timeout,
+                     boolean ignoreSemaphore) throws MQClientException, RemotingException, InterruptedException;
+
 
     /**
      * 发送消息，可以自定义选择队列，队列的总数可能会由于Broker的启停变化<br>

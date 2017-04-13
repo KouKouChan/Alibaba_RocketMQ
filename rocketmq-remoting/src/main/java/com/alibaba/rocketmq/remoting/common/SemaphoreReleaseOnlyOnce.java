@@ -28,15 +28,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SemaphoreReleaseOnlyOnce {
     private final AtomicBoolean released = new AtomicBoolean(false);
     private final Semaphore semaphore;
+    private final boolean ignoreSemaphore;
 
 
-    public SemaphoreReleaseOnlyOnce(Semaphore semaphore) {
+    public SemaphoreReleaseOnlyOnce(final Semaphore semaphore, final boolean ignoreSemaphore) {
         this.semaphore = semaphore;
+        this.ignoreSemaphore = ignoreSemaphore;
     }
 
 
     public void release() {
-        if (this.semaphore != null) {
+        if (!ignoreSemaphore && this.semaphore != null) {
             if (this.released.compareAndSet(false, true)) {
                 this.semaphore.release();
             }

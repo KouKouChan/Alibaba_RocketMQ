@@ -403,19 +403,20 @@ public abstract class NettyRemotingAbstract {
 
 
     public void invokeAsyncImpl(final Channel channel, final RemotingCommand request,
-            final long timeoutMillis, final InvokeCallback invokeCallback) throws InterruptedException,
-            RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
+            final long timeoutMillis, final boolean ignoreSemaphore, final InvokeCallback invokeCallback)
+            throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException,
+            RemotingSendRequestException {
 
         long start = systemClock.now();
-        boolean acquired = this.semaphoreAsync.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
+        boolean acquired = !ignoreSemaphore && this.semaphoreAsync.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
         long duration = systemClock.now() - start;
 
         if (duration > 10) {
             LOGGER.warn("Acquire semaphore async takes {}ms", duration);
         }
 
-        if (acquired) {
-            final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreAsync);
+        if (ignoreSemaphore || acquired) {
+            final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreAsync, ignoreSemaphore);
 
             final ResponseFuture responseFuture =
                     new ResponseFuture(request.getOpaque(), timeoutMillis, invokeCallback, once);
@@ -473,6 +474,12 @@ public abstract class NettyRemotingAbstract {
         }
     }
 
+    public void invokeAsyncImpl(final Channel channel, final RemotingCommand request,
+                                final long timeoutMillis, final InvokeCallback invokeCallback) throws InterruptedException,
+            RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
+        invokeAsyncImpl(channel, request, timeoutMillis, false, invokeCallback);
+    }
+
     /**
      * Execute callback in callback executor. If callback executor is null, run directly in current thread.
      *
@@ -519,7 +526,7 @@ public abstract class NettyRemotingAbstract {
         request.markOnewayRPC();
         boolean acquired = this.semaphoreOneway.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
         if (acquired) {
-            final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreOneway);
+            final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreOneway, false);
             try {
                 channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
                     @Override

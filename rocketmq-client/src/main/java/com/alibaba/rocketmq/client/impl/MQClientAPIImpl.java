@@ -46,8 +46,65 @@ import com.alibaba.rocketmq.common.namesrv.NamesrvUtil;
 import com.alibaba.rocketmq.common.namesrv.TopAddressing;
 import com.alibaba.rocketmq.common.protocol.RequestCode;
 import com.alibaba.rocketmq.common.protocol.ResponseCode;
-import com.alibaba.rocketmq.common.protocol.body.*;
-import com.alibaba.rocketmq.common.protocol.header.*;
+import com.alibaba.rocketmq.common.protocol.body.BrokerStatsData;
+import com.alibaba.rocketmq.common.protocol.body.ClusterInfo;
+import com.alibaba.rocketmq.common.protocol.body.ConsumeMessageDirectlyResult;
+import com.alibaba.rocketmq.common.protocol.body.ConsumerConnection;
+import com.alibaba.rocketmq.common.protocol.body.ConsumerRunningInfo;
+import com.alibaba.rocketmq.common.protocol.body.GetConsumerStatusBody;
+import com.alibaba.rocketmq.common.protocol.body.GroupList;
+import com.alibaba.rocketmq.common.protocol.body.KVTable;
+import com.alibaba.rocketmq.common.protocol.body.LockBatchRequestBody;
+import com.alibaba.rocketmq.common.protocol.body.LockBatchResponseBody;
+import com.alibaba.rocketmq.common.protocol.body.ProducerConnection;
+import com.alibaba.rocketmq.common.protocol.body.QueryConsumeTimeSpanBody;
+import com.alibaba.rocketmq.common.protocol.body.QueryCorrectionOffsetBody;
+import com.alibaba.rocketmq.common.protocol.body.QueueTimeSpan;
+import com.alibaba.rocketmq.common.protocol.body.ResetOffsetBody;
+import com.alibaba.rocketmq.common.protocol.body.SubscriptionGroupWrapper;
+import com.alibaba.rocketmq.common.protocol.body.TopicList;
+import com.alibaba.rocketmq.common.protocol.body.UnlockBatchRequestBody;
+import com.alibaba.rocketmq.common.protocol.header.AddCommitLogStorePathRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.CloneGroupOffsetRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.ConsumeMessageDirectlyResultRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.ConsumerSendMsgBackRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.CreateTopicRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.DeleteSubscriptionGroupRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.DeleteTopicRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.EndTransactionRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetConsumeStatsRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetConsumerConnectionListRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetConsumerListByGroupRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetConsumerListByGroupResponseBody;
+import com.alibaba.rocketmq.common.protocol.header.GetConsumerRunningInfoRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetConsumerStatusRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetEarliestMsgStoretimeRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetEarliestMsgStoretimeResponseHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetMaxOffsetRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetMaxOffsetResponseHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetMinOffsetRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetMinOffsetResponseHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetProducerConnectionListRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetTopicStatsInfoRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.GetTopicsByClusterRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.PullMessageRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.PullMessageResponseHeader;
+import com.alibaba.rocketmq.common.protocol.header.QueryConsumeTimeSpanRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.QueryConsumerOffsetRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.QueryConsumerOffsetResponseHeader;
+import com.alibaba.rocketmq.common.protocol.header.QueryCorrectionOffsetHeader;
+import com.alibaba.rocketmq.common.protocol.header.QueryMessageRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.QueryTopicConsumeByWhoRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.ResetOffsetRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.SearchOffsetRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.SearchOffsetResponseHeader;
+import com.alibaba.rocketmq.common.protocol.header.SendMessageRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.SendMessageRequestHeaderV2;
+import com.alibaba.rocketmq.common.protocol.header.SendMessageResponseHeader;
+import com.alibaba.rocketmq.common.protocol.header.UnregisterClientRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.UpdateConsumerOffsetRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.ViewBrokerStatsDataRequestHeader;
+import com.alibaba.rocketmq.common.protocol.header.ViewMessageRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.filtersrv.RegisterMessageFilterClassRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.namesrv.DeleteKVConfigRequestHeader;
 import com.alibaba.rocketmq.common.protocol.header.namesrv.DeleteTopicInNamesrvRequestHeader;
@@ -81,9 +138,9 @@ import com.alibaba.rocketmq.remoting.netty.NettySystemConfig;
 import com.alibaba.rocketmq.remoting.netty.ResponseFuture;
 import com.alibaba.rocketmq.remoting.protocol.RemotingCommand;
 import com.alibaba.rocketmq.remoting.protocol.RemotingSerializable;
-import java.io.IOException;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -322,7 +379,8 @@ public class MQClientAPIImpl {
                                   final MQClientInstance instance, // 9
                                   final int retryTimesWhenSendFailed, // 10
                                   final SendMessageContext context, // 11
-                                  final DefaultMQProducerImpl producer // 12
+                                  final DefaultMQProducerImpl producer, // 12
+                                  final boolean ignoreSemaphore
                                   ) throws RemotingException, MQBrokerException, InterruptedException {
         // 添加虚拟运行环境相关的projectGroupPrefix
         if (!UtilAll.isBlank(projectGroupPrefix)) {
@@ -363,7 +421,7 @@ public class MQClientAPIImpl {
             case ASYNC:
                 final AtomicInteger times = new AtomicInteger();
                 this.sendMessageAsync(addr, brokerName, msg, timeoutMillis, request, requestHeader, sendCallback, topicPublishInfo,
-                        instance, retryTimesWhenSendFailed, times, context, producer);
+                        instance, retryTimesWhenSendFailed, times, context, producer, ignoreSemaphore);
                 return null;
             case SYNC:
                 return this.sendMessageSync(addr, brokerName, msg, timeoutMillis, request);
@@ -373,6 +431,24 @@ public class MQClientAPIImpl {
         }
 
         return null;
+    }
+
+    public SendResult sendMessage(//
+                                  final String addr, // 1
+                                  final String brokerName, // 2
+                                  final Message msg, // 3
+                                  final SendMessageRequestHeader requestHeader, // 4
+                                  final long timeoutMillis, // 5
+                                  final CommunicationMode communicationMode, // 6
+                                  final SendCallback sendCallback, // 7
+                                  final TopicPublishInfo topicPublishInfo, // 8
+                                  final MQClientInstance instance, // 9
+                                  final int retryTimesWhenSendFailed, // 10
+                                  final SendMessageContext context, // 11
+                                  final DefaultMQProducerImpl producer // 12
+    ) throws RemotingException, MQBrokerException, InterruptedException {
+        return sendMessage(addr, brokerName, msg, requestHeader, timeoutMillis, communicationMode, sendCallback,
+                topicPublishInfo, instance, retryTimesWhenSendFailed, context, producer, false);
     }
 
 
@@ -402,9 +478,10 @@ public class MQClientAPIImpl {
                                   final int retryTimesWhenSendFailed, //
                                   final AtomicInteger times, //
                                   final SendMessageContext context, //
-                                  final DefaultMQProducerImpl producer //
+                                  final DefaultMQProducerImpl producer, //
+                                  final boolean ignoreSemaphore
     ) throws InterruptedException, RemotingException {
-        this.remotingClient.invokeAsync(addr, request, timeoutMillis, new InvokeCallback() {
+        this.remotingClient.invokeAsync(addr, request, timeoutMillis, ignoreSemaphore, new InvokeCallback() {
             @Override
             public void operationComplete(ResponseFuture responseFuture) {
                 RemotingCommand response = responseFuture.getResponseCommand();
@@ -463,6 +540,25 @@ public class MQClientAPIImpl {
                 }
             }
         });
+    }
+
+    private void sendMessageAsync(//
+                                  final String addr, //
+                                  final String brokerName, //
+                                  final Message msg, //
+                                  final long timeoutMillis, //
+                                  final RemotingCommand request, //
+                                  final SendMessageRequestHeader requestHeader, //
+                                  final SendCallback sendCallback, //
+                                  final TopicPublishInfo topicPublishInfo, //
+                                  final MQClientInstance instance, //
+                                  final int retryTimesWhenSendFailed, //
+                                  final AtomicInteger times, //
+                                  final SendMessageContext context, //
+                                  final DefaultMQProducerImpl producer //
+    ) throws InterruptedException, RemotingException {
+        sendMessageAsync(addr, brokerName, msg, timeoutMillis, request, requestHeader, sendCallback, topicPublishInfo,
+                instance, retryTimesWhenSendFailed, times, context, producer, false);
     }
 
 
