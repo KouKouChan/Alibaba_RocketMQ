@@ -519,48 +519,28 @@ public class MQClientAPIImpl {
                     } catch (Exception e) {
                         producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), true);
                         onExceptionImpl(brokerName, msg, 0L, request, requestHeader, sendCallback, topicPublishInfo, instance,
-                                retryTimesWhenSendFailed, times, e, context, false, producer);
+                                retryTimesWhenSendFailed, times, e, context, false, producer, ignoreSemaphore);
                     }
                 } else {
                     producer.updateFaultItem(brokerName, System.currentTimeMillis() - responseFuture.getBeginTimestamp(), true);
                     if (!responseFuture.isSendRequestOK()) {
                         MQClientException ex = new MQClientException("send request failed", responseFuture.getCause());
                         onExceptionImpl(brokerName, msg, 0L, request, requestHeader, sendCallback, topicPublishInfo, instance,
-                                retryTimesWhenSendFailed, times, ex, context, true, producer);
+                                retryTimesWhenSendFailed, times, ex, context, true, producer, ignoreSemaphore);
                     } else if (responseFuture.isTimeout()) {
                         MQClientException ex = new MQClientException("wait response timeout " + responseFuture.getTimeoutMillis() + "ms",
                                 responseFuture.getCause());
                         onExceptionImpl(brokerName, msg, 0L, request, requestHeader, sendCallback, topicPublishInfo, instance,
-                                retryTimesWhenSendFailed, times, ex, context, true, producer);
+                                retryTimesWhenSendFailed, times, ex, context, true, producer, ignoreSemaphore);
                     } else {
                         MQClientException ex = new MQClientException("unknown reason", responseFuture.getCause());
                         onExceptionImpl(brokerName, msg, 0L, request, requestHeader, sendCallback, topicPublishInfo, instance,
-                                retryTimesWhenSendFailed, times, ex, context, true, producer);
+                                retryTimesWhenSendFailed, times, ex, context, true, producer, ignoreSemaphore);
                     }
                 }
             }
         });
     }
-
-    private void sendMessageAsync(//
-                                  final String addr, //
-                                  final String brokerName, //
-                                  final Message msg, //
-                                  final long timeoutMillis, //
-                                  final RemotingCommand request, //
-                                  final SendMessageRequestHeader requestHeader, //
-                                  final SendCallback sendCallback, //
-                                  final TopicPublishInfo topicPublishInfo, //
-                                  final MQClientInstance instance, //
-                                  final int retryTimesWhenSendFailed, //
-                                  final AtomicInteger times, //
-                                  final SendMessageContext context, //
-                                  final DefaultMQProducerImpl producer //
-    ) throws InterruptedException, RemotingException {
-        sendMessageAsync(addr, brokerName, msg, timeoutMillis, request, requestHeader, sendCallback, topicPublishInfo,
-                instance, retryTimesWhenSendFailed, times, context, producer, false);
-    }
-
 
     private void onExceptionImpl(final String brokerName, //
                                  final Message msg, //
@@ -575,7 +555,8 @@ public class MQClientAPIImpl {
                                  final Exception e, //
                                  final SendMessageContext context, //
                                  final boolean needRetry, //
-                                 final DefaultMQProducerImpl producer // 12
+                                 final DefaultMQProducerImpl producer, // 12
+                                 final boolean ignoreSemaphore
     ) {
         int tmp = curTimes.incrementAndGet();
         if (needRetry && tmp <= totalRetryTimes) {
@@ -595,21 +576,21 @@ public class MQClientAPIImpl {
             try {
                 request.setOpaque(RemotingCommand.createNewRequestId());
                 sendMessageAsync(addr, retryBrokerName, msg, timeoutMillis, request, requestHeader, sendCallback,
-                        topicPublishInfo, instance, totalRetryTimes, curTimes, context, producer);
+                        topicPublishInfo, instance, totalRetryTimes, curTimes, context, producer, ignoreSemaphore);
             } catch (InterruptedException exception) {
                 onExceptionImpl(retryBrokerName, msg, timeoutMillis, request, requestHeader, sendCallback, topicPublishInfo,
-                        instance, totalRetryTimes, curTimes, exception, context, false, producer);
+                        instance, totalRetryTimes, curTimes, exception, context, false, producer, ignoreSemaphore);
             } catch (RemotingConnectException exception) {
                 producer.updateFaultItem(brokerName, 3000, true);
                 onExceptionImpl(retryBrokerName, msg, timeoutMillis, request, requestHeader, sendCallback, topicPublishInfo,
-                        instance, totalRetryTimes, curTimes, exception, context, true, producer);
+                        instance, totalRetryTimes, curTimes, exception, context, true, producer, ignoreSemaphore);
             } catch (RemotingTooMuchRequestException exception) {
                 onExceptionImpl(retryBrokerName, msg, timeoutMillis, request, requestHeader, sendCallback, topicPublishInfo,
-                        instance, totalRetryTimes, curTimes, exception, context, false, producer);
+                        instance, totalRetryTimes, curTimes, exception, context, false, producer, ignoreSemaphore);
             } catch (RemotingException exception) {
                 producer.updateFaultItem(brokerName, 3000, true);
                 onExceptionImpl(retryBrokerName, msg, timeoutMillis, request, requestHeader, sendCallback, topicPublishInfo,
-                        instance, totalRetryTimes, curTimes, exception, context, true, producer);
+                        instance, totalRetryTimes, curTimes, exception, context, true, producer, ignoreSemaphore);
             }
         } else {
             if (context != null) {
@@ -722,7 +703,6 @@ public class MQClientAPIImpl {
                 if (response != null) {
                     try {
                         PullResult pullResult = MQClientAPIImpl.this.processPullResponse(response);
-                        assert pullResult != null;
                         pullCallback.onSuccess(pullResult);
                     }
                     catch (Exception e) {
