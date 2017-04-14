@@ -331,6 +331,8 @@ public abstract class NettyRemotingAbstract {
 
 
     public void scanResponseTable() {
+        LOGGER.info("Begin to scan response table");
+
         final List<ResponseFuture> responseFutures = new LinkedList<ResponseFuture>();
         Iterator<Entry<Integer, ResponseFuture>> it = this.responseTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -345,6 +347,8 @@ public abstract class NettyRemotingAbstract {
             }
         }
 
+        LOGGER.info("About to expire {} deprecated requests", responseFutures.size());
+
         for (ResponseFuture responseFuture : responseFutures) {
             try {
                 executeInvokeCallback(responseFuture);
@@ -352,6 +356,8 @@ public abstract class NettyRemotingAbstract {
                 LOGGER.warn("scanResponseTable, operationComplete Exception", e);
             }
         }
+
+        LOGGER.info("Exit scanResponseTable");
     }
 
 
@@ -441,8 +447,7 @@ public abstract class NettyRemotingAbstract {
                         LOGGER.warn(request.toString());
                     }
                 });
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 responseFuture.release();
                 LOGGER.warn("send a request command to channel <" + RemotingHelper.parseChannelRemoteAddr(channel)
                                 + "> Exception", e);
