@@ -25,6 +25,10 @@ import com.alibaba.rocketmq.common.message.MessageExt;
 import com.alibaba.rocketmq.common.protocol.heartbeat.MessageModel;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -43,12 +47,22 @@ public class Consumer {
         consumer.subscribe("T_QuickStart", "*");
         consumer.setMessageModel(MessageModel.CLUSTERING);
 
-        consumer.registerMessageListener(new MessageListenerConcurrently() {
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
+        final AtomicLong count = new AtomicLong();
+
+        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("C: " + count.get());
+            }
+        }, 10, 1, TimeUnit.SECONDS);
+
+        consumer.registerMessageListener(new MessageListenerConcurrently() {
             @Override
             public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
                     ConsumeConcurrentlyContext context) {
-                System.out.println(Thread.currentThread().getName() + " Receive New Messages: " + msgs);
+                count.incrementAndGet();
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
         });

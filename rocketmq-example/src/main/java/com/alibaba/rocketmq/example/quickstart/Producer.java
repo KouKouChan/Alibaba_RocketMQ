@@ -25,6 +25,10 @@ import com.alibaba.rocketmq.common.message.Message;
 import com.google.common.util.concurrent.RateLimiter;
 
 import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -38,7 +42,7 @@ public class Producer {
         producer.start();
         byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'x');
-        float limit = 1000;
+        float limit = 12000;
         if (args.length > 0) {
             limit = Float.parseFloat(args[0]);
         }
@@ -48,6 +52,18 @@ public class Producer {
         );
         msg.setWaitStoreMsgOK(false);
         RateLimiter rateLimiter = RateLimiter.create(limit);
+        final AtomicLong success = new AtomicLong();
+        final AtomicLong failure = new AtomicLong();
+
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+        scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("S: " + success.get());
+                System.out.println("F: " + failure.get());
+            }
+        }, 10, 1, TimeUnit.SECONDS);
+
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
             rateLimiter.acquire();
             try {
@@ -56,16 +72,15 @@ public class Producer {
                 producer.send(msg, new SelectMessageQueueByRegion(Region.ANY), null, new SendCallback() {
                     @Override
                     public void onSuccess(SendResult sendResult) {
-                        System.out.println(sendResult);
+                        success.incrementAndGet();
                     }
 
                     @Override
                     public void onException(Throwable e) {
-                        e.printStackTrace();
+                        failure.incrementAndGet();
                     }
                 });
             } catch (Exception e) {
-                e.printStackTrace();
                 Thread.sleep(1000);
             }
         }

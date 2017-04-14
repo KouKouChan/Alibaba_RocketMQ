@@ -406,13 +406,7 @@ public abstract class NettyRemotingAbstract {
             final long timeoutMillis, final InvokeCallback invokeCallback) throws InterruptedException,
             RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
 
-        long start = systemClock.now();
-        boolean acquired = this.semaphoreAsync.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
-        long duration = systemClock.now() - start;
-
-        if (duration > 10) {
-            LOGGER.warn("Acquire semaphore async takes {}ms", duration);
-        }
+        boolean acquired = this.semaphoreAsync.tryAcquire(10, TimeUnit.MILLISECONDS);
 
         if (acquired) {
             final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreAsync);
@@ -454,12 +448,10 @@ public abstract class NettyRemotingAbstract {
                                 + "> Exception", e);
                 throw new RemotingSendRequestException(RemotingHelper.parseChannelRemoteAddr(channel), e);
             }
-        }
-        else {
+        } else {
             if (timeoutMillis <= 0) {
                 throw new RemotingTooMuchRequestException("invokeAsyncImpl invoke too fast");
-            }
-            else {
+            } else {
                 String info = String.format(
                         "invokeAsyncImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreAsyncValue: %d", //
                         timeoutMillis,//
