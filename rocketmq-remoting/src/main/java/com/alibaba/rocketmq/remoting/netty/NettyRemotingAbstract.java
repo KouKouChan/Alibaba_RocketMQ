@@ -411,8 +411,8 @@ public abstract class NettyRemotingAbstract {
     public void invokeAsyncImpl(final Channel channel, final RemotingCommand request,
             final long timeoutMillis, final InvokeCallback invokeCallback) throws InterruptedException,
             RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
-
-        boolean acquired = this.semaphoreAsync.tryAcquire(10, TimeUnit.MILLISECONDS);
+        long semaphoreTimeout = 10;
+        boolean acquired = this.semaphoreAsync.tryAcquire(semaphoreTimeout, TimeUnit.MILLISECONDS);
 
         if (acquired) {
             final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreAsync);
@@ -449,19 +449,22 @@ public abstract class NettyRemotingAbstract {
                 });
             } catch (Exception e) {
                 responseFuture.release();
-                LOGGER.warn("send a request command to channel <" + RemotingHelper.parseChannelRemoteAddr(channel)
-                                + "> Exception", e);
+                LOGGER.warn("send a request command to channel <{}> Exception",
+                        RemotingHelper.parseChannelRemoteAddr(channel), e);
                 throw new RemotingSendRequestException(RemotingHelper.parseChannelRemoteAddr(channel), e);
             }
         } else {
             if (timeoutMillis <= 0) {
                 throw new RemotingTooMuchRequestException("invokeAsyncImpl invoke too fast");
             } else {
-                String info = String.format(
-                        "invokeAsyncImpl tryAcquire semaphore timeout, %dms, waiting thread nums: %d semaphoreAsyncValue: %d", //
-                        timeoutMillis,//
-                        this.semaphoreAsync.getQueueLength(),//
-                        this.semaphoreAsync.availablePermits()//
+                String info = String.format("invokeAsyncImpl tryAcquire semaphore timeout, %dms;" +
+                                " Number of waiting thread: %d " +
+                                " semaphoreAsyncValue: %d, " +
+                                " Remote Address: %s", //
+                        semaphoreTimeout,//
+                        this.semaphoreAsync.getQueueLength(), //
+                        this.semaphoreAsync.availablePermits(), //
+                        RemotingHelper.parseChannelRemoteAddr(channel) //
                 );
                 LOGGER.warn(info);
                 LOGGER.warn(request.toString());
