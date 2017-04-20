@@ -13,12 +13,12 @@ public class NettySystemConfig {
     public static final String SystemPropertyClientAsyncSemaphoreValue = //
             "com.rocketmq.remoting.clientAsyncSemaphoreValue";
     public static int ClientAsyncSemaphoreValue = //
-            Integer.parseInt(System.getProperty(SystemPropertyClientAsyncSemaphoreValue, "2048"));
+            Integer.parseInt(System.getProperty(SystemPropertyClientAsyncSemaphoreValue, "4096"));
 
     public static final String SystemPropertyClientOnewaySemaphoreValue = //
             "com.rocketmq.remoting.clientOnewaySemaphoreValue";
     public static int ClientOnewaySemaphoreValue = //
-            Integer.parseInt(System.getProperty(SystemPropertyClientOnewaySemaphoreValue, "2048"));
+            Integer.parseInt(System.getProperty(SystemPropertyClientOnewaySemaphoreValue, "4096"));
 
     public static final String SYSTEM_NETTY_CONNECT_TIMEOUT = "com.rocketmq.remoting.connect.timeout";
     public static int NETTY_CONNECT_TIMEOUT = Integer.parseInt(System.getProperty(SYSTEM_NETTY_CONNECT_TIMEOUT, "30000"));

@@ -408,8 +408,8 @@ public abstract class NettyRemotingAbstract {
     }
 
 
-    public void invokeAsyncImpl(final Channel channel, final RemotingCommand request,
-            final long timeoutMillis, final InvokeCallback invokeCallback) throws InterruptedException,
+    public void invokeAsyncImpl(final Channel channel, final RemotingCommand request, final long timeoutMillis,
+                                final InvokeCallback invokeCallback) throws InterruptedException,
             RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
         long semaphoreTimeout = 10;
         boolean acquired = this.semaphoreAsync.tryAcquire(semaphoreTimeout, TimeUnit.MILLISECONDS);
@@ -417,8 +417,7 @@ public abstract class NettyRemotingAbstract {
         if (acquired) {
             final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreAsync);
 
-            final ResponseFuture responseFuture =
-                    new ResponseFuture(request.getOpaque(), timeoutMillis, invokeCallback, once);
+            final ResponseFuture responseFuture = new ResponseFuture(request.getOpaque(), timeoutMillis, invokeCallback, once);
             this.responseTable.put(request.getOpaque(), responseFuture);
             try {
                 channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
@@ -427,8 +426,7 @@ public abstract class NettyRemotingAbstract {
                         if (f.isSuccess()) {
                             responseFuture.setSendRequestOK(true);
                             return;
-                        }
-                        else {
+                        } else {
                             responseFuture.setSendRequestOK(false);
                         }
 
