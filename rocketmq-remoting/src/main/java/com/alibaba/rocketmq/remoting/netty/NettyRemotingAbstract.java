@@ -421,7 +421,7 @@ public abstract class NettyRemotingAbstract {
                 }
             };
 
-            //wrap the passed callback to remove close chanel listener
+            //wrap the passed callback to remove close channel listener
             InvokeCallback responseCallback = new InvokeCallback() {
                 @Override
                 public void operationComplete(ResponseFuture responseFuture) {
