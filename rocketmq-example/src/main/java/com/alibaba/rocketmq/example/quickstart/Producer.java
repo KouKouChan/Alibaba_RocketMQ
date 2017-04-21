@@ -42,7 +42,7 @@ public class Producer {
         producer.start();
         byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'x');
-        float limit = 12000;
+        float limit = 1000;
         if (args.length > 0) {
             limit = Float.parseFloat(args[0]);
         }
